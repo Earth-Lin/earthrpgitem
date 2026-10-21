@@ -3,6 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Minecraft](https://img.shields.io/badge/Minecraft-1.20.5%20~%201.21.x-green.svg)](https://www.minecraft.net/)
 [![Paper](https://img.shields.io/badge/Paper-API-blue.svg)](https://papermc.io/)
+[![Release](https://img.shields.io/github/v/release/Earth-Lin/earthrpgitem?include_prereleases&label=release)](https://github.com/Earth-Lin/earthrpgitem/releases)
 
 一个面向 Minecraft **Paper 1.20.5 ~ 1.21.x** 服务端的 RPG 物品框架插件：RPG 武器 / 防具 / 工具 / 饰品、技能系统、强化台、宝石镶嵌、采集系统、伤害演示假人。
 
@@ -56,6 +57,21 @@
 > 已处理的版本差异集中在 `util/AttributeModifiers.java`：1.21 起 `AttributeModifier`
 > 改用 `NamespacedKey` 作标识，1.20.x 只有 `UUID`。该适配层在运行时自动选择正确的构造方式。
 > 另外 `DamageCause.CAMPFIRE` 只在 1.21+ 存在，已改为按名字解析、老版本自动跳过。
+
+---
+
+## 安装
+
+### 直接下载（推荐）
+
+到 [**Releases**](https://github.com/Earth-Lin/earthrpgitem/releases) 下载最新的
+`EarthRPGItem-<版本>.jar`，放进服务器的 `plugins/` 目录即可。
+
+**同一个 jar 兼容 Paper 1.20.5 ~ 1.21.x 全部版本，不需要按服务端版本挑选。**
+
+### 从源码构建
+
+见下方「构建」一节。
 
 ---
 
