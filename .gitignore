@@ -1,10 +1,14 @@
 # Gradle
 .gradle/
 build/
-# gradlew 在找不到 GRADLE_USER_HOME 时会把整个 Gradle 分发（~150MB）解到项目根，
-# 绝不能提交。正常情况它在 ~/.gradle/wrapper/ 下。
-wrapper/
+# gradlew 在 distributionBase=PROJECT 时会把整个 Gradle 分发（~145MB）解到项目根，
+# 绝不能提交。注意这里必须写 /wrapper/（前导斜杠 = 只匹配根目录），
+# 否则会连 gradle/wrapper/gradle-wrapper.properties 一起排除掉，
+# 导致别人 clone 下来根本没有 gradlew 的配置。
+# 现已改用 distributionBase=GRADLE_USER_HOME，根目录不会再产生这个目录。
+/wrapper/
 !gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
 
 # 本地环境（含本机 JDK 绝对路径，不可开源）
 gradle.properties.local
