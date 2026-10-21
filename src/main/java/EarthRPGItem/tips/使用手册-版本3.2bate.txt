@@ -3481,6 +3481,271 @@ accessory:
 | `config-version` | 当前 `2`。升级版本时插件会据此迁移，**不要手改小** |
 | 颜色代码 | 支持 `&` 前缀（`&c` 红、`&a` 绿、`&7` 灰……），也支持 `&#RRGGBB` 十六进制（已确认启用 `hexColors()`） |
 
+二十、多物品 YML 与皮革颜色
+
+**一、支持的文件格式**
+
+`Weapon`、`Armor`、`Tool`、`Accessory` 四个目录都支持三种文件：
+
+| 扩展名 | 说明 |
+|---|---|
+| `.txt` | 原有格式，继续完全兼容 |
+| `.yml` / `.yaml` | 标准 YAML |
+
+改完执行 `/rpgitem reload` 重新加载注册表。
+
+**二、单文件单物品**
+
+三种格式都可以用根节点结构：
+
+```yaml
+id: fire_sword
+material: DIAMOND_SWORD
+display-name: "&c烈焰剑"
+attributes:
+  Attack: 12
+  FireDamage: 8
+description:
+  - "&7燃烧着火焰的长剑。"
+```
+
+不填 `id` 时用**文件名**作为默认 ID（`fire_sword.yml` → `fire_sword`）。
+
+**三、单个文件写多个物品**
+
+推荐用根节点 `items:`：
+
+```yaml
+items:
+  iron_sword_a:
+    material: IRON_SWORD
+    display-name: "&f铁剑 A"
+    attributes:
+      Attack: 5
+      Fix/5s: 1
+    description:
+      - "&7每五秒恢复一点耐久。"
+
+  magic_sword_b:
+    material: GOLDEN_SWORD
+    display-name: "&d魔法剑 B"
+    attributes:
+      Attack: 3
+      MagicDamage: 10
+    sounds:
+      enabled: true
+      sound: BLOCK_AMETHYST_BLOCK_CHIME
+      volume: 1.0
+      pitch: 1.2
+```
+
+`items` 下一级的键就是默认物品 ID。上例注册 `iron_sword_a` 和 `magic_sword_b`。
+
+**四、连续 id 格式**
+
+另一个写法：每个**行首无缩进**的 `id:` 都代表一件新物品。
+
+```yaml
+id: best_iron_sword_in_village
+material: IRON_SWORD
+display-name: "&f全村最好的铁剑"
+attributes:
+  Attack: 5
+description:
+  - "&f第一把武器"
+
+id: flower_blade
+material: IRON_SWORD
+display-name: "&f鲜花战刃"
+attributes:
+  Attack: 7
+description:
+  - "&f第二把武器"
+```
+
+插件在解析标准 YAML **之前**先识别这些顶层 `id`，把每段作为独立物品注册，因此前一件不会被后面的重复键覆盖。
+
+> `id:` **必须顶格**，不能带空格。`attributes`、`description` 等内部节点仍按正常 YAML 缩进。
+
+**五、多物品里的技能配置**
+
+`items` 下的每件物品都支持完整的 `fskill`、`rskill`、`lskill`、粒子、音效、Buff、附魔和吟唱：
+
+```yaml
+items:
+  chant_staff:
+    material: BLAZE_ROD
+    display-name: "&6吟唱法杖"
+    attributes:
+      MagicDamage: 15
+    fskill:
+      cooldown-seconds: 5
+      chants:
+        spell:
+          interval-seconds: 1
+          interrupt-on-item-switch: true
+          release-at: end
+          texts:
+            - "&e第一阶段"
+            - "&6第二阶段"
+      damages:
+        beam:
+          mode: wave
+          damage-type: MAGIC
+          damage: 20
+          length: 40
+          radius: 1
+```
+
+**六、皮革护甲颜色**
+
+只有 `LEATHER_HELMET`、`LEATHER_CHESTPLATE`、`LEATHER_LEGGINGS`、`LEATHER_BOOTS` 会应用颜色。
+
+```yaml
+items:
+  red_leather_chestplate:
+    material: LEATHER_CHESTPLATE
+    display-name: "&c赤红皮甲"
+    leather-color: "255,0,0"        # RGB 格式
+    attributes:
+      Armor: 5
+
+  blue_leather_boots:
+    material: LEATHER_BOOTS
+    display-name: "&9深蓝皮靴"
+    leather-color: "#2050FF"        # 十六进制格式
+    attributes:
+      Armor: 2
+```
+
+| 规则 | 说明 |
+|---|---|
+| RGB 范围 | 每项 0~255 |
+| 无效颜色 | 后台警告，退回原版皮革颜色 |
+| 非皮革材质 | `leather-color` 字段被直接忽略 |
+
+**七、使用与模板生成**
+
+多物品 YML 注册后与 TXT 物品**没有区别**：
+
+```
+/rpgitem give 玩家名 iron_sword_a
+/rpgitem puton 玩家名 red_leather_chestplate
+```
+
+也会自动进入对应的 Weapon / Armor / Tool / Accessory GUI。
+
+> **模板生成规则**：目录中存在任意 `.txt`、`.yml` 或 `.yaml` 时，插件认为该目录已有配置，
+> **不会**生成自带测试模板。只有三种格式全都不存在时才生成默认模板。
+
+**八、注意事项**
+
+| # | 事项 |
+|---|---|
+| 1 | 同一文件内不要重复使用相同节点键 |
+| 2 | 不同文件也不要注册相同 ID，否则指令和 GUI 可能只找到其中一个 |
+| 3 | YAML 缩进**必须用空格**，不能用 Tab |
+| 4 | 含 `#`、冒号、颜色代码或特殊字符的文本建议用双引号 |
+| 5 | TXT 文件本质上仍按 YAML 语法读取，原有 TXT 配置**不需要迁移** |
+
+**九、原版附魔写法**
+
+两种写法效果相同：
+
+```yaml
+# 列表格式（兼容旧写法）
+enchantments:
+  - "SHARPNESS:4"
+  - "UNBREAKING:3"
+
+# 映射格式
+enchantments:
+  SHARPNESS: 4
+  UNBREAKING: 3
+```
+
+`SHARPNESS`（锋利）会进入插件接管后的物理伤害结算，并显示在物理伤害数字中。
+
+二十一、技能命令序列（`commands`）
+
+**一、功能说明**
+
+`commands` 可以在一次技能释放中按顺序执行多条指令，也可以用 `delay` 延迟后续指令。
+延迟单位是 **Minecraft tick**，**20 tick = 1 秒**。
+
+**二、基础格式**
+
+```yaml
+fskill:
+  commands:
+    sequence:
+      as-op: true
+      commands:
+        - "say 第一条指令"
+        - "delay 60"
+        - "say 三秒后执行"
+```
+
+| `as-op` | 执行身份 | 适用 |
+|---|---|---|
+| `true` | **控制台** | `rpgitem give`、`broadcast` 等管理指令 |
+| `false` | **玩家本人** | 需要玩家权限或身份识别的指令 |
+
+**三、延迟规则**
+
+`delay 60` = 等待 60 tick = 3 秒。延迟是**累计**计算的：
+
+```yaml
+commands:
+  - "say A"
+  - "delay 20"
+  - "say B"
+  - "delay 40"
+  - "say C"
+```
+
+| 指令 | 执行时机 |
+|---|---|
+| A | 立即 |
+| B | 1 秒后 |
+| C | 再等 2 秒后（总计 3 秒） |
+
+多条不带 `delay` 的指令会在**同一轮立即执行**。也支持 `delay: 60` 写法。
+
+**四、变量替换**
+
+`${player}`、`{player}`、`@self` 都会替换成**释放技能玩家的游戏 ID**。
+
+```yaml
+- 'command{c="rpgitem give ${player} 陨铁剑"} @self'
+```
+
+**五、兼容 MythicMobs 风格写法**
+
+| 写法 | 行为 |
+|---|---|
+| `command{c="指令内容"} @self` | 提取 `c` 中的指令并执行 |
+| `message{m="文本内容"} @self` | 向释放者发消息，**不**执行服务器指令 |
+
+```yaml
+- 'command{c="broadcast &6陨铁剑即将觉醒"} @self'
+- 'message{m="&a兑换成功"} @self'
+```
+
+**六、完整示例：兑换书**
+
+插件首次会在 `Weapon` 文件夹生成 `meteor_iron_sword_exchange_book.txt`。
+该物品设置 `Consumables: true`，使用 FSkill 后消耗一本。
+
+流程是三轮全服公告，每轮间隔 60 tick，最后执行：
+
+```
+rpgitem give ${player} 陨铁剑
+```
+
+> **注意**：如果服务器里的目标物品 ID 不是「陨铁剑」，请把最后一条指令改成实际 ID。
+> 兑换流程排队后，玩家**下线时未执行的后续步骤会自动跳过**。
+
 三十九、故障速查总表
 
 按「现象」查。详细原因见对应章节。

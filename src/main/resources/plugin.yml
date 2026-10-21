@@ -1,7 +1,10 @@
 name: EarthRPGItem
 version: '${version}'
 main: EarthRPGItem.EarthRPGItem
-api-version: '1.21'
+# api-version 声明的是「本插件按哪个版本的 API 编写」，服务端据此决定是否加载。
+# 写 1.20 表示最低支持 1.20.x；1.21.x 服务端同样接受（新服务端兼容旧 api-version）。
+# 若写 '1.21'，1.20.x 服务端会直接拒绝加载本插件。
+api-version: '1.20'
 author: Earth_lin
 description: EarthRPGItem - RPG weapons, armor, tools, accessories, dummy, and slash particles
 # EarthExp 是可选附属（技能点 = 天赋点），声明在这里有两个作用：

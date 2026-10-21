@@ -3,6 +3,7 @@ package EarthRPGItem.items;
 import EarthRPGItem.EarthRPGItem;
 import EarthRPGItem.collection.CollectionStats;
 import EarthRPGItem.skills.EarthExpBridge;
+import EarthRPGItem.util.AttributeModifiers;
 import EarthRPGItem.util.Texts;
 import org.bukkit.GameMode;
 import org.bukkit.Color;
@@ -48,6 +49,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -159,6 +161,15 @@ public class RpgItemManager {
     private final Set<UUID> loadedPermanentModifiers = new HashSet<>();
     /** Attribute modifier keys handed to entities by the API, so they can be removed again. */
     private final Map<UUID, Map<String, List<NamespacedKey>>> vanillaModifierKeys = new HashMap<>();
+
+    /**
+     * 本插件生成过的 {@code native_*} 属性修饰符所对应的 UUID。
+     *
+     * <p>1.20.5 / 1.20.6 的 {@link AttributeModifier} 没有 key，只能按 UUID 识别；
+     * 而这些 key 的后缀含 hashCode，无法在清理时穷举重算，所以在生成时就登记下来。
+     * 1.21+ 走 {@code getKey()} 分支，这个集合不参与判断。
+     */
+    private static final Set<UUID> nativeModifierKeys = ConcurrentHashMap.newKeySet();
     private final NamespacedKey permanentModifiersKey;
     private Set<String> exampleGenerationFolders = Set.of();
 
@@ -657,7 +668,7 @@ public class RpgItemManager {
         removeVanillaModifiers(entity, key);
         AttributeModifier.Operation resolved = operation == null ? AttributeModifier.Operation.ADD_NUMBER : operation;
         NamespacedKey modifierKey = new NamespacedKey(plugin, "api_" + Integer.toHexString((key + ':' + attribute).hashCode()));
-        instance.addModifier(new AttributeModifier(modifierKey, amount, resolved));
+        instance.addModifier(AttributeModifiers.create(modifierKey, amount, resolved, null));
         vanillaModifierKeys.computeIfAbsent(entity.getUniqueId(), ignored -> new HashMap<>())
                 .computeIfAbsent(key, ignored -> new ArrayList<>()).add(modifierKey);
         if (durationSeconds > 0) {
@@ -675,7 +686,9 @@ public class RpgItemManager {
         for (Attribute attribute : Attribute.values()) {
             AttributeInstance instance = entity.getAttribute(attribute);
             if (instance == null) continue;
-            for (NamespacedKey key : keys) instance.removeModifier(key);
+            // removeModifier(UUID) 在 1.20.5 ~ 1.21.x 全程存在，用它避开
+            // "1.20.x 没有 removeModifier(NamespacedKey)" 的版本差异。
+            for (NamespacedKey key : keys) instance.removeModifier(AttributeModifiers.uuidFor(key));
         }
         if (bySource.isEmpty()) vanillaModifierKeys.remove(entity.getUniqueId());
     }
@@ -688,7 +701,7 @@ public class RpgItemManager {
             for (Attribute attribute : Attribute.values()) {
                 AttributeInstance instance = entity.getAttribute(attribute);
                 if (instance == null) continue;
-                for (NamespacedKey key : keys) instance.removeModifier(key);
+                for (NamespacedKey key : keys) instance.removeModifier(AttributeModifiers.uuidFor(key));
             }
         }
     }
@@ -863,7 +876,7 @@ public class RpgItemManager {
             if (enchantment != null) meta.addEnchant(enchantment, entry.getValue(), true);
         }
         if (!hasVanillaAttribute(rpgItem, Attribute.GENERIC_ATTACK_SPEED)) {
-            meta.addAttributeModifier(Attribute.GENERIC_ATTACK_SPEED, new AttributeModifier(vanillaSpeedKey, 1024, AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
+            meta.addAttributeModifier(Attribute.GENERIC_ATTACK_SPEED, AttributeModifiers.create(vanillaSpeedKey, 1024, AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
         }
         applyVanillaAttributes(meta, rpgItem, material);
         meta.getPersistentDataContainer().set(idKey, PersistentDataType.STRING, rpgItem.id());
@@ -1769,7 +1782,8 @@ public class RpgItemManager {
             AttributeModifier.Operation operation = resolveOperation(config.operation());
             EquipmentSlotGroup slot = resolveSlot(config.slot(), material, item.type());
             NamespacedKey key = new NamespacedKey(plugin, "native_" + Integer.toHexString((item.id() + ':' + index + ':' + attribute).hashCode()));
-            meta.addAttributeModifier(attribute, new AttributeModifier(key, config.amount(), operation, slot));
+            nativeModifierKeys.add(AttributeModifiers.uuidFor(key));
+            meta.addAttributeModifier(attribute, AttributeModifiers.create(key, config.amount(), operation, slot));
         }
     }
 
@@ -1835,15 +1849,46 @@ public class RpgItemManager {
             var modifiers = meta.getAttributeModifiers(attribute);
             if (modifiers == null) continue;
             for (AttributeModifier modifier : List.copyOf(modifiers)) {
-                NamespacedKey key = modifier.getKey();
-                if (key.getNamespace().equals(plugin.getName().toLowerCase(Locale.ROOT))
-                        && (key.getKey().startsWith("native_") || key.equals(vanillaSpeedKey))) {
+                if (isPluginNativeModifier(modifier)) {
                     meta.removeAttributeModifier(attribute, modifier);
                     changed = true;
                 }
             }
         }
         if (changed) itemStack.setItemMeta(meta);
+    }
+
+    /**
+     * 判断某个属性修饰符是不是本插件生成的、需要清理的「旧版原生属性」修饰符。
+     *
+     * <p>1.21+ 可以直接读 {@code modifier.getKey()} 看命名空间和 {@code native_} 前缀；
+     * 1.20.5 / 1.20.6 的 {@link AttributeModifier} 没有 key 概念（只有 UUID），
+     * 因此退回「用 UUID 反查候选 key」的方式：把本插件可能生成的 key 逐个算出 UUID 比对。
+     */
+    private boolean isPluginNativeModifier(AttributeModifier modifier) {
+        String identifier = AttributeModifiers.identifierOf(modifier);
+        String namespace = plugin.getName().toLowerCase(Locale.ROOT);
+
+        // 1.21+：identifier 形如 "earthrpgitem:native_1a2b3c4d"
+        int separator = identifier.indexOf(':');
+        if (separator > 0) {
+            String actualNamespace = identifier.substring(0, separator);
+            String actualKey = identifier.substring(separator + 1);
+            if (actualNamespace.equals(namespace)
+                    && (actualKey.startsWith("native_") || actualKey.equals(vanillaSpeedKey.getKey()))) {
+                return true;
+            }
+            // 命名空间对不上，但可能是别的写法，继续走 UUID 比对兜底
+        }
+
+        // 1.20.x：只有 UUID，靠反推比对
+        UUID uniqueId = modifier.getUniqueId();
+        if (uniqueId == null) return false;
+        if (AttributeModifiers.uuidFor(vanillaSpeedKey).equals(uniqueId)) return true;
+        // native_ 键的后缀是 item.id() + ':' + index + ':' + attribute 的 hashCode，
+        // 无法穷举；但本插件所有 native_ key 都以 "native_" 开头，且 UUID 由完整 key 决定。
+        // 这里用已登记过的 key 集合比对（见 nativeModifierKeys）。
+        return nativeModifierKeys.contains(uniqueId);
     }
 
     private void normalizeLoreFont(ItemStack itemStack) {

@@ -1,10 +1,10 @@
 # EarthRPGItem
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Minecraft](https://img.shields.io/badge/Minecraft-1.21.1-green.svg)](https://www.minecraft.net/)
+[![Minecraft](https://img.shields.io/badge/Minecraft-1.20.5%20~%201.21.x-green.svg)](https://www.minecraft.net/)
 [![Paper](https://img.shields.io/badge/Paper-API-blue.svg)](https://papermc.io/)
 
-一个面向 Minecraft **Paper 1.21.1** 服务端的 RPG 物品框架插件：RPG 武器 / 防具 / 工具 / 饰品、技能系统、强化台、宝石镶嵌、采集系统、伤害演示假人。
+一个面向 Minecraft **Paper 1.20.5 ~ 1.21.x** 服务端的 RPG 物品框架插件：RPG 武器 / 防具 / 工具 / 饰品、技能系统、强化台、宝石镶嵌、采集系统、伤害演示假人。
 
 > **开发中版本** `3.2bate`：接口与配置仍可能变化，请在生产环境使用前充分测试。
 
@@ -44,10 +44,18 @@
 
 | 项 | 版本 |
 |---|---|
-| 服务端 | **Paper 1.21.1**（或兼容的 fork，如 Purpur） |
-| Java | **21** |
+| 服务端 | **Paper 1.20.5 ~ 1.21.x**（或兼容的 fork，如 Purpur） |
+| Java | **21**（Paper 1.20.5+ 的 API 本身要求 Java 21，无法降低） |
 | 构建工具 | Gradle 8.x（仓库自带 wrapper） |
 | 可选 | [EarthExp](https://github.com/) 0.5.1+（天赋点模式） |
+
+> **跨版本说明**：本项目以 **1.20.6 的 paper-api 编译**，在 1.21.x 上运行。
+> 这是刻意为之 —— 用最低支持版本编译，任何误用高版本专有 API 的代码都会在**编译期**报错，
+> 而不是等到用户的服务器上才抛 `NoSuchMethodError`。
+>
+> 已处理的版本差异集中在 `util/AttributeModifiers.java`：1.21 起 `AttributeModifier`
+> 改用 `NamespacedKey` 作标识，1.20.x 只有 `UUID`。该适配层在运行时自动选择正确的构造方式。
+> 另外 `DamageCause.CAMPFIRE` 只在 1.21+ 存在，已改为按名字解析、老版本自动跳过。
 
 ---
 

@@ -6,9 +6,16 @@ group = 'EarthRPGItem'
 version = '3.2bate'
 
 dependencies {
-    compileOnly("io.papermc.paper:paper-api:1.21.1-R0.1-SNAPSHOT")
+    // 编译用 1.20.6 API（本插件支持的最低版本）。
+    // 用最低版本编译、在更高版本上运行，这样误用高版本专有 API 会直接在编译期报错，
+    // 而不是等到用户服务器上才抛 NoSuchMethodError。
+    // 支持范围：Paper 1.20.5 ~ 1.21.x
+    compileOnly("io.papermc.paper:paper-api:1.20.6-R0.1-SNAPSHOT")
 }
 
+// Java 21 是硬性前提：Paper 1.20.5+ 的 paper-api 本身就是用 Java 21 编译的
+// （Gradle 会直接拒绝："paper-api 1.20.6 is only compatible with JVM runtime version 21"）。
+// 好消息是 1.20.5 / 1.20.6 服务端已经要求 Java 21，与实际运行环境一致。
 def targetJavaVersion = 21
 java {
     def javaVersion = JavaVersion.toVersion(targetJavaVersion)

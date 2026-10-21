@@ -37,14 +37,37 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class ActiveDefenseListener implements Listener {
 
-    private static final Set<EntityDamageEvent.DamageCause> EXCLUDED_CAUSES = EnumSet.of(
-            EntityDamageEvent.DamageCause.FIRE, EntityDamageEvent.DamageCause.FIRE_TICK,
-            EntityDamageEvent.DamageCause.LAVA, EntityDamageEvent.DamageCause.HOT_FLOOR,
-            EntityDamageEvent.DamageCause.CAMPFIRE, EntityDamageEvent.DamageCause.VOID,
-            EntityDamageEvent.DamageCause.STARVATION, EntityDamageEvent.DamageCause.SUFFOCATION,
-            EntityDamageEvent.DamageCause.MAGIC, EntityDamageEvent.DamageCause.POISON,
-            EntityDamageEvent.DamageCause.WITHER, EntityDamageEvent.DamageCause.DRAGON_BREATH
-    );
+    /**
+     * 不参与闪避/格挡判定的伤害来源。
+     *
+     * <p>注意 {@code CAMPFIRE} 是 1.21 才加的枚举值，1.20.5 / 1.20.6 的
+     * {@link EntityDamageEvent.DamageCause} 里没有它。直接写 {@code DamageCause.CAMPFIRE}
+     * 会导致在 1.20.x 上编译不过（用低版本 API 编译时）或在 1.20.x 上加载时抛
+     * {@code NoSuchFieldError}。这里改为按名字解析，缺了就跳过。
+     */
+    private static final Set<EntityDamageEvent.DamageCause> EXCLUDED_CAUSES = buildExcludedCauses();
+
+    private static Set<EntityDamageEvent.DamageCause> buildExcludedCauses() {
+        Set<EntityDamageEvent.DamageCause> causes = EnumSet.of(
+                EntityDamageEvent.DamageCause.FIRE, EntityDamageEvent.DamageCause.FIRE_TICK,
+                EntityDamageEvent.DamageCause.LAVA, EntityDamageEvent.DamageCause.HOT_FLOOR,
+                EntityDamageEvent.DamageCause.VOID, EntityDamageEvent.DamageCause.STARVATION,
+                EntityDamageEvent.DamageCause.SUFFOCATION, EntityDamageEvent.DamageCause.MAGIC,
+                EntityDamageEvent.DamageCause.POISON, EntityDamageEvent.DamageCause.WITHER,
+                EntityDamageEvent.DamageCause.DRAGON_BREATH);
+        // CAMPFIRE（营火）只在 1.21+ 存在；按名字解析，老版本自动跳过。
+        EntityDamageEvent.DamageCause campfire = causeOrNull("CAMPFIRE");
+        if (campfire != null) causes.add(campfire);
+        return causes;
+    }
+
+    private static EntityDamageEvent.DamageCause causeOrNull(String name) {
+        try {
+            return EntityDamageEvent.DamageCause.valueOf(name);
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
+    }
 
     private final EarthRPGItem plugin;
     private final DamageDisplay damageDisplay;
