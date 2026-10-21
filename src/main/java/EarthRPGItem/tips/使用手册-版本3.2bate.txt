@@ -3207,6 +3207,280 @@ skill-panel:
 | `lore-templates.enabled` | true | 物品描述模板总开关 |
 | `lore-templates.hide-zero` | true | 隐藏数值为 0 的属性行 |
 
+六、物品描述模板（`lore-templates` 段，完整）
+
+三十二节讲的是「用」的效果，这里列「改」的方式。物品 lore 的排版全部由这一段决定。
+
+| 键 | 默认 | 说明 |
+|---|---|---|
+| `lore-templates.enabled` | true | 总开关。关掉后物品描述回退成最朴素的几行 |
+| `lore-templates.hide-zero` | true | 数值为 0 的属性整行不显示 |
+| `lore-templates.show-vanilla-attributes` | true | 原版属性修饰符（`vanilla-attributes`）是否显示在属性框里 |
+| `lore-templates.show-buffs` | true | 药水 Buff 是否显示在属性框里 |
+| `lore-templates.defaults.prefix` | `"  "` | 每行属性前的缩进 |
+| `lore-templates.defaults.icon` | `"&7◆"` | 属性行前面的图标字符 |
+| `lore-templates.defaults.zh-color` | `"&6"` | 中文属性名颜色 |
+| `lore-templates.defaults.en-color` | `"&7"` | 英文属性名颜色 |
+| `lore-templates.defaults.value-color` | `"&f"` | 属性数值颜色 |
+| `lore-templates.defaults.name-separator` | `" "` | 中英文属性名之间的分隔符 |
+| `lore-templates.defaults.positive-prefix` | `"+"` | 正数前面的符号（负数自动用 `-`） |
+| `lore-templates.attribute-box.top` | 一行框线 | 属性框顶部那条线 |
+| `lore-templates.attribute-box.bottom` | 一行框线 | 属性框底部那条线 |
+| `lore-templates.separator.enabled` | true | 是否显示分隔线 |
+| `lore-templates.separator.lines` | 一条 `&8&m` 线 | 分隔线内容，可写多行 |
+| `lore-templates.socket-line.enabled` | true | 是否显示宝石槽那一行 |
+| `lore-templates.socket-line.label` | `"&7宝石槽: "` | 槽位标签文字 |
+| `lore-templates.socket-line.bracket-color` | `"&f"` | 方括号 `[ ]` 的颜色（空槽永远是白色 `[ ]`） |
+| `lore-templates.socket-line.gem-color` | `"&a"` | 已镶嵌宝石名的默认颜色（宝石自己配了 `color` 时以宝石为准） |
+
+**按属性单独覆盖**：`lore-templates.attributes.<属性键>` 下可以改 `zh`、`en`、`icon`、`zh-color`、`en-color`、`value-color`。
+
+```yaml
+lore-templates:
+  attributes:
+    exdraw:
+      zh: "追加拉弓"
+      en: "Extra Draw"
+    critchance:
+      zh: "暴击率"
+      icon: "&e✦"
+```
+
+> 属性键名用**小写**（`exdraw`、`critchance`、`attackpercent`……），与 `attributes.<Key>` 写法一致但不区分大小写。
+
+七、耐久与损毁提示（`durability` 段）
+
+| 键 | 默认 | 说明 |
+|---|---|---|
+| `durability.warning-message` | `"&cItem is nearly broken, attributes are disabled"` | 耐久见底时的提示，**属性同时失效** |
+| `durability.break-limit-message` | `"&cItem broke, BreakLimit protection triggered"` | 触发 `BreakLimit` 保护时的提示 |
+| `durability.fix-repairs-extra-durability` | false | 用 `fix-per-second`（自动修复）修复时，是否**连额外耐久一起修**。默认 `false` 只修原版耐久，额外耐久靠铁砧等途径 |
+
+八、防御动作（`defensive-actions` 段）
+
+闪避（dodge）与格挡（block）的判定窗口。改这里会影响手感，建议先用默认值测试。
+
+| 键 | 默认 | 说明 |
+|---|---|---|
+| `defensive-actions.timing-window-seconds` | 0.3 | **有效判定窗口**：受击前这么长时间内按下防御键才算成功 |
+| `defensive-actions.invalid-window-seconds` | 1.0 | **无效窗口**：超出这个时间的按键不再被记录为「准备防御」 |
+| `defensive-actions.repeat-guard-seconds` | 1.0 | 同一动作的重复触发保护，防止连按刷判定 |
+| `defensive-actions.resistance-duration-seconds` | 1.0 | 成功闪避/格挡后抗性效果的持续时间 |
+| `defensive-actions.dodge.cooldown-seconds` | 1.0 | 闪避冷却 |
+| `defensive-actions.dodge.particles-enabled` | true | 闪避粒子开关 |
+| `defensive-actions.dodge.particle-count` | 48 | 闪避粒子数量 |
+| `defensive-actions.dodge.particle-radius` | 1.0 | 闪避粒子扩散半径 |
+| `defensive-actions.dodge.sound-enabled` / `.sound` / `.volume` / `.pitch` | true / `ENTITY_ENDERMAN_TELEPORT` / 1.0 / 1.2 | 闪避音效 |
+| `defensive-actions.block.cooldown-seconds` | 1.0 | 格挡冷却 |
+| `defensive-actions.block.particles-enabled` | true | 格挡粒子开关 |
+| `defensive-actions.block.particle-count` | 48 | 格挡粒子数量 |
+| `defensive-actions.block.particle-radius` | 0.8 | 格挡粒子扩散半径 |
+| `defensive-actions.block.sound-enabled` / `.sound` / `.volume` / `.pitch` | true / `BLOCK_ANVIL_LAND` / 1.0 / 0.4 | 格挡音效 |
+
+> **调手感建议**：`timing-window-seconds` 从 0.3 调到 0.5 会明显变简单；调到 0.15 以下很难成功。
+> `invalid-window-seconds` 必须**大于** `timing-window-seconds`，否则按键记录会提前失效。
+
+九、挥砍粒子（`slash-particles` 段）
+
+普通攻击和技能挥砍时的粒子刀光。
+
+| 键 | 默认 | 说明 |
+|---|---|---|
+| `slash-particles.enabled` | true | 总开关 |
+| `slash-particles.particle` | `DUST` | 粒子类型（`DUST` 支持颜色） |
+| `slash-particles.color` | `"128,128,128"` | `DUST` 的颜色，**RGB 三值逗号分隔** |
+| `slash-particles.count` | 160 | 基础粒子数量 |
+| `slash-particles.count-multiplier` | 4.0 | 数量倍率（与技能自带的数量相乘） |
+| `slash-particles.speed-multiplier` | 0.65 | 粒子速度倍率 |
+| `slash-particles.duration-seconds` | 3 | 粒子持续秒数 |
+| `slash-particles.slash-diameter` | 2.0 | **横斩**弧线的直径 |
+| `slash-particles.slash-radius` | 0.08 | 横斩线的粗细 |
+| `slash-particles.length` | 1.2 | 刀光长度 |
+| `slash-particles.thrust-diameter` | 1.5 | **突刺**弧线的直径 |
+| `slash-particles.thrust-radius` | 0.18 | 突刺线的粗细 |
+| `slash-particles.start-random-radius` | 0.5 | 起点随机偏移半径（让每次刀光不完全重合） |
+| `slash-particles.start-forward-distance` | 1.0 | 起点前移距离（避免粒子贴脸） |
+
+> **性能提示**：`count` 越大、`count-multiplier` 越高，每次挥砍发出的粒子包越多。
+> 人多混战时建议 `count` 不超过 200；卡的服务器可以降到 60~80。
+
+十、投射物（弓 / 弩）全套反馈
+
+共 6 个子段，分别在拉弓、发射、飞行、命中四个阶段播放。
+
+**拉弓音效**（`projectile-draw-sound`）——拉弓过程中按蓄力阶段升调：
+
+| 键 | 默认 | 说明 |
+|---|---|---|
+| `projectile-draw-sound.enabled` | true | 开关 |
+| `projectile-draw-sound.sound` | `BLOCK_NOTE_BLOCK_PLING` | 音效 |
+| `projectile-draw-sound.volume` | 0.35 | 音量（偏低，避免吵） |
+| `projectile-draw-sound.low-pitch` | 0.6 | 刚拉弓时的音调 |
+| `projectile-draw-sound.high-pitch` | 1.4 | 拉满时的音调 |
+| `projectile-draw-sound.stage-pitch-step` | 0.08 | 每个蓄力阶段音调增加量 |
+
+**发射音效**（`projectile-launch-sound`）：
+
+| 键 | 默认 | 说明 |
+|---|---|---|
+| `projectile-launch-sound.enabled` | true | 开关 |
+| `projectile-launch-sound.sound` | `ENTITY_WITHER_SHOOT` | 音效 |
+| `projectile-launch-sound.volume` | 0.7 | 音量 |
+| `projectile-launch-sound.pitch` | 1.0 | 音调 |
+
+**飞行拖尾粒子**（`projectile-trail-particles`）：
+
+| 键 | 默认 | 说明 |
+|---|---|---|
+| `projectile-trail-particles.enabled` | true | 开关 |
+| `projectile-trail-particles.particle` | `DUST` | 粒子类型 |
+| `projectile-trail-particles.color` | `"128,128,128"` | 颜色 |
+| `projectile-trail-particles.count` | 2 | 每个飞行 tick 的粒子数 |
+| `projectile-trail-particles.radius` | 0.05 | 扩散半径 |
+
+**命中反馈**（`projectile-hit-feedback`）：
+
+| 键 | 默认 | 说明 |
+|---|---|---|
+| `projectile-hit-feedback.allow` | false | 是否允许**原版击退/伤害反馈**。默认 `false` 关闭，因为 RPG 伤害走自己的结算 |
+
+> 另有 `projectile-hit-particles` 与 `projectile-hit-sound` 两段，结构同上，控制命中瞬间的粒子与音效。
+
+十一、格挡 / 招架 / 反击 的专项反馈
+
+这三段只在触发对应防御判定时播放，和第八节的 `defensive-actions` 是两回事：
+第八节管**判定**，这里管**看到和听到什么**。
+
+| 段·键 | 默认 | 说明 |
+|---|---|---|
+| `parry-particles.enabled` | true | 招架粒子开关 |
+| `parry-particles.count` | 48 | 粒子数量 |
+| `parry-particles.radius` | 0.8 | 扩散半径 |
+| `parry-particles.duration-seconds` | 3 | 持续秒数 |
+| `parry-sound.enabled` | true | 招架音效开关 |
+| `parry-sound.sound` | `BLOCK_ANVIL_LAND` | 音效 |
+| `parry-sound.volume` | 1.0 | 音量 |
+| `parry-sound.pitch` | 0.5 | 音调 |
+| `parry.attack-speed-penalty` | -20 | **招架成功后攻速惩罚**（百分比）。负数 = 降低，写 `0` 取消惩罚，写正数会变成加速 |
+| `counter-attack-sound.enabled` | true | 反击音效开关 |
+| `counter-attack-sound.sound` | `ENTITY_WITHER_HURT` | 音效 |
+| `counter-attack-sound.volume` | 1.0 | 音量 |
+| `counter-attack-sound.pitch` | 0.8 | 音调 |
+
+十二、普攻音效与 Buff 刷新
+
+| 键 | 默认 | 说明 |
+|---|---|---|
+| `sounds.enabled` | true | 普通攻击音效总开关 |
+| `sounds.sound` | `ENTITY_PLAYER_ATTACK_STRONG` | 普攻音效 |
+| `sounds.volume` | 1.0 | 音量 |
+| `sounds.pitch` | 1.0 | 音调 |
+| `buffs.enabled` | true | 药水 Buff 系统总开关 |
+| `buffs.refresh-interval-seconds` | 10 | 每隔多少秒**重新施加**一次 Buff（防止玩家喝药覆盖） |
+| `buffs.duration-seconds` | 13 | 每次施加的持续时间。**必须大于刷新间隔**，否则 Buff 会闪断 |
+| `hit-buffs.enabled` | true | 命中时附带 Buff（物品 `hit-buffs` 配置）的总开关 |
+
+> `buffs.duration-seconds` 与 `refresh-interval-seconds` 的关系：前者应比后者多 2~3 秒留余量。
+> 默认 13 / 10 就是这个原因。如果 Buff 出现一断一断，先查这里。
+
+十三、伤害数字显示（`damage-display` 段，节选）
+
+这一段配置项非常多（每种伤害类型各有 `color` / `prefix` / `format` 三个键）。完整列表见
+`config.yml` 原位注释，这里只列最常改的。
+
+| 键 | 默认 | 说明 |
+|---|---|---|
+| `damage-display.enabled` | true | 伤害数字总开关 |
+| `damage-display.duration-seconds` | 3 | 数字浮空时长 |
+| `damage-display.prefix-enabled` | false | **是否显示图标前缀**。`false` 时只显示纯数字，`true` 时显示 `🗡❤-123` 这类 |
+| `damage-display.random-range` | 1.0 | **浮空位置随机偏移**，防止同一位置的数字叠在一起看不清 |
+| `damage-display.physical-color` | `"&c"` | 普通物理伤害颜色 |
+| `damage-display.physical-crit-color` | `"&6"` | 物理暴击颜色 |
+| `damage-display.magic-color` / `.magic-crit-color` | `"&d"` / `"&5"` | 魔法伤害 / 魔法暴击 |
+| `damage-display.bow-color` / `.bow-crit-color` | `"&a"` / `"&2"` | 弓伤害 / 弓暴击 |
+| `damage-display.ice-color` / `.fire-color` / `.light-color` / `.dark-color` | `&9` / `&c` / `&e` / `&0` | 元素伤害颜色 |
+
+**格式占位符**：所有 `*-format` 键都支持 `{damage}`。
+
+```yaml
+assassin-format: "☠刺客-{damage}"
+backstrike-format: "🗡背击-{damage}"
+```
+
+十四、启动信息与进服广播
+
+| 键 | 默认 | 说明 |
+|---|---|---|
+| `startup-message.enabled` | true | 开服时是否在控制台打印欢迎行 |
+| `startup-message.lines` | 两行 | 打印的内容，**可用 `${version}` 占位** |
+| `join-broadcast.enabled` | true | 玩家进服是否全服广播 |
+| `join-broadcast.message` | `"&aWelcome &e{player} &ato the game"` | 广播内容，**可用 `{player}` 占位** |
+
+```yaml
+startup-message:
+  enabled: true
+  lines:
+    - "&aEarthRPGItem &fVersion &e${version} &aenabled"
+join-broadcast:
+  enabled: true
+  message: "&a欢迎 &e{player} &a来到服务器"
+```
+
+十五、饰品类型名（`accessory.types` 段）
+
+定义饰品子系统有哪几类、以及它们在界面上的显示名。
+
+```yaml
+accessory:
+  types:
+    ring: "戒指 Ring"
+    earring: "耳饰 Earring"
+    chest: "胸饰 Chest Ornament"
+    hand: "手饰 Hand Ornament"
+    necklace: "项链 Necklace"
+    belt: "腰饰 Belt"
+    cloak: "披风 Cloak"
+```
+
+| 说明 | 内容 |
+|---|---|
+| 键名 | 就是物品 yml 里 `accessory-type` 要填的值 |
+| 值的格式 | 自由文本，一般写「中文 English」 |
+| 增删类型 | **直接在这里加/删行**，界面槽位会跟着变 |
+| 改动影响 | 已有存档里该类型的饰品会按类型名迁移，删掉类型会导致这些饰品失效 —— 删之前先清空 |
+
+十六、技能通用参数（`fskill` 段补充）
+
+第三十二节讲了技能系统怎么用，这里补充几个**影响全局行为**的键。
+
+| 键 | 默认 | 说明 |
+|---|---|---|
+| `fskill.default-cooldown-seconds` | 5 | 技能没写 `cooldown-seconds` 时的默认冷却 |
+| `fskill.chant-interrupted-message` | `"&c切换物品，吟唱已中断，技能冷却已重置。"` | **吟唱被打断时的提示**（切主手会中断吟唱） |
+| `fskill.global-cooldown-message` | — | 技能处于**全局冷却**（`global-cooldown: true`）时的提示 |
+| `fskill.max-ray-length` | 512 | **射线技能的最大检测距离**（格）。技能里 `max-range` 超过这个值会被截断 |
+| `fskill.ray-step` | 0.4 | 射线的**采样步长**（格）。调小更精确但更耗性能 |
+| `fskill.gate-max-live-displays` | 512 | 「王之宝库」全服同时存在的武器实体**残留上限**（单次施放固定上限 32）。防止刷技能把实体堆爆 |
+
+> **调 `ray-step` 的经验**：0.4 是精度与性能的平衡点。
+> 调到 0.2 精度翻倍、性能开销也翻倍；调到 0.8 以上会出现「穿墙判定漏检」——细的柱子会被射线跳过。
+
+十七、`rpgitem` 段补充
+
+| 键 | 默认 | 说明 |
+|---|---|---|
+| `rpgitem.hide-enchantments-default` | — | 物品没写 `hide-enchantments` 时，**是否默认隐藏附魔光泽**。想让 RPG 物品统一没有附魔闪光就设 `true` |
+
+十八、改配置的通用注意事项
+
+| 事项 | 说明 |
+|---|---|
+| 生效方式 | 改完 **必须 `/rpgitem reload`**，只有部分键支持热重载 |
+| 资源包 | 只与 `custom-model-data` 有关，改配置不影响模型 |
+| 备份 | `config.yml` 会被自动补全缺失键，**但注释会丢失**；改前先备份 |
+| `config-version` | 当前 `2`。升级版本时插件会据此迁移，**不要手改小** |
+| 颜色代码 | 支持 `&` 前缀（`&c` 红、`&a` 绿、`&7` 灰……），也支持 `&#RRGGBB` 十六进制（已确认启用 `hexColors()`） |
+
 三十九、故障速查总表
 
 按「现象」查。详细原因见对应章节。
