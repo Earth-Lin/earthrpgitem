@@ -1,0 +1,189 @@
+# ==========================================================================
+#  等级资源点整合模板（Collection/collection_level_points.yml）
+# ==========================================================================
+#  一个 yml 整合全部带【经验】和【采掘等级门槛】的资源点模板。
+#  · experience：采集成功一次发给外部插件多少经验（抛 GatheringExperienceEvent）。
+#  · required-level：采集这个资源点需要的【工具采掘等级】（按 type 分类判定；
+#    门槛只看手持工具 attributes 里的 MiningLevel / ForestLevel / FarmingLevel，
+#    和其他插件的玩家等级无关）。
+#  · 原版矿物不给经验、不设门槛；经验与门槛都只在这里（资源点）编辑。
+#  · 想加新资源点：复制下面任意一段，改 id / materials / experience / required-level。
+#  · 文件缺失时插件会自动写入一份（已存在不会覆盖）。
+collections:
+  copper_collection:
+    id: copper_collection
+    display-name: "&6铜矿资源点"
+    type: MINING
+    materials: [COPPER_ORE]
+    item-material: COPPER_ORE
+    support-materials: [STONE, DEEPSLATE]
+    hardness: 1.8
+    refresh-seconds: 60
+    depleted-material: AIR
+    experience: 8
+    required-level: 3
+    drops:
+      copper:
+        item: COPPER_INGOT
+        amount: 2.0
+        chance: 100
+      stone:
+        item: COBBLESTONE
+        amount: 1.0
+        chance: 40
+
+  iron_collection:
+    id: iron_collection
+    display-name: "&7铁矿资源点"
+    type: MINING
+    materials: [IRON_ORE, DEEPSLATE_IRON_ORE]
+    item-material: IRON_ORE
+    support-materials: [STONE, DEEPSLATE]
+    hardness: 2.1
+    refresh-seconds: 60
+    depleted-material: AIR
+    experience: 12
+    required-level: 5
+    drops:
+      iron:
+        item: IRON_INGOT
+        amount: 3.0
+        chance: 100
+      stone:
+        item: COBBLESTONE
+        amount: 1.0
+        chance: 40
+
+  gold_collection:
+    id: gold_collection
+    display-name: "&6金矿资源点"
+    type: MINING
+    materials: [GOLD_ORE, DEEPSLATE_GOLD_ORE]
+    item-material: GOLD_ORE
+    support-materials: [STONE, DEEPSLATE]
+    hardness: 2.6
+    refresh-seconds: 90
+    depleted-material: AIR
+    experience: 18
+    required-level: 8
+    drops:
+      gold:
+        item: GOLD_INGOT
+        amount: 2.0
+        chance: 100
+
+  diamond_collection:
+    id: diamond_collection
+    display-name: "&b钻石矿资源点"
+    type: MINING
+    materials: [DIAMOND_ORE, DEEPSLATE_DIAMOND_ORE]
+    item-material: DIAMOND_ORE
+    support-materials: [STONE, DEEPSLATE]
+    hardness: 3.2
+    refresh-seconds: 120
+    depleted-material: AIR
+    experience: 30
+    required-level: 10
+    drops:
+      diamond:
+        item: DIAMOND
+        amount: 2.0
+        chance: 80
+      stone:
+        item: COBBLESTONE
+        amount: 1.0
+        chance: 50
+
+  debris_collection:
+    id: debris_collection
+    display-name: "&8远古残骸资源点"
+    type: MINING
+    materials: [ANCIENT_DEBRIS]
+    item-material: ANCIENT_DEBRIS
+    support-materials: [NETHERRACK, BASALT]
+    hardness: 4.0
+    refresh-seconds: 150
+    depleted-material: AIR
+    experience: 50
+    required-level: 15
+    drops:
+      debris:
+        item: ANCIENT_DEBRIS
+        amount: 1.0
+        chance: 60
+      netherrack:
+        item: NETHERRACK
+        amount: 1.0
+        chance: 50
+
+  darkoak_collection:
+    id: darkoak_collection
+    display-name: "&2深色橡木资源点"
+    type: FOREST
+    materials: [DARK_OAK_LOG]
+    item-material: DARK_OAK_LOG
+    support-materials: [DIRT, GRASS_BLOCK]
+    hardness: 2.0
+    refresh-seconds: 60
+    depleted-material: AIR
+    experience: 6
+    required-level: 4
+    drops:
+      dark_oak_log:
+        item: DARK_OAK_LOG
+        amount: 6.0
+        chance: 100
+
+  crimson_collection:
+    id: crimson_collection
+    display-name: "&c绯红菌柄资源点"
+    type: FOREST
+    materials: [CRIMSON_STEM]
+    item-material: CRIMSON_STEM
+    support-materials: [CRIMSON_NYLIUM, NETHERRACK]
+    hardness: 2.4
+    refresh-seconds: 90
+    depleted-material: AIR
+    experience: 8
+    required-level: 6
+    drops:
+      crimson_stem:
+        item: CRIMSON_STEM
+        amount: 5.0
+        chance: 100
+
+  melon_collection:
+    id: melon_collection
+    display-name: "&a西瓜资源点"
+    type: FARMING
+    materials: [MELON]
+    item-material: MELON
+    support-materials: [FARMLAND, DIRT]
+    hardness: 1.0
+    refresh-seconds: 45
+    depleted-material: AIR
+    experience: 3
+    required-level: 3
+    drops:
+      melon_slice:
+        item: MELON_SLICE
+        amount: 5.0
+        chance: 100
+
+  wart_collection:
+    id: wart_collection
+    display-name: "&d地狱疣资源点"
+    type: FARMING
+    materials: [NETHER_WART]
+    item-material: NETHER_WART
+    support-materials: [SOUL_SAND, SOUL_SOIL]
+    hardness: 1.2
+    refresh-seconds: 60
+    depleted-material: AIR
+    experience: 5
+    required-level: 4
+    drops:
+      nether_wart:
+        item: NETHER_WART
+        amount: 4.0
+        chance: 100

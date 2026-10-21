@@ -1,0 +1,82 @@
+# 战意鼓舞 - 通用增益技能模板
+# 本文件位于 plugins/EarthRPGItem/skills/战意鼓舞.yml
+# 插件会自动把本文件注册为一个技能，技能 ID 就是文件名：战意鼓舞
+#
+# 定位：通用爆发增益。短时间提升攻击力、攻速与移动速度，适合任何武器。
+# supported-weapons: [ANY] —— 不限制武器类型，谁都能带。
+# 技能组1：与其它主动技能互斥，避免多个增益叠乘。
+#
+# attribute-boost 只改属性、本身不绘制粒子，
+# 所以同时挂 magic-circle 段当视觉载体（金色爆发环 + 上升粒子）。
+
+display-name: "&6战意鼓舞"
+material: ENCHANTED_BOOK
+# ANY = 不限武器类型。
+supported-weapons: [ANY]
+skill-group: "技能组1"
+
+cast-time-seconds: 0.3
+cooldown-seconds: 22
+cooldown-name: "战意鼓舞"
+cooldown-enabled: true
+messages-enabled: true
+global-cooldown: false
+
+# ---- 成长规则 ----
+# 每级：攻击力 +2、攻击力% +1.5、攻速 +1.2、持续 +0.4 秒。
+# Lv.10：攻击 15+18=33、攻击% 10+13.5=23.5%、攻速 8+10.8=18.8、
+#        持续 6 + 9×0.4 = 9.6 秒。
+leveling:
+  max-level: 10
+  per-level:
+    attribute-boost.attack: 2
+    attribute-boost.attackpercent: 1.5
+    attribute-boost.attackspeed: 1.2
+    attribute-boost.duration-seconds: 0.4
+
+# ---- 属性增益 ----
+# 攻击力/攻速是通用属性，对所有武器生效。
+attribute-boost:
+  attack: 15
+  attackpercent: 10
+  attackspeed: 8
+  duration-seconds: 6
+  stackable: false
+
+# ---- 视觉载体：金色战意爆发 ----
+magic-circle:
+  damage: 0
+  weapon-percent: 0
+  distance: 0.5
+  radius: 2.4
+  height: 2.4
+  duration-seconds: 0.9
+  interval-seconds: 0.3
+  burst-count: 5
+  use-armor-stand: false
+  target: ENEMY
+  include-self: false
+  # 视觉锚点 buff：让 magic-circle 通过 enabled() 判定。
+  # 实际增益全部来自上面的 attribute-boost，这里给一个几乎无感的速度 I（1 秒）。
+  buffs:
+    anchor:
+      type: SPEED
+      amplifier: 0
+      duration-seconds: 1
+  # 外环用金色 DUST。
+  particle:
+    enabled: true
+    particle: DUST
+    block: "255,200,60"
+    count: 80
+  # 上升爆发：火山岩粒子带火星感。
+  burst-particle:
+    enabled: true
+    particle: FLAME
+    count: 28
+    radius: 0.45
+  sound:
+    enabled: true
+    sound: ENTITY_RAVAGER_ROAR
+    volume: 0.8
+    pitch: 1.4

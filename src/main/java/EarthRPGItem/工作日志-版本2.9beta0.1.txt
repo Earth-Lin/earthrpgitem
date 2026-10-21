@@ -1,0 +1,7 @@
+EarthRPGItem 版本 2.9beta0.1 工作日志
+
+1. 副手持有 Q 技能 RPGItem 时，丢弃普通主手物品不再被技能监听器拦截。
+2. 翻滚核心 QSKILL/SQSKILL 显式开启 cooldown-enabled 和 messages-enabled，正常显示冷却提示。
+3. 生命恢复、亡灵伤害、迅捷光环、坚韧光环同时提供 RSKILL 与 SRSKILL：站立右键使用 RSKILL，蹲下右键优先使用未冷却的 SRSKILL，SRSKILL 冷却时回退 RSKILL。
+4. 法杖模板合集已同步到项目根目录和 2.9beta0.1 快照。
+5. Gradle 离线构建成功。

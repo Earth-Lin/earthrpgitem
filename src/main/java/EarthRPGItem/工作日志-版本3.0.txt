@@ -1,0 +1,48 @@
+EarthRPGItem 3.0 稳定版工作日志
+
+版本：3.0
+日期：2026-09-22
+项目：Paper 1.21.1 / Java 21
+
+一、本次版本目标
+- 正式版本从 2.9 beta 系列升级为 3.0 稳定版。
+- 保留 RPGItem、属性、技能、采集、饰品、GUI、假人和投射物功能。
+- 新增面向服主和配置作者的中文文档。
+- 明确全局冷却默认规则与是否需要额外注册。
+
+二、文档交付
+新增：
+- src/main/java/EarthRPGItem/tips/属性百科-版本3.0.txt
+- src/main/java/EarthRPGItem/tips/使用方式汇总表-版本3.0.txt
+
+文档包含：
+- RPGStats 当前全部属性、YAML 键名和计算方式。
+- 有效攻击、有效魔法伤害、暴击溢出、护甲穿透、抗性和吸血公式。
+- 元素伤害与元素护甲说明。
+- 采集属性、耐久属性、技能节点和效果节点说明。
+- 命令、权限、GUI、饰品、假人、采集点和重载流程表格。
+- 全局冷却默认开启、不需要额外注册、按具体技能节点关闭的方法。
+
+三、全局冷却结论
+RpgItemManager.loadSkill 使用 section.getBoolean("global-cooldown", true)。
+因此未填写 global-cooldown 时默认开启；F、R、SR、Q、SQ、L 按触发类型分别计算；未填写 global-cooldown-seconds 时使用 cooldown-seconds；不需要额外注册，在 RPGItem YAML 中配置并执行 /rpgitem reload 即可。
+
+四、既有功能状态
+- RPGItem 分类：Armor、Tool、Weapon、Items、Accessory。
+- 属性：攻击、防御、暴击、攻速、生命、吸血、魔法、弓箭、元素、抗性、穿透、耐久、采集等。
+- 技能入口：F、R、SR、Q、SQ、L。
+- 技能类型：粒子、声音、消息、命令、Buff、伤害、突进、翻滚、范围 Buff、吟唱和切换。
+- 采集系统：农业、挖掘、伐木、刷新和采集点保存。
+- 饰品系统、GUI 分类分页、假人测试和投射物效果继续保留。
+
+五、兼容与使用说明
+- tips 文件夹中原有文档只读保留，本版本仅新增文档，不修改旧文档。
+- 配置修改后使用 /rpgitem reload。
+- JAR 更新必须完全停止服务器、替换 JAR 后重新启动。
+- 目标环境为 Paper 1.21.1、Java 21。
+
+六、构建记录
+- Gradle 8.8。
+- 使用项目内 Gradle 缓存执行离线构建。
+- 构建命令：build --offline --no-daemon。
+- 本日志在构建成功后确认归档。

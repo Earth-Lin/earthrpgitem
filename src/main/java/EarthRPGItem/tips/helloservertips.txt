@@ -1,0 +1,101 @@
+﻿========================================
+  EarthRPGItem 使用手册
+  Hello Server Tips / 进服欢迎广播
+========================================
+
+一、插件简介
+----------------------------------------
+插件名称：EarthRPGItem
+作者：Earth_lin
+适用版本：Minecraft Paper 1.21.x
+功能说明：
+  当玩家进入服务器时，向全服广播一条可自定义的欢迎消息。
+  消息支持 Minecraft 原版 & 颜色代码，便于服主控制显示样式。
+
+二、安装方法
+----------------------------------------
+1. 使用 Gradle 构建本项目：
+     Windows:  gradlew.bat build
+     Linux/macOS:  ./gradlew build
+2. 构建完成后，在 build/libs/ 目录找到 EarthRPGItem-*.jar
+3. 将 jar 放入服务器的 plugins 文件夹
+4. 启动或重载服务器（建议完整重启）
+5. 首次启动会自动生成 plugins/EarthRPGItem/config.yml
+
+三、配置说明（config.yml）
+----------------------------------------
+路径：plugins/EarthRPGItem/config.yml
+
+join-broadcast:
+  enabled: true
+  message: "&a欢迎 &e{player} &a加入游戏"
+
+字段说明：
+  enabled
+    - true  : 开启进服广播
+    - false : 关闭进服广播
+
+  message
+    - 广播文本模板
+    - 可用占位符：
+        {player}   玩家名称
+        %player%   玩家名称（同上，兼容写法）
+
+修改配置后，需要重载插件或重启服务器才会生效。
+当前版本请使用 /reload confirm（不推荐）或重启服务器；
+后续版本可增加 /earthrpgitem reload 命令。
+
+四、颜色代码一览（& 符号）
+----------------------------------------
+颜色：
+  &0 黑色       &1 深蓝       &2 深绿       &3 青色
+  &4 深红       &5 紫色       &6 金色       &7 灰色
+  &8 深灰       &9 蓝色       &a 绿色       &b 天蓝
+  &c 红色       &d 粉色       &e 黄色       &f 白色
+
+样式：
+  &k 乱码       &l 加粗       &m 删除线
+  &n 下划线     &o 斜体       &r 重置样式
+
+示例：
+  "&6[服务器] &a欢迎 &e{player} &a加入游戏！"
+  "&b★ &f{player} &b进入了世界 &b★"
+  "&c注意！ &7玩家 &e{player} &7上线了"
+
+五、常见问题
+----------------------------------------
+Q1：改了 config.yml 没效果？
+A1：请确认 YAML 缩进使用空格，并重启服务器；检查 enabled 是否为 true。
+
+Q2：颜色不显示，直接出现 &a？
+A2：请确认使用的是半角 &，不要用全角＆；不要给整段消息额外加引号嵌套错误。
+
+Q3：能关闭默认进服黄字吗？
+A3：本插件发送的是额外广播。若要隐藏原版 “xxx joined the game”，
+    可在后续版本扩展，或使用 Paper 的 join message 相关设置/其他插件配合。
+
+Q4：支持 BungeeCord / Velocity 全网络广播吗？
+A4：当前仅本服广播。跨服广播可作为后续功能开发。
+
+六、目录结构（开发）
+----------------------------------------
+src/main/java/EarthRPGItem/
+  EarthRPGItem.java              主类
+  listeners/PlayerJoinListener.java   进服监听
+  tips/helloservertips.txt       本使用手册
+src/main/resources/
+  plugin.yml
+  config.yml
+
+七、后续扩展建议
+----------------------------------------
+- 增加 /earthrpgitem reload 重载配置
+- 首次进服与老玩家不同欢迎语
+- 点击玩家名显示信息（Adventure 事件）
+- 权限节点控制是否广播某玩家
+- RPG 物品系统（与插件名 EarthRPGItem 对应）
+
+========================================
+  文档版本：1.0
+  对应插件：EarthRPGItem 1.0-SNAPSHOT
+========================================

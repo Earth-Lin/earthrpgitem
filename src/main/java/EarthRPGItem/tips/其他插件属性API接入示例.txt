@@ -1,0 +1,206 @@
+================================================================================
+EarthRPGItem 属性 API —— 给其他插件的接入示例
+版本 3.2bate
+================================================================================
+
+本文档面向**其他插件的开发者**。EarthRPGItem 通过 Bukkit 的 ServicesManager
+暴露一个稳定接口，其他插件可以借此为玩家或生物增加 / 减少 RPG 属性。
+
+完整参考（含全属性键表、原版属性、接口总览与完整示例插件）见同目录
+《属性API使用手册-版本3.2bate.txt》，本文是它的实战示例速查。
+
+--------------------------------------------------------------------------------
+一、不要这样做
+--------------------------------------------------------------------------------
+
+不要转换主类、也不要直接访问内部管理器：
+
+    // 不要这样：依赖内部实现，版本升级后可能失效
+    EarthRPGItem plugin = (EarthRPGItem) Bukkit.getPluginManager().getPlugin("EarthRPGItem");
+    plugin.getRpgItemManager().applyTemporaryAttributeBoost(player, stats, 30);
+
+请使用 ServicesManager 获取接口。这样即使插件内部重构，你的代码也不用改。
+
+--------------------------------------------------------------------------------
+二、在你的 plugin.yml 里声明依赖（推荐）
+--------------------------------------------------------------------------------
+
+    softdepend: [EarthRPGItem]
+
+用 softdepend 而不是 depend：这样即使服务器没装 EarthRPGItem，你的插件也能正常启动，
+只是属性功能自动不可用。
+
+--------------------------------------------------------------------------------
+三、获取 API
+--------------------------------------------------------------------------------
+
+    import EarthRPGItem.api.EarthRPGItemAPI;
+    import org.bukkit.Bukkit;
+    import org.bukkit.plugin.RegisteredServiceProvider;
+
+    private EarthRPGItemAPI rpgApi;
+
+    @Override
+    public void onEnable() {
+        RegisteredServiceProvider<EarthRPGItemAPI> provider =
+                Bukkit.getServicesManager().getRegistration(EarthRPGItemAPI.class);
+        if (provider == null) {
+            getLogger().warning("未找到 EarthRPGItem，属性加成功能已禁用。");
+            return;
+        }
+        rpgApi = provider.getProvider();
+    }
+
+必须在 onEnable 里获取。EarthRPGItem 在自己的 onEnable 中注册该服务，所以用
+softdepend 声明后能保证顺序正确。
+
+--------------------------------------------------------------------------------
+四、加属性
+--------------------------------------------------------------------------------
+
+方式 A：用属性名直接加（最简单）
+
+    // 给玩家 +10 攻击、+5% 暴击率，持续 30 秒
+    rpgApi.setModifier(player, "myplugin:aura", Map.of(
+            "attack", 10.0,
+            "critchance", 5.0
+    ), 30);
+
+属性名就是物品 lore 里用的那些，**小写、无分隔符**：
+    attack, attackpercent, armor, armorpercent, critchance, critdamage,
+    attackspeed, health, vitality, recovery, magicdamage, bowdamage,
+    truedamage, backstrikedamage, assdamage, armorpen, evasion,
+    icedamage, firedamage, lightdamage, darkdamage ... （完整列表见 RpgStats）
+
+写错名字不会报错，只是该项被忽略。建议先用 /rpgitem MY 确认数值生效。
+
+方式 B：用 RpgStats 构造
+
+    import EarthRPGItem.items.RpgStats;
+
+    RpgStats bonus = RpgStats.fromLore(Map.of("attack", 10.0, "critchance", 5.0));
+    rpgApi.setModifier(player, "myplugin:aura", bonus, 30);
+
+方式 C：永久加成（重启后保留）
+
+    // durationSeconds <= 0 表示永久，写入玩家 PDC，重启后自动读回
+    rpgApi.setModifier(player, "myplugin:levelup", Map.of("attack", 25.0), 0);
+
+永久加成不会自己消失，必须显式移除：
+
+    rpgApi.removeModifier(player, "myplugin:levelup");
+
+--------------------------------------------------------------------------------
+五、减少属性
+--------------------------------------------------------------------------------
+
+传负数即可：
+
+    // 减速 30%，持续 5 秒
+    rpgApi.setModifier(player, "myplugin:slow", Map.of("attackspeed", -30.0), 5);
+
+注意 AttackSpeed 同时参与冷却换算：负值会让技能冷却变长（见插件冷却规则）。
+
+--------------------------------------------------------------------------------
+六、移除
+--------------------------------------------------------------------------------
+
+    rpgApi.removeModifier(player, "myplugin:aura");    // 移除单个来源
+    rpgApi.clearModifiers(player);                      // 移除该实体全部外部加成
+
+--------------------------------------------------------------------------------
+七、读取
+--------------------------------------------------------------------------------
+
+    RpgStats all = rpgApi.getStats(player);                       // 全量生效属性
+    RpgStats mine = rpgApi.getModifier(player, "myplugin:aura");  // 我自己加的那部分
+    Set<String> sources = rpgApi.getModifierSources(player);      // 所有来源
+    boolean active = rpgApi.hasModifier(player, "myplugin:aura");
+
+--------------------------------------------------------------------------------
+八、原版属性（速度、跳跃、击退抗性等）
+--------------------------------------------------------------------------------
+
+RPG 属性里没有"移动速度"这类原版属性。用 setVanillaModifier：
+
+    import org.bukkit.attribute.AttributeModifier;
+
+    // +0.025 移动速度，持续 10 秒
+    rpgApi.setVanillaModifier(player, "myplugin:boots", "movement_speed", 0.025,
+            AttributeModifier.Operation.ADD_NUMBER, 10);
+
+    // 永久，直到显式移除
+    rpgApi.setVanillaModifier(player, "myplugin:boots", "jump_strength", 0.5,
+            AttributeModifier.Operation.ADD_NUMBER, 0);
+
+    rpgApi.removeVanillaModifiers(player, "myplugin:boots");
+
+支持的属性名与物品配置一致（可带或不带 minecraft: / generic. 前缀）：
+    max_health, attack_damage, movement_speed, armor, armor_toughness,
+    attack_speed, luck, attack_knockback, jump_strength, knockback_resistance
+
+三种运算：
+    ADD_NUMBER        直接加数值（速度、跳跃、击退抗性用这个）
+    ADD_SCALAR        按基础值的百分比加（填 0.1 表示 +10%）
+    MULTIPLY_SCALAR_1 乘算，最终值 = 值 × (1 + amount)
+
+--------------------------------------------------------------------------------
+九、来源命名规则（重要）
+--------------------------------------------------------------------------------
+
+每个加成必须归属一个"来源"名，例如 "myplugin:aura"。
+
+- 必须匹配 [A-Za-z0-9_.:-]{1,64}，否则抛 IllegalArgumentException
+- 大小写不敏感（内部统一转小写）
+- "earthrpgitem" 是保留名（插件自身技能使用）。**写入和移除**该来源会被拒绝，
+  避免外部插件覆盖或清掉技能给自己加的加成；**读取**它是允许的，便于排查。
+- **不同来源互不干扰**：两个插件各加各的，一方到期不会清掉另一方的加成
+
+建议格式："你的插件名:用途"，方便在 /rpgitem MY 里辨认。
+
+--------------------------------------------------------------------------------
+十、setModifier 与 addModifier 的区别
+--------------------------------------------------------------------------------
+
+setModifier   整体替换该来源的加成。**幂等**，适合每 tick 调用的光环、区域效果。
+              重复调用不会累加，只会刷新数值和到期时间。
+
+addModifier   在该来源已有加成上累加。只适合确实要叠加的效果。
+              用它做光环会无限增长。
+
+每 tick 刷新的正确写法：
+
+    // 区域光环：范围内玩家获得加成，离开后不再刷新，5 秒后自动过期
+    rpgApi.setModifier(player, "myplugin:aura", Map.of("attack", 10.0), 5);
+
+--------------------------------------------------------------------------------
+十一、生效时机
+--------------------------------------------------------------------------------
+
+立即生效     攻击、暴击、护甲、魔法/元素伤害等 —— 结算伤害时读取
+约 1 秒内     Health、Vitality —— 由插件每秒的属性任务推送到最大生命
+需用原版接口  移动速度、跳跃、击退抗性 —— 用 setVanillaModifier
+
+注意：`features.*` 功能开关会作用于外部加成。例如 config.yml 里
+`features.attack: false` 时，外部加的 Attack 同样会被清零。这是刻意保持一致。
+
+--------------------------------------------------------------------------------
+十二、线程要求
+--------------------------------------------------------------------------------
+
+所有方法都必须在**主线程**调用。若在异步任务里，请切回主线程：
+
+    Bukkit.getScheduler().runTask(plugin, () -> rpgApi.setModifier(...));
+
+--------------------------------------------------------------------------------
+十三、验证
+--------------------------------------------------------------------------------
+
+让玩家执行 /rpgitem MY，会看到：
+
+    ---- 外部属性加成 / External modifiers ----
+    来源 myplugin:aura -> {attack=10.0, critchance=5.0}
+
+这能直接确认你的加成是否落地，以及和其他插件是否冲突。
+
+================================================================================

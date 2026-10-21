@@ -1,0 +1,72 @@
+EarthRPGItem GUI 使用手册
+
+版本：1.2
+
+一、打开 GUI
+指令：
+/EarthRPGitem gui
+
+注意：
+这个指令现在需要管理员权限。
+权限节点为 earthrpgitem.gui 或 earthrpgitem.admin。
+
+二、主界面
+主界面标题为 Arthritism，是一个大箱子 GUI。
+
+Setting：
+材质为红石比较器，用于进入设置界面。
+
+Armor：
+材质为钻石胸甲，用于进入 Armor 物品界面。
+
+Tool：
+材质为金稿，用于进入 Tool 物品界面。
+
+Weapon：
+材质为钻石剑，用于进入 Weapon 物品界面。
+
+三、Setting 界面
+Setting 界面可以切换部分全局功能。
+绿色羊毛表示已开启。
+红色羊毛表示已关闭。
+
+当前可切换：
+RPGItem 总开关
++Attack
++Armor
++CritChance
++CritDamage
++AttackSpeed
+伤害数字显示
+
+切换后插件会保存 config.yml。
+
+四、Armor / Tool / Weapon 界面
+这三个界面的标题分别是 Armor、Tool、Weapon。
+前 45 格用于展示当前目录中的 RPGItem。
+最下面一排保留给按钮，不会摆放 RPGItem。
+
+左下角：
+上一页 / Previous，材质为蓝色羊毛。
+没有上一页时显示基岩。
+
+右下角：
+下一页 / Next，材质为绿色羊毛。
+没有下一页时显示基岩。
+
+中间：
+返回主页 / Back，材质为屏障。
+
+五、拿取规则
+点击 RPGItem 会复制一份到玩家背包。
+GUI 中的原物品不会消失。
+按钮无法被拿取，也无法通过拖拽、Shift 点击等方式放入玩家背包。
+
+六、查看自身属性
+玩家可以输入：
+/EarthRPGitem my
+
+该指令会显示当前正在生效的属性。
+配置中关闭的属性不会显示。
+等级不足的物品属性不会显示。
+副手物品默认不会显示，除非物品带有 Deputy 属性。

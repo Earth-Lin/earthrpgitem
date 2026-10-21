@@ -1,0 +1,151 @@
+EarthRPGItem 属性百科
+版本：3.0 稳定版
+适用环境：Paper 1.21.1、Java 21
+
+一、基础规则
+
+1. 属性来源
+RPGItem 的属性来自 YAML 的 attributes 节点；装备、手持物品和符合条件的饰品会汇总到玩家当前 RPGStats。多个物品的同名属性通常相加。随机属性会在物品生成时记录，并在统计时加入对应属性。
+
+2. 百分比写法
+带 Percent 的属性按百分数填写。例如 AttackPercent: 25 表示基础攻击增加 25%，不是 0.25%。
+
+3. 有效攻击公式
+有效物理攻击 = Attack × (1 + AttackPercent / 100)
+有效魔法伤害 = MagicDamage × (1 + MagicDamagePercent / 100)
+
+4. 防御层与抗性
+Armor、MagicArmor、BowArmor 和元素护甲是对应伤害类型的平坦减伤；带 Percent 的护甲是同类百分比减伤。ArmorPen 先按比例削弱目标护甲及护甲百分比，再计算剩余伤害。Resistance 在护甲计算后按比例削减最终伤害：
+最终伤害 = 护甲计算后的伤害 × (1 - Resistance / 100)
+Resistance 达到 100 时对应伤害通常被减为 0；负抗性会放大允许受负抗性影响的伤害。
+
+二、攻击与暴击属性
+
+| 属性 | 作用与计算方式 | YAML 键 |
+|---|---|---|
+| Attack | 追加到 RPG 近战物理伤害。与 AttackPercent 一起计算有效攻击。 | Attack |
+| AttackPercent | 按百分比提高 Attack。 | AttackPercent |
+| CritChance | 暴击概率，0 至 100 按百分比判定；超过 100 的部分不会继续提高概率，而是每 1 点转为 10 点额外暴击伤害。 | CritChance |
+| CritDamage | 暴击时追加的伤害。物理和魔法伤害分别判定暴击。 | CritDamage |
+| AttackSpeed | RPG 攻击冷却。0 约为 1 秒，100 约为 0.05 秒；负值会延长冷却，-100 约为 10 秒。 | AttackSpeed |
+| AttackRange | 攻击距离相关属性，具体受攻击监听和目标距离限制。 | AttackRange |
+| ArmorPen | 护甲穿透百分比，范围按 0 至 100 处理。 | ArmorPen |
+
+暴击溢出公式：额外暴击伤害 = max(0, CritChance - 100) × 10。
+
+三、生存属性
+
+| 属性 | 作用与使用方式 | YAML 键 |
+|---|---|---|
+| Health | 提供额外生命相关数值，穿戴或手持符合条件的 RPGItem 时汇总。 | Health |
+| Vitality | 生命/生存类属性，按当前玩家属性系统参与生命统计。 | Vitality |
+| Recovery | 生命恢复速度，按每秒恢复值处理。 | Recovery |
+| LifeSteal | RPGItem 伤害后的固定吸血值。 | LifeSteal |
+| LifeStealPercent | 按本次有效 RPGItem 伤害百分比吸血。 | LifeStealPercent |
+| Evasion | 闪避概率相关属性。 | Evasion |
+| Dodge | 防御动作中的闪避/躲避属性。 | Dodge |
+| Block | 格挡相关属性。 | Block |
+| Parry | 招架相关属性，需要对应攻击/防御监听条件。 | Parry |
+| CounterAttack | 反击相关属性。 | CounterAttack |
+| Determination | 坚定/抗性类防御属性。 | Determination |
+| CAD | 额外近战伤害修正，当前主动防御反击路径使用 CAD 百分比修正有效攻击。 | CAD |
+
+吸血公式：吸血总量 = LifeSteal + RPGItem 实际有效伤害 × LifeStealPercent / 100。
+
+四、物理、魔法、弓与元素
+
+| 属性 | 作用 | YAML 键 |
+|---|---|---|
+| MagicDamage | 追加魔法伤害，可独立暴击。 | MagicDamage |
+| MagicDamagePercent | 提高 MagicDamage。 | MagicDamagePercent |
+| BowDamage | 投射物/弓弩伤害的 RPG 追加值。 | BowDamage |
+| ExDraw | 弓弩额外蓄力/弹射相关数值。 | ExDraw |
+| TrueDamage | 真实伤害，通常不经过普通护甲层；正抗性处理规则按当前伤害监听实现。 | TrueDamage |
+| PctDamage | 按攻击者最大生命值比例追加伤害。 | PctDamage |
+| PstDamage | 按目标最大生命值比例追加伤害。 | PstDamage |
+| BackstrikeDamage | 背击时追加的固定伤害。 | BackstrikeDamage |
+| AssDamage | 刺客/特定背后攻击路径追加的固定伤害。 | AssDamage |
+| AssDamagePercent | 刺客伤害倍率加成百分比。 | AssDamagePercent |
+| IceDamage、FireDamage、LightDamage、DarkDamage | 对应元素固定伤害。 | 对应属性名 |
+| IceDamagePercent、FireDamagePercent、LightDamagePercent、DarkDamagePercent | 对应元素按基础伤害总量计算的百分比伤害。 | 对应属性名 |
+
+百分比伤害的基础值和目标护甲类型由实际伤害类型决定；元素伤害会经过对应元素护甲和 Resistance。
+
+五、护甲与元素抗性
+
+| 属性 | 防御对象 | YAML 键 |
+|---|---|---|
+| Armor | 普通物理/近战伤害。 | Armor |
+| ArmorPercent | 普通物理护甲百分比层。 | ArmorPercent |
+| MagicArmor | 魔法伤害。 | MagicArmor |
+| MagicArmorPercent | 魔法护甲百分比层。 | MagicArmorPercent |
+| BowArmor | 弓、弩、投射物伤害。 | BowArmor |
+| BowArmorPercent | 投射物护甲百分比层。 | BowArmorPercent |
+| CritArmor | 暴击追加伤害。 | CritArmor |
+| CritArmorPercent | 暴击护甲百分比层。 | CritArmorPercent |
+| IceArmor、FireArmor、LightArmor、DarkArmor | 对应元素伤害。 | 对应属性名 |
+| Resistance | 多数伤害的最终百分比减伤。 | Resistance |
+
+单层护甲计算：
+穿透后的平坦护甲 = max(0, 平坦护甲 × (1 - ArmorPen))
+穿透后的百分比护甲 = max(0, 护甲百分比 × (1 - ArmorPen))
+伤害经过对应护甲层后，再经过 Resistance。
+
+六、耐久与维护
+
+| 属性 | 作用 | YAML 键 |
+|---|---|---|
+| Fix | 按配置间隔恢复耐久/额外耐久。 | Fix |
+| ExDur | 额外耐久池。 | ExDur |
+| BreakLimit | 耐久耗尽后的保护/损坏阈值。 | BreakLimit |
+| Unbreakable | 配置物品不按普通耐久损坏逻辑处理。 | unbreakable |
+
+七、采集属性
+
+| 属性 | 作用 | YAML 键 |
+|---|---|---|
+| FarmingSpeed | 农业采集进度速度。 | FarmingSpeed |
+| MiningSpeed | 挖掘采集进度速度。 | MiningSpeed |
+| ForestSpeed | 伐木采集进度速度。 | ForestSpeed |
+| FarmingFortune | 农业采集掉落时运。 | FarmingFortune |
+| MiningFortune | 挖掘采集掉落时运。 | MiningFortune |
+| ForestFortune | 伐木采集掉落时运。 | ForestFortune |
+| FarmingLevel | 手持工具的农业采掘等级（门槛档位，用于资源点 required-level）。 | FarmingLevel |
+| MiningLevel | 手持工具的挖矿采掘等级（门槛档位）。 | MiningLevel |
+| ForestLevel | 手持工具的砍树采掘等级（门槛档位，别名 WoodcuttingLevel）。 | ForestLevel |
+
+这些属性用于采集点系统，不等同于原版工具效率或原版时运附魔。
+采掘等级（Level）不提供原版属性，是资源点门槛的比对对象：手持工具的
+MiningLevel / ForestLevel / FarmingLevel ≥ 资源点 required-level 才能采集，
+和其他插件的玩家等级无关。原版矿物不给经验、不设门槛（采集经验只来自资源点）。
+
+八、技能与冷却
+
+技能节点：fskill、rskill、srskill、qskill、sqskill、lskill。
+
+默认全局冷却：开启。源码默认值为 global-cooldown: true。
+全局冷却按触发类型分别计算：F、R、SR、Q、SQ、L 各自独立；同一触发类型的技能共享该类型全局冷却，不同触发类型互不影响。
+
+是否需要额外注册：不需要。技能写在 RPGItem YAML 中，执行 /rpgitem reload 重新加载即可。技能节点不写 global-cooldown 时按 true 处理。需要关闭时：
+qskill:
+  cooldown-seconds: 5
+  global-cooldown: false
+
+未填写 global-cooldown-seconds 时，使用该节点的 cooldown-seconds；填写后使用专用全局冷却秒数。
+
+九、示例
+
+attributes:
+  Attack: 12
+  AttackPercent: 25
+  CritChance: 30
+  CritDamage: 8
+  ArmorPen: 15
+  LifeSteal: 2
+  LifeStealPercent: 10
+
+十、注意事项
+
+1. RPGItem 配置修改后必须 /rpgitem reload；涉及插件类或 JAR 更新必须完全重启服务器。
+2. 仅写属性不会自动生成物品，必须放入正确分类目录并通过 GUI、命令或配置领取。
+3. 具体伤害显示、技能效果和防御效果以当前版本源码及 config.yml 开关为准。

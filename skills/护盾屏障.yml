@@ -1,0 +1,117 @@
+# 护盾屏障 - 法师独立技能模板
+# 本文件位于 plugins/EarthRPGItem/skills/护盾屏障.yml
+# 插件会自动把本文件注册为一个技能，技能 ID 就是文件名：护盾屏障
+#
+# 定位：自保。法师被贴脸时的唯一答案——短时间大幅提升魔法护甲与抗性，并给一层吸收。
+# 技能组4：与元素崩解同组互斥。也就是说玩家必须在「保命」和「大招」之间二选一，
+# 这是刻意的取舍，防止法师既能秒人又打不死。
+
+display-name: "&f护盾屏障"
+material: ENCHANTED_BOOK
+skill-group: "技能组4"
+supported-weapons: [STAFF]
+
+# 瞬发：被打的时候没有时间读条，这是护盾类技能的前提。
+cooldown-seconds: 22
+cooldown-name: "护盾屏障"
+cooldown-enabled: true
+messages-enabled: true
+global-cooldown: false
+
+# ---- 成长规则 ----
+# 四条成长线：魔法护甲、魔法护甲百分比、抗性、吸收盾量，外加增益时长。
+# 只写数值字段：type 之类的字符串字段写进来会被当成配置错误并打警告。
+# amplifier 在代码里按 getInt 读取，所以这里必须写整数，写 0.5 会被截断成 0（等于不成长）。
+# Lv.10：魔法护甲 10+18=28、百分比 15+9=24%、抗性 5+9=14、吸收 IV、
+#        时长 6 + 9×0.3 = 8.7 秒。
+leveling:
+  max-level: 10
+  per-level:
+    attribute-boost.magicArmor: 2
+    attribute-boost.magicArmorPercent: 1
+    attribute-boost.resistance: 1
+    attribute-boost.duration-seconds: 0.3
+    buffs.shield.amplifier: 1
+    buffs.shield.duration-seconds: 0.3
+    buffs.barrier.duration-seconds: 0.3
+
+# ---- 属性增益：魔法护甲 + 抗性 ----
+# 键名会被归一化（去下划线、转小写），magicArmor / magic-armor 都可以。
+# 持续时间 6 秒，冷却 22 秒——有窗口期，不能无脑开。
+attribute-boost:
+  magicArmor: 10
+  magicArmorPercent: 15
+  resistance: 5
+  duration-seconds: 6
+  # 不可叠加：连开两次不会叠成 20 点魔法护甲。
+  stackable: false
+
+# ---- 吸收伤害 ----
+# ABSORPTION = 原版黄色吸收心，有实际血量条观感，比单纯堆数值更直观。
+# amplifier 从 2 起步、满级 6：原版吸收效果每级 4 点生命，是线性增长的，
+# 不存在「超过 IV 就无效」的问题；这里上限压在 6 是为了不让满级盾厚到打不动，
+# 真正的成长主力放在魔法护甲与抗性上。
+buffs:
+  shield:
+    type: ABSORPTION
+    amplifier: 2
+    duration-seconds: 6
+  # 同时给抗性提升，让「屏障」有硬抗的手感。
+  # RESISTANCE 在原版里超过 IV（amplifier 4）不再增长，所以这里不参与成长，
+  # 固定 amplifier 1，避免满级时这几级白升。
+  barrier:
+    type: RESISTANCE
+    amplifier: 1
+    duration-seconds: 6
+
+# ---- 特效 ----
+# 【重要】原来这里写的是根级 particle:（单数）段，插件根本不读它
+# （根级键是 particles，复数，而且那是给通用物品用的），
+# 加上 attribute-boost / buffs 本身没有任何渲染代码，
+# 所以护盾放出来「一点效果都没有」。
+# 现在改用 magic-circle 作为视觉载体：它是唯一会按持续 tick 绘制粒子的技能段，
+# 这里把它配成「以自己为中心、0 伤害、纯特效」的护盾法阵。
+magic-circle:
+  # 0 伤害：护盾不该有攻击性，这里只借它画粒子。
+  # enabled() 需要 duration>0 且「有伤害/buff/属性」之一，本技能自带 buffs，满足条件。
+  damage: 0
+  weapon-percent: 0
+  # 与其余法术保持一致：排除 PHYSICAL 与 PROJECTILE。
+  # 本技能倍率是 0，写不写都不影响伤害；写上是为了防止将来有人把倍率调高时
+  # 意外吃到近战面板/弓术词条。
+  weapon-percent-sources: [PHYSICAL, PROJECTILE]
+  # 以自己脚下为中心，半径 2.2 格：正好在身周画一圈护盾环。
+  distance: 0
+  radius: 2.2
+  height: 2.4
+  # 持续 1.2 秒：足够看清三层环扩散 + 上升粒子，又不至于拖沓。
+  duration-seconds: 1.2
+  # 0.2 秒一轮 = 6 轮，护盾环会一层层向外扩散。
+  interval-seconds: 0.2
+  # 每轮额外迸发 6 处上升粒子，形成「护盾球」的包裹感。
+  burst-count: 6
+  # 中心不放展示物：护盾不该在地上插一个实体物品。
+  use-armor-stand: false
+  # ENEMY + include-self：只为了让 buff 不误伤别人；
+  # 真正给自己上的属性来自上面的 attribute-boost 与 buffs（那两个不经过法阵）。
+  target: ENEMY
+  include-self: false
+  # ---- 护盾环：每轮重画的一圈 ----
+  # magic-circle 的法阵是用私有 drawCircle() 画的：它只读 particle 与 count，
+  # 【不读 effect 与 radius】（radius 由上面 magic-circle.radius 决定）。
+  # 所以这里不写 effect，避免让人以为改它有用。
+  particle:
+    enabled: true
+    particle: END_ROD
+    count: 48
+  # ---- 向上迸发：撑起「球形护盾」的纵向体积 ----
+  burst-particle:
+    enabled: true
+    particle: ENCHANT
+    count: 18
+    radius: 0.45
+  sound:
+    enabled: true
+    sound: BLOCK_ENCHANTMENT_TABLE_USE
+    volume: 1.0
+    pitch: 1.2

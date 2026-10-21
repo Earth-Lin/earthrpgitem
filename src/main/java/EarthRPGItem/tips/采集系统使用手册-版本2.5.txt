@@ -1,0 +1,106 @@
+EarthRPGItem 采集系统使用手册（版本 2.5）
+==========================================
+
+一、打开采集菜单
+----------------
+管理员打开 /rpgitem gui，在主菜单点击 Collection / 采集。
+采集菜单中的每个方块都是一个采集点模板。点击后会把带有采集点标识的方块物品放入背包。
+采集菜单物品不能直接从 GUI 中拿走，只能通过点击领取。
+
+二、采集点配置文件
+------------------
+采集配置放在插件数据目录的 Collection 文件夹，支持 .txt、.yml、.yaml。
+每个文件可以写一个采集点，也支持用 collections 节点写多个采集点。
+
+基础格式：
+id: meteor_iron_collection
+display-name: "&b陨铁采集点"
+type: MINING
+materials: [IRON_ORE, DEEPSLATE_IRON_ORE]
+item-material: IRON_ORE
+support-materials: [GRASS_BLOCK, STONE]
+hardness: 2.1
+refresh-seconds: 60
+depleted-material: AIR
+drops:
+  meteor_iron:
+    item: meteor_iron
+    amount: 3.0
+    chance: 100
+  stone:
+    item: COBBLESTONE
+    amount: 1.0
+    chance: 10
+
+字段说明：
+id：采集点唯一 ID。
+display-name：采集菜单显示名称，也会作为领取方块的名称。
+type：FARMING 农业、MINING 挖掘、FOREST 伐木。
+materials：采集点可以使用的实际方块类型，支持多个。
+item-material：菜单领取和创造放置时使用的物品材质。小麦应使用 WHEAT_SEEDS。
+support-materials：允许放置采集点的下方方块，支持多个。写 AIR 表示不限制支撑方块。
+hardness：采集硬度。采集时间 = hardness / 对应采集速度 * 20 tick，并四舍五入，最少 1 tick。
+refresh-seconds：采集成功后恢复的秒数，默认 60 秒。
+depleted-material：采集后的显示方块，通常写 AIR，也可以写 STONE 等不可采集显示方块。
+
+三、放置和世界范围
+------------------
+只有创造模式可以使用采集方块创建刷新点。
+采集点保存世界名称和坐标，只对创建它的世界生效，不会同步到其他世界。
+创造模式破坏采集点会删除该刷新点；普通破坏行为会被拦截。
+采集点会阻止方块物理更新、活塞推动以及破坏其下方支撑方块造成的连锁破坏。
+
+四、采集速度属性
+----------------
+FarmingSpeed：农业采集速度，只对 FARMING 采集点生效。
+MiningSpeed：挖掘采集速度，只对 MINING 采集点生效。
+ForestSpeed：伐木采集速度，只对 FOREST 采集点生效。
+
+示例工具：
+attributes:
+  MiningSpeed: 20
+  MiningFortune: 20
+
+如果玩家没有对应类型的速度属性，采集点不会显示原版挖掘进度，也不会采集成功。
+采集期间插件取消原版方块破坏，使用自定义硬度计算进度。
+玩家停止看向目标后，进度会在最多 1 秒内重置。
+多人同时采集时，每个玩家按自己的速度计算，最快完成者优先采集；成功后其他人的进度取消。
+进度会发送给在线玩家，因此所有玩家都能看到采集动画。
+
+五、采集时运属性
+----------------
+FarmingFortune：农业时运。
+MiningFortune：挖掘时运。
+ForestFortune：伐木时运。
+
+每 100 点时运增加一个必定的掉落倍数层，每剩余 1 点有 1% 概率再增加一层。
+121 点时运：必定 2 倍，另有 21% 概率变为 3 倍。
+221 点时运：必定 3 倍，另有 21% 概率变为 4 倍。
+amount 支持小数。7.4 表示 7 个必定掉落，40% 概率再掉落 1 个。
+chance 是该掉落条目的初始爆率，范围 0 到 100。
+item 可以写原版材质，也可以写已经注册的 RPGItem ID。
+
+六、三个示例
+------------
+插件第一次启动且 Collection 文件夹为空时会自动生成：
+wheat_collection.txt：小麦农业采集点，支撑方块为 FARMLAND。
+meteor_iron_collection.yml：陨铁挖掘采集点。
+oak_collection.txt：橡木伐木采集点。
+同时会在 Tool 文件夹生成农业锄、陨铁采集镐和橡木采集斧模板。
+如果文件夹中已经存在任意配置，插件不会覆盖现有模板。
+
+七、配置开关
+------------
+features.collection 控制采集系统总开关。
+features.farming-speed、mining-speed、forest-speed 控制三种采集速度属性。
+features.farming-fortune、mining-fortune、forest-fortune 控制三种采集时运属性。
+这些开关也可以在 Setting / 设置 GUI 的分页中修改。
+补充修复：
+1. 创造模式放置采集点时，合法放置不再被事件取消；下方支撑方块不符合要求时会取消并提示原因。
+2. 小麦等不能触发原版方块放置事件的资源点，改为创造模式右键支撑方块直接生成资源点。
+3. 没有对应 FarmingSpeed、MiningSpeed 或 ForestSpeed 的玩家不会看到采集点破坏进度；已有进度会立即清零。
+4. 采集点成功创建和创造模式删除时，插件会向操作玩家发送中文提示。
+5. `/rpgitem my` 现在统计六项采集属性：FarmingSpeed、MiningSpeed、ForestSpeed、FarmingFortune、MiningFortune、ForestFortune。
+6. 农业采集点（例如小麦）改为右键采集；左键会被插件拦截，不会触发原版秒破坏和原版掉落。
+7. 采集点本体及其周围一格的物理更新会被拦截，资源点采集、耗尽和刷新不会带动周围方块。
+8. 创造模式左键采集点会删除采集点并发送提示；农业采集点也不例外。

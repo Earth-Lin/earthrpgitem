@@ -1,0 +1,81 @@
+# 精准射击 - 弓手普通攻击技能模板
+# 本文件位于 plugins/EarthRPGItem/skills/精准射击.yml
+# 插件会自动把本文件注册为一个技能，技能 ID 就是文件名：精准射击
+#
+# 定位：弓手的普通攻击。直接射出一发箭矢，冷却跟随攻速。
+# 与「代达罗斯弓」（16 支箭雨）刻意不同：这是单发、精准、可高频的平A。
+# 同属「普通攻击」组，两者互斥——想用箭雨就不能用精准射击，反之亦然。
+
+display-name: "&a精准射击"
+material: BOW
+skill-group: "普通攻击"
+supported-weapons: [BOW]
+
+# ---- 冷却 ----
+# 使用玩家攻速换算冷却；此时不需要也不能写 cooldown-seconds。
+attack-speed-cooldown: true
+cooldown-name: "精准射击"
+cooldown-enabled: true
+messages-enabled: true
+global-cooldown: false
+
+# ---- 成长规则 ----
+# 成长选「弹速 + 判定半径」，不堆伤害倍率：
+# 攻速冷却下倍率成长会与攻速叠乘，高频暴击极易失衡。
+# Lv.10：弹速 3.4 + 9×0.1 = 4.3 格/tick，判定 0.7 + 9×0.04 = 1.06 格。
+leveling:
+  max-level: 10
+  per-level:
+    shortbow.speed: 0.1
+    shortbow.projectile-item.hit-radius: 0.04
+    shortbow.projectile-item.max-distance: 1.5
+
+# ---- 技能效果：单发箭矢 ----
+shortbow:
+  arrow-count: 1
+  # 飞行速度 3.4 格/tick：比原版箭快，才有「精准射击」的脆快手感。
+  speed: 3.4
+  # 100% 武器面板。
+  weapon-percent: 100
+  # 弓手的伤害就该吃弓术词条，所以这里【不写】weapon-percent-sources。
+  # 写了反而会把未列出的来源取消掉（它是排除列表，不是允许列表）。
+  # damage-type 用 BOW：走弓术护甲/弓术暴击的结算分支。
+  damage-type: BOW
+  damage-enabled: true
+  volleys: 1
+  volley-interval-ticks: 0
+  # 单发不散布。
+  spread-mode: line
+  spread-degrees: 0
+  projectile: ARROW
+  projectile-item:
+    glow: false
+    # 不穿透：单发精准射击，命中即停。
+    pierce: 0
+    # 被方块挡住：射墙就停，符合弓箭直觉。
+    collide-blocks: true
+    hit-radius: 0.7
+    max-distance: 32
+    scale: 1.0
+    # 箭的贴图是斜着画的，实测 -45 摆正。
+    tilt-degrees: -45
+    impact-particle:
+      enabled: true
+      particle: CRIT
+      count: 6
+      radius: 0.3
+    impact-sound:
+      enabled: true
+      sound: ENTITY_ARROW_HIT
+      volume: 0.8
+      pitch: 1.4
+  # 拖尾：淡白色，比原版箭更易看清弹道。
+  trail:
+    enabled: true
+    particle: DUST
+    count: 4
+    radius: 0.05
+    color: "220,240,255"
+  launch-sound: ENTITY_ARROW_SHOOT
+  launch-volume: 0.8
+  launch-pitch: 1.3

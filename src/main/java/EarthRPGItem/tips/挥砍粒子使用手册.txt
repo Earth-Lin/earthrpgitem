@@ -1,0 +1,76 @@
+EarthRPGItem 挥砍粒子使用手册（版本 1.4）
+
+一、功能说明
+挥砍粒子是 RPGItem 近战武器专用的攻击轨迹效果。玩家挥动剑、斧、三叉戟时会立刻进入自定义 AttackSpeed 冷却，并生成刀波轨迹；命中目标时也会补充对应粒子效果。
+
+二、生效武器
+1. 剑类：所有以 _SWORD 结尾的原版材质。
+2. 斧类：所有以 _AXE 结尾的原版材质。
+3. 三叉戟：TRIDENT 永远触发突刺粒子。
+4. 弓、弩等远程武器不会触发挥砍粒子。
+
+三、全局开关
+config.yml:
+features:
+  slash-particles: true
+slash-particles:
+  enabled: true
+
+也可以在 /EarthRPGitem gui -> Setting 中点击 Slash Particles 关闭。
+
+四、服务器全局参数
+slash-particles:
+  particle: DUST          # 默认灰色粉尘粒子
+  color: "128,128,128"   # DUST 粒子的 RGB 颜色
+  count: 96              # 粒子密度，越高越密集
+  duration-seconds: 3    # 粒子存在逻辑窗口，刀波会在 3 秒内结束
+  slash-diameter: 2.0    # 横扫/下落刀波最大直径
+  slash-radius: 0.5      # 横扫/下落刀波粒子束半径
+  thrust-diameter: 1.5   # 突刺最大长度
+  thrust-radius: 0.3     # 突刺粒子束半径
+  start-random-radius: 0.5
+  start-forward-distance: 1.0
+
+五、单个 RPGItem 覆盖配置
+在武器 txt 中添加：
+slash-particles:
+  enabled: true
+  particle: DUST
+  color: "128,128,128"
+  count: 120
+
+六、攻速影响成型时间
++AttackSpeed -100：刀波最终成型约 5 秒。
++AttackSpeed 0：刀波最终成型约 1 秒。
++AttackSpeed 100：刀波最终成型约 0.1 秒。
+
+七、轨迹类型
+1. 普通挥砍：随机生成横扫或下落弧形刀波。
+2. 疾跑攻击：直接生成直线突刺粒子，不触发横扫。
+3. 三叉戟攻击：永远生成直线突刺粒子。
+
+八、性能建议
+count 建议 60-140；大量玩家同时战斗时可降低 count 或关闭全局 slash-particles。
+
+九、版本 1.9 补充：刀波三轴运动与前进距离
+横扫和下落刀波现在同时包含：
+1. 横向弧线运动：根据玩家朝向在世界 X/Z 平面展开。
+2. 纵向运动：下落或弧形轨迹会改变 Y 高度。
+3. 前进运动：刀波形成期间沿玩家面朝方向向前移动。
+
+服务器默认距离：
+slash-particles:
+  length: 1.2
+
+单独武器覆盖：
+slash-particles:
+  enabled: true
+  particle: DUST
+  color: "128,128,128"
+  count: 160
+  radius: 0.08
+  length: 2.5
+
+length 表示横扫/下落刀波从起点向前移动的方块距离。
+length: 0 表示只在原位置形成弧线；数值越大，刀波向前推进越远。
+该参数不修改三叉戟或疾跑攻击的突刺长度，突刺仍由 thrust-diameter 控制。

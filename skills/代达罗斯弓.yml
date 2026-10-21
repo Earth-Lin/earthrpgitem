@@ -1,0 +1,154 @@
+# 代达罗斯弓 - 独立技能模板
+# 本文件位于 plugins/EarthRPGItem/skills/代达罗斯弓.yml
+# 插件会自动把本文件注册为一个技能，技能 ID 就是文件名：代达罗斯弓
+# 不需要在 config.yml 里添加任何配置。
+#
+# 本技能复用「王之宝库」的代码（gate-of-babylon 段落），只改了配置：
+#   1. 落下的武器 → 箭（weapon-materials 全换成箭矢类）
+#   2. 金色特效 → 粉色（所有粒子的 block 换成粉色）
+#   3. 背后生成 → 天上生成（spawn-mode: sky）
+#   4. 悬停期剑柄圆环 → 取消（ripple.enabled: false）
+#   5. 落地爆炸 → 取消（explosion-particle.enabled: false）
+#   6. 技能冷却 → 攻速冷却（attack-speed-cooldown: true，与王之宝库一致）
+#   7. 飞行途中碰到生物就命中（collide-with-entities: true）—— 箭雨的关键，
+#      否则箭会穿过目标、砸在后面地上。
+# ---- 技能物品外观与分类 ----
+display-name: "&d代达罗斯弓"
+material: BOW
+skill-group: "技能组3"
+# 武器类型：ANY = 默认，不限武器。也可写 [SWORD, AXE] / [BOW] / [CROSSBOW] / [STAFF]
+supported-weapons: [ANY]
+# ---- 冷却 ----
+# 使用玩家攻速（AttackSpeed）换算冷却；此时不需要也不能用 cooldown-seconds。
+# 这就是「改为普通攻击」的意思：冷却跟普攻走，而不是走固定秒数。
+attack-speed-cooldown: true
+cooldown-name: "代达罗斯弓"
+cooldown-enabled: true
+messages-enabled: true
+global-cooldown: false
+# ---- 技能效果：gate-of-babylon（箭雨）----
+# 箭在落点上方的空中生成（spawn-mode: sky），短暂停留后射向准星所指的位置；
+# 飞行途中碰到生物就立即命中并停下，没碰到的落到地面后消失（不产生爆炸）。
+gate-of-babylon:
+  # 伤害走与其它技能完全相同的结算管线：damage 固定值 + weapon-percent 武器面板百分比。
+  # 每个命中/落点会结算一次；同一目标本次施放最多被打中 max-hits-per-target 次。
+  damage: 0
+  weapon-percent: 60
+  damage-type: BOW
+  can-crit: true
+  # 不要写 weapon-percent-sources：默认即为全部来源，写了反而会「取消」列出的类型。
+  # 一次施放生成多少支箭（单次施放上限 32，写更大也会被截断）
+  weapon-count: 16
+  # ---- 落点：跟随准星 ----
+  # 从眼睛沿视线做射线，命中方块就用命中点、没命中就用最大距离处，
+  # 再从这个位置往下找地面。所以瞄准哪里就砸哪里，头顶有方块也不会把落点顶到天花板上。
+  distance: 16.0
+  # 落点相对准星落点的散布半径。
+  # 调小会让整批箭「汇聚」到同一个点，看起来是瞄准一个位置射下去；
+  # 调大则变成一片箭雨覆盖。
+  spread-radius: 2.5
+  # ---- 生成点：只在天上 ----
+  # sky = 只在落点上方的空中生成。两套参数互不相干，切换方式不需要改另一套的数值。
+  # 别名：back/rear = behind，air/above/top = sky，both/random/mix = mixed。
+  spawn-mode: sky
+  # 天上生成（spawn-mode 为 sky 或 mixed 时生效）
+  # 落点上方多少格（会再乘以 0.85~1.15 的随机系数）
+  sky-height: 14.0
+  # 相对落点的水平偏移半径
+  sky-offset: 2.5
+  # 生成后等待 0~N tick 再发射，每支箭随机取值；0 = 立刻发射
+  launch-delay-ticks: 15
+  # 飞行时每 tick 前进多少格。箭比剑轻，所以给得比王之宝库快一些，更像箭雨。
+  # 注意这是直线插值：调太大会看不清飞行轨迹。
+  fall-speed: 1.2
+  # 命中/落地后停留几秒再消失
+  linger-seconds: 0.5
+  # 落点伤害半径 / 高度（本技能主要靠飞行命中，这两个值只在「一支箭都没碰到生物」时兜底）
+  impact-radius: 2.5
+  impact-height: 2.0
+  # 同一目标在本次施放中最多被打中几次。
+  # 16 支箭各结算一次会把伤害放大 16 倍，所以这里必须有上限。
+  max-hits-per-target: 3
+  # ---- 飞行命中生物（箭雨的关键）----
+  # 飞行途中碰到生物就立即命中并停下，不再穿过去砸在后面地上。
+  # 判定用「本 tick 飞过的那一段线段」而不是当前位置的点，
+  # 否则 fall-speed 大于 1 时箭会直接跳过站位不巧的目标。
+  collide-with-entities: true
+  # 判定半径（格）。取生物中心而非脚底，所以贴近掠过也算命中。
+  # 调大 = 更容易命中（箭雨的「擦到就算」）；调小 = 更严格。
+  collision-radius: 1.0
+  # ---- 箭的姿态 ----
+  # 贴图摆正角。箭的贴图和剑一样是**斜着画的**，所以这里沿用王之宝库实测出来的 -45。
+  # 这是本文件里唯一无法离线验证的值（它取决于贴图画法，不是代码逻辑）：
+  #   箭身斜 45°  → 改 0
+  #   箭身反向斜  → 改 +45 或 -90
+  # 游戏里看一眼就能定，不需要重新编译。调法见手册第二十七章。
+  blade-tilt-degrees: -45
+  # 外观池，每次生成随机取一个。
+  # **同一个材质写多次 = 提高它的出现概率**。
+  # 全部换成箭矢/投射物类，不再出现剑斧。
+  weapon-materials:
+    - ARROW
+    - ARROW
+    - ARROW
+    - ARROW
+    - SPECTRAL_ARROW
+    - SPECTRAL_ARROW
+    - TIPPED_ARROW
+  # ---- 粒子与音效（金色 → 粉色）----
+  # 粉色 = 255,105,180。所有粒子的 block 都换成它。
+  # 通用规则：count = 粒子数量，radius = 散布半径；两者都直接生效，越小越不挡视野。
+  # 飞行轨迹粒子（粉色）。count = 每经过一格路径撒多少粒子，radius = 轨迹粗细（上限 1）
+  trail:
+    enabled: true
+    particle: DUST
+    block: "255,105,180"
+    count: 4
+    radius: 0.25
+  # 箭出现时的粉色特效
+  spawn-particle:
+    enabled: true
+    particle: DUST
+    block: "255,105,180"
+    count: 8
+    radius: 0.4
+  # ---- 悬停期剑柄圆环：本技能取消 ----
+  # enabled: false 就完全不会画圆环（drawGateRipple 会先读这个开关）。
+  # 箭本来也没有「剑柄」，套一个圆环在箭上很怪，所以关掉。
+  # 想恢复的话把 enabled 改成 true 即可，其余参数照旧生效。
+  ripple:
+    enabled: false
+    particle: DUST
+    block: "255,105,180"
+    count: 12
+    radius: 0.35
+    plane: blade
+  # 命中/落地的粉色上升粒子
+  impact-particle:
+    enabled: true
+    particle: DUST
+    block: "255,105,180"
+    count: 6
+    radius: 0.4
+  # ---- 落地爆炸：本技能取消 ----
+  # enabled: false 就完全不会播放爆炸粒子。
+  # 落地爆炸走的是 playImpactBurst（纯粒子、不破坏方块、不生成爆炸实体），
+  # 但箭雨要的是「一根根扎下去」，地上再炸一团烟反而不像箭。
+  # 想恢复的话把 enabled 改成 true 并调 particle/count/radius。
+  explosion-particle:
+    enabled: false
+    particle: EXPLOSION
+    count: 2
+    radius: 0.6
+  # 施放时的音效（箭雨用弓弦声更贴切）
+  sound:
+    enabled: true
+    sound: ENTITY_ARROW_SHOOT
+    volume: 1.0
+    pitch: 1.2
+  # 每支箭命中/落地的音效
+  impact-sound:
+    enabled: true
+    sound: ENTITY_ARROW_HIT
+    volume: 0.7
+    pitch: 1.3

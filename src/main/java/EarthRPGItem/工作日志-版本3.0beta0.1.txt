@@ -1,0 +1,185 @@
+EarthRPGItem 3.0beta0.1 工作日志
+
+版本：3.0beta0.1
+日期：2026-09-22
+
+一、新增技能类型
+
+1. shortbow
+- 技能释放后朝玩家准星方向发射箭矢。
+- 支持 arrow-count 多枚箭矢。
+- 支持 spread-degrees 水平方向散射角度。
+- 支持 speed 发射速度。
+- 箭矢伤害使用释放者当前 RPG 有效攻击面板值。
+- trail.enabled 默认 false；开启后可配置轨迹粒子和数量。
+- 支持 launch-sound、launch-volume、launch-pitch。
+- 默认使用玩家 RPG AttackSpeed 计算冷却，逻辑与打击类攻击冷却一致。
+
+2. shortbow-cd
+- 与 shortbow 发射效果相同。
+- 不使用玩家 AttackSpeed。
+- 使用技能节点自身 cooldown-seconds 作为冷却。
+
+3. dimensional-slash
+- 从玩家准星方向进行方块射线检测。
+- 默认前方距离 7 格，可使用 distance 修改。
+- 遇到方块后停止，不穿透方块。
+- 在命中点播放爆炸粒子和可配置音效。
+- 使用生物范围伤害，不破坏方块，不生成方块掉落物。
+- radius 默认 3，可配置；height 可配置伤害高度。
+- damage、weapon-percent、damage-type、can-crit 可配置。
+
+二、测试模板
+
+新增文件：
+- 新技能测试模板-3.0beta0.1.yml
+
+模板包含：
+- test_shortbow：玩家攻速冷却的三箭水平散射。
+- test_shortbow_cd：技能自身 CD 的五箭水平散射，并开启 END_ROD 轨迹。
+- test_dimensional_slash：7 格距离、3 格范围的次元斩。
+
+使用：将模板中的内容复制到 plugins/EarthRPGItem/Tool/ 下，执行 /rpgitem reload，再通过 GUI 或管理员命令领取。
+
+三、兼容说明
+
+- 原有技能节点和旧版配置保持兼容。
+- 未配置 shortbow、shortbow-cd 或 dimensional-slash 的技能不受影响。
+- 粒子轨迹默认关闭，避免额外视觉和调度开销。
+- 版本为 3.0 正式版后的 beta0.1，不修改正式版本基线。
+
+
+
+五、3.0beta0.2 - 3.0beta0.6 变更记录
+
+1. 投射物伤害归属
+- shortbow 和 shortbow-cd 的弹射物记录释放玩家。
+- 命中伤害使用玩家作为伤害来源，击杀归属为玩家。
+- 命中目标时清除无敌帧并移除弹射物，多个弹射物可以连续命中并叠加。
+- 支持 ARROW、SNOWBALL、FIREBALL、SMALL_FIREBALL 弹射物类型。
+
+2. 投射物显示与特效
+- 修复投射物浮字只显示弓箭分项、实际扣血却包含多个伤害分项的问题。
+- 浮字现在显示与最终实际扣血一致的总伤害。
+- 投射物命中粒子和命中音效默认关闭。
+- 服务器已存在的旧 config.yml 需要手动确认 projectile-hit-particles 和 projectile-sounds 为 false。
+
+3. 技能连锁与属性增强
+- 新增 chain.after、chain.next、chain.delay-seconds 配置。
+- 支持次元斩完成后延迟释放 shortbow。
+- 新增 attribute-boost 技能类型。
+- 支持 duration-seconds 和任意已注册 RPG 属性的临时增强。
+- 属性增强到期后自动移除，不永久修改武器或玩家基础数据。
+
+4. 暴击属性说明
+- 原有 CritDamage 保持固定值附加逻辑，CritDamage: 10 不会解释为百分比。
+- 新增独立 CritDamagePercent 属性，默认值为 0，兼容未配置该属性的旧物品。
+- CritDamagePercent: 100 表示暴击时在原有暴击计算基础上额外增加 100% 的基础暴击伤害部分。
+
+5. 版本与构建
+- 3.0beta0.2：投射物玩家归属、连续命中、弹射物类型。
+- 3.0beta0.3：技能连锁、属性增强、投射物命中特效默认关闭。
+- 3.0beta0.4：暴击和投射物默认命中特效配置修正。
+- 3.0beta0.5：投射物浮字与实际总伤害统一。
+- 3.0beta0.6：独立 CritDamagePercent 属性链和当前可替换 beta 包。
+- 每个版本均使用 Paper 1.21.1、Java 21、Gradle 8.8 离线构建。
+
+六、3.0beta0.7 投射物问题修复
+
+- 修复 shortbow 命中浮字显示 13、实际扣血约 55 的问题：投射物伤害现在按最终计算值进行统一扣血，避免 Bukkit 投射物事件再次叠加原始箭矢伤害。
+- 普通弓箭和 shortbow 不再额外播放物品级命中粒子与音效。
+- 全局投射物命中反馈增加总开关，默认关闭。
+- 内置普通弓模板的 projectile-hit-particles 和 projectile-hit-sound 默认改为 false。
+- config.yml 中 projectile-hit-particles.enabled 和 projectile-hit-sound.enabled 默认改为 false。
+- 版本升级为 3.0beta0.7。
+
+七、3.0beta0.8 短弓重复伤害修复
+
+- 根因：短弓自定义伤害计算后仍调用 LivingEntity.damage，Paper 又执行了一次实体伤害链，导致浮字与实际生命值变化不一致。
+- 修复：短弓投射物现在直接按最终四舍五入伤害扣除目标生命值，不再调用第二套实体伤害结算。
+- 保留玩家击杀归属：设置目标 killer 为短弓释放玩家。
+- 版本升级为 3.0beta0.8，Paper 1.21.1、Java 21、Gradle 8.8 离线构建成功。
+
+八、3.0beta0.9 吟唱与丢弃保护修复
+
+- 修复 RpgDropListener 只要主手持有 RPGItem 就拦截所有丢弃操作的问题。
+- 背包丢弃判断改为检查实际被丢弃的物品，不再误拦截普通物品和无关副手物品。
+- 没有配置 Q/SQ 技能的 RPGItem 可以正常丢弃；配置 Q/SQ 技能时，丢弃键仍优先触发技能。
+- 修复吟唱开始时 buffs 不立即生效的问题。
+- 有 chants 的技能现在在吟唱开始阶段立即施加 buffs，结束释放阶段不重复施加。
+- dimensional-slash 不再要求固定 damage 大于 0；只配置 weapon-percent 时也可以正常释放。
+- 支持 chants + dimensional-slash 在 release-at: start、end、both 下执行。
+- 版本升级为 3.0beta0.9，Paper 1.21.1、Java 21、Gradle 8.8 离线构建成功。
+
+九、3.0beta0.10 吟唱 Buff 释放时机修复
+
+- Buff 不再固定只在吟唱开始时施加。
+- 用户可以通过 chants 的 release-at 注册 Buff 释放时机。
+- release-at: start：吟唱开始时施加 Buff。
+- release-at: end：吟唱结束时施加 Buff。
+- release-at: both：吟唱开始和结束各施加一次 Buff。
+- dimensional-slash、shortbow 和 damages 等释放技能继续遵循对应的吟唱释放时机。
+- 版本升级为 3.0beta0.10，Paper 1.21.1、Java 21、Gradle 8.8 离线构建成功。
+
+十、3.0beta0.14 投射物伤害分项显示修复
+
+- 修复 shortbow 技能命中只显示 Projectile 总伤害、隐藏具体伤害类型的问题。
+- 投射物现在恢复显示计算结果中的各伤害分项。
+- 支持显示刺客伤害、背击伤害、弓箭暴击伤害、真实伤害以及魔法和元素伤害。
+- 实际扣血仍使用所有分项合计值，浮字分项合计应与实际最终伤害一致。
+- 版本升级为 3.0beta0.14，Paper 1.21.1、Java 21、Gradle 8.8 离线构建成功。
+
+十一、3.0beta0.15 背击与刺客伤害默认显示
+
+- 修复背击伤害和刺客伤害被合并进物理伤害、没有独立浮字的问题。
+- 普通攻击和投射物攻击均显示独立分项。
+- 默认背击显示：金色 `🗡背击-{damage}`。
+- 默认刺客显示：红色 `☠刺客-{damage}`。
+- 配置路径：damage-display.backstrike-format、damage-display.backstrike-color、damage-display.assassin-format、damage-display.assassin-color。
+- 真实伤害继续使用红色骷髅图标，弓箭暴击继续使用弓箭暴击图标。
+- 版本升级为 3.0beta0.15，Paper 1.21.1、Java 21、Gradle 8.8 离线构建成功。
+
+十二、3.0beta0.17 新增技能形态
+
+- 新增 shockwave 冲击波：玩家脚下为中心生成可调角度的地面扇形粒子区域。
+- 支持冲击波 radius、height、angle-degrees、particle.count 和 knockback 参数。
+- 新增 sweep 横扫：在玩家准星前方可调距离生成水平弧形粒子刀波。
+- 新增 cross-slash 十字斩：水平和垂直两段刀波分别计算伤害，支持分别配置固定伤害、weapon-percent、伤害类型和粒子。
+- 新技能沿用 DamageSkill 伤害系统，支持 PHYSICAL、MAGIC、BOW、TRUE、ICE、FIRE、LIGHT、DARK 类型和 weapon-percent-sources。
+- 版本升级为 3.0beta0.17，离线构建成功。
+
+十三、3.0beta0.18 次元斩粒子与测试武器模板
+
+- 次元斩爆炸中心改为 EXPLOSION 爆炸粒子与可配置第二种粒子的组合效果。
+- 爆炸粒子和额外粒子均从中心向外扩散，额外粒子支持 particle、count、radius 和 effect。
+- 新增 skill-shapes-test-weapon.yml 完整测试武器，顶层直接从 id: 开始，可复制到 plugins/EarthRPGItem/Weapon/。
+- 测试武器包含冲击波、横扫、十字斩和次元斩四种技能形态。
+- 版本升级为 3.0beta0.18，Paper 1.21.1、Java 21、Gradle 8.8 离线构建成功。
+
+十四、3.0beta0.19 - 3.0beta0.21 技能动画修正与音效配置
+
+- 3.0beta0.19：冲击波改为以玩家脚下为中心、从小半径逐帧向外扩散的圆弧波前，不再一次性绘制雷达式放射线。
+- 冲击波改为在波前接触目标时造成伤害和击退，每个目标每次释放只命中一次。
+- 横扫改为以玩家准星前方为中心的水平刀弧；正面观察接近水平直线，从侧面观察呈向前弯曲的弧形。
+- 十字斩重新区分两个几何平面：horizontal 为左右展开的水平刀弧，vertical 为上下展开的垂直刀弧。
+- 3.0beta0.20：修正横扫和十字斩粒子绘制方向，避免把水平刀波误绘制为上下弧线。
+- 3.0beta0.21：新增精确点位粒子绘制接口，移除通用粒子效果附带的高度偏移，使横扫和十字斩严格对齐玩家准星。
+- 冲击波、横扫支持各自的 sound.enabled、sound.sound、sound.volume 和 sound.pitch 配置。
+- 十字斩支持两次自定义音效：horizontal.sound 配置水平刀波音效，vertical.sound 配置垂直刀波音效；缺少子节点时使用 cross-slash.sound 作为兜底。
+- 测试武器已加入十字斩双音效示例：水平段使用 ENTITY_PLAYER_ATTACK_SWEEP，垂直段使用 ENTITY_PLAYER_ATTACK_STRONG。
+- 次元斩未配置 particle 时默认使用 EXPLOSION 加 END_ROD 扩散粒子。
+- 3.0beta0.21 使用 Paper 1.21.1、Java 21、Gradle 8.8 离线构建成功。
+
+十五、3.0beta0.22 新增法阵技能
+
+- 新增 magic-circle 技能类型：从玩家准星方向进行方块射线检测，在命中位置创建贴近地面的法阵。
+- 法阵范围使用可配置粒子圆环表示，默认持续 5 秒，默认每 1 秒执行一次喷发和范围伤害。
+- 新增 burst-count：控制每次间隔生成的地面喷发数量。
+- 新增 burst-particle：配置从地面向上窜出的喷发粒子效果。
+- 法阵伤害沿用技能伤害系统，支持固定 damage、weapon-percent、damage-type、weapon-percent-sources 和 can-crit。
+- 新增可选中心盔甲架：本体隐身、中心物品可见、无重力、无碰撞、不可交互，法阵结束或玩家离线/死亡时自动删除。
+- 新增 use-armor-stand 和 center-material 配置，center-material 默认 PAPER。
+- 新增可直接使用的 magic-circle-test-weapon.yml 法阵测试武器模板。
+- 更新 3.0 中文使用手册，补充法阵配置和字段说明。
+- 版本升级为 3.0beta0.22，Paper 1.21.1、Java 21、Gradle 8.8 离线构建成功。
+

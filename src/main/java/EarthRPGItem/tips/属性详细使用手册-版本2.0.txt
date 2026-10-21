@@ -1,0 +1,864 @@
+EarthRPGItem 属性详细使用手册
+适用版本：2.0
+
+==================================================
+一、基础说明
+==================================================
+
+1. RPGItem 文件分别放在插件数据目录的 Weapon、Armor、Tool、Accessory 文件夹。
+2. 每个物品都是独立的 .txt 文件，内容使用 YAML 格式，空格层级必须保持一致，禁止使用 Tab 缩进。
+3. 属性统一写在 attributes: 节点下，属性名区分英文拼写，建议完全照抄本手册。
+4. 没有填写的属性默认为 0 或 false。
+5. 数值属性可以使用整数或小数，例如 5、2.5、0.25。
+6. 百分比属性直接填写百分数，例如 25 表示 25%，不是 0.25。
+7. 玩家可以使用 /EarthRPGitem my 查看当前实际生效的属性；被全局关闭或因条件不足而失效的属性不会显示。
+
+基础物品结构：
+
+id: example_sword
+material: DIAMOND_SWORD
+display-name: "&b示例长剑"
+attributes:
+  Attack: 8
+  CritChance: 20
+  CritDamage: 6
+description:
+  - "&7这是一把示例武器。"
+  - "&f支持 &c&l多种颜色代码&f。"
+
+==================================================
+二、属性生效位置
+==================================================
+
+1. 武器和工具：玩家主手持有时生效。
+2. 护甲：穿在正确护甲栏位时生效。
+3. 副手：默认不生效，物品具有 Deputy: true 时才允许副手属性生效。
+4. 饰品：只有放入 /rpgitem accessorygui 的正确饰品槽位时生效，放在背包或手持时不生效。
+5. 生物：生物正确穿戴 RPGItem 护甲或主手持有 RPGItem 武器时，支持的战斗属性可以生效。
+6. Level 不满足、灵魂绑定主人不匹配、物品即将损毁或对应全局功能关闭时，相关属性不生效。
+7. 同一玩家多件有效装备的同名数值属性会相加。
+
+==================================================
+三、基础攻击属性
+==================================================
+
+1. Attack：物理攻击
+
+格式：
+attributes:
+  Attack: 10
+
+作用：在原版近战伤害基础上追加物理伤害。
+物理伤害会受到原版护甲、Armor、EnvArmor、Resistance、护甲穿透等效果影响。
+弓和弩作为近战武器挥打时，只允许触发 Attack，不会把弓箭专属伤害当成近战伤害。
+
+案例：原版最终伤害为 6，Attack 为 10，在不考虑其他防御时，本次物理伤害基础为 16。
+
+2. CritChance：暴击率
+
+格式：
+attributes:
+  CritChance: 35
+
+作用：每次可暴击的物理、魔法或弓箭伤害独立进行暴击判定。
+100 表示 100% 暴击。超过 100% 的部分不会浪费，每超过 1% 转化为 10 点额外暴击伤害。
+
+案例：CritChance 为 120，相当于必定暴击，并把多出的 20% 转化为 200 点额外暴击伤害。
+
+3. CritDamage：暴击伤害
+
+格式：
+attributes:
+  CritDamage: 12
+
+作用：暴击成功后追加固定伤害。物理暴击、魔法暴击、弓箭暴击分别判定，因此可能同时暴击，也可能只有一种伤害暴击。
+暴击追加伤害会受到 CritArmor 和对应伤害防御影响。
+
+4. AttackSpeed：自定义攻速
+
+格式：
+attributes:
+  AttackSpeed: 50
+
+作用：控制玩家发动 RPGItem 近战或 LSkill 的最短间隔。
+AttackSpeed 冷却是玩家全局冷却，冷却期间切换其他 RPGItem 近战武器也不能造成伤害。
+
+常用数值：
+AttackSpeed: -100 约为 10 秒一次。
+AttackSpeed: 0 为 1 秒一次。
+AttackSpeed: 50 约为 0.525 秒一次。
+AttackSpeed: 100 为 0.05 秒一次，即每秒最多 20 次。
+
+正数最大按 100 计算，负数最低按 -100 计算。冷却会显示在原版物品栏中。
+
+==================================================
+四、生命与恢复属性
+==================================================
+
+1. Health：额外最大生命值
+
+格式：
+attributes:
+  Health: 20
+
+作用：增加最大生命值。Minecraft 中 2 点生命值等于 1 颗心，因此 Health: 20 等于额外 10 颗心。
+
+2. Recovery：生命恢复
+
+格式：
+attributes:
+  Recovery: 2
+
+作用：周期性恢复生命值，不能超过当前最大生命值。
+Recovery: 2 表示每次恢复计算回复 2 点生命，即 1 颗心。
+
+3. LifeSteal：固定吸血
+
+格式：
+attributes:
+  LifeSteal: 3
+
+作用：使用 RPGItem 造成有效伤害后，立即恢复固定生命值。
+
+4. LifeStealPercent：百分比吸血
+
+格式：
+attributes:
+  LifeStealPercent: 20
+
+也支持：
+attributes:
+  LifeSteal%: 20
+
+作用：根据本次实际结算伤害按百分比回血，可与固定 LifeSteal 同时存在。
+
+案例：
+attributes:
+  LifeSteal: 2
+  LifeStealPercent: 25
+
+本次造成 20 点伤害时，回血量为 2 + 20 × 25% = 7 点生命。
+
+==================================================
+五、防御属性
+==================================================
+
+1. Armor：普通护甲
+
+格式：
+attributes:
+  Armor: 5
+
+作用：直接从可防御伤害中减去固定数值，不是百分比。
+案例：进入 Armor 计算前伤害为 18，Armor 为 5，则剩余 13。
+
+2. EnvArmor：环境护甲
+
+格式：
+attributes:
+  EnvArmor: 3
+
+作用：优先减少包括普通攻击、烧伤、窒息、饥饿等环境来源在内的伤害。采用固定减法。
+EnvArmor 会先于其他护甲类属性计算。
+
+3. BowArmor：弹射物护甲
+
+格式：
+attributes:
+  BowArmor: 6
+
+作用：减少玩家或原版生物造成的箭、弩箭及其他弹射物伤害。采用固定减法。
+
+4. CritArmor：暴击护甲
+
+格式：
+attributes:
+  CritArmor: 10
+
+作用：减少物理暴击和魔法暴击产生的追加伤害。采用固定减法。
+
+5. Resistance：完全抵抗
+
+格式：
+attributes:
+  Resistance: 30
+
+作用：在护甲完成固定减伤后，再按百分比减少剩余伤害。
+Resistance: 30 表示减少剩余伤害的 30%；100 表示完全抵抗所有可抵抗伤害。
+正数 Resistance 不减少 TrueDamage；负数 Resistance 会放大 TrueDamage。
+
+案例：伤害经过护甲后剩余 20，Resistance 为 30，则最终剩余 14。
+
+6. Evasion：闪避概率
+
+格式：
+attributes:
+  Evasion: 25
+
+作用：受到攻击时按概率完全闪避本次攻击。100 表示必定闪避，超过 100 仍视为必定闪避。
+
+7. Parry：格挡概率
+
+格式：
+attributes:
+  Parry: 80
+
+作用：受到可格挡的近战物理或弹射物伤害时，有概率完全免疫对应伤害。
+虚空、摔落、烧伤、窒息、魔法、真实伤害等不可被此属性格挡。
+玩家处于攻速冷却时不能触发格挡。
+格挡成功后会播放全局格挡粒子与音效，并施加服务器配置的攻速惩罚。
+
+8. CounterAttack：反击概率
+
+格式：
+attributes:
+  Parry: 80
+  CounterAttack: 60
+
+作用：近战格挡成功后，再按 CounterAttack 概率对攻击者造成一次玩家来源的武器伤害。
+弹射物格挡不会触发反击。CounterAttack 单独存在但没有 Parry 时无法触发。
+
+==================================================
+六、特殊伤害属性
+==================================================
+
+1. MagicDamage：魔法伤害
+
+格式：
+attributes:
+  MagicDamage: 8
+
+作用：在其他伤害之外独立追加魔法伤害。魔法伤害可以独立暴击，并显示独立伤害数字。
+魔法伤害会受到对应护甲、CritArmor（暴击时）和 Resistance 影响。
+
+2. TrueDamage：真实伤害
+
+格式：
+attributes:
+  TrueDamage: 5
+
+作用：直接追加真实伤害，不受原版护甲、属性护甲、元素护甲和正数 Resistance 影响；负数 Resistance 会放大真实伤害。
+
+3. PctDamage：规模伤害
+
+格式：
+attributes:
+  PctDamage: 10
+
+作用：根据攻击者最大生命值计算额外物理伤害。
+计算公式：攻击者最大生命值 × PctDamage%。
+该属性可用于近战、弓弩弹射物和支持武器属性的技能伤害，并受到目标护甲影响。
+
+案例：攻击者最大生命值为 60，PctDamage 为 10，追加 6 点物理伤害。
+
+4. PstDamage：比例伤害
+
+格式：
+attributes:
+  PstDamage: 5
+
+作用：根据目标最大生命值计算额外物理伤害。
+计算公式：目标最大生命值 × PstDamage%。
+该属性可用于近战、弓弩弹射物和支持武器属性的技能伤害，并受到目标护甲影响。
+
+案例：目标最大生命值为 400，PstDamage 为 5，追加 20 点物理伤害。
+
+5. AttackRange：攻击范围
+
+格式：
+attributes:
+  AttackRange: 2.5
+
+作用：以主目标为中心，让范围内其他生物受到同类型、同数值、同玩家来源的伤害。
+支持小数。范围伤害会破除目标无敌帧，并显示对应伤害数字。
+适用于近战、弓弩弹射物以及 LSkill 等技能伤害。范围伤害不会继续递归触发第二层范围扩散。
+
+6. ArmorPen：护甲穿透
+
+格式：
+attributes:
+  ArmorPen: 40
+
+作用：按百分比忽略目标原版护甲、普通属性护甲和对应元素固定护甲。
+最大有效值为 100。护甲穿透不能穿透 Resistance，也不能增加 TrueDamage。
+
+7. BackstrikeDamage：背击伤害
+
+格式：
+attributes:
+  BackstrikeDamage: 12
+
+作用：玩家从目标背面命中时追加固定伤害。未处于目标背面时不生效。
+
+8. AssDamage：刺客固定伤害
+
+格式：
+attributes:
+  AssDamage: 10
+
+作用：攻击当前没有将玩家设为仇恨目标的生物时追加固定伤害。
+
+9. AssDamagePercent：刺客全伤害加成
+
+格式：
+attributes:
+  AssDamagePercent: 50
+
+也支持：
+attributes:
+  AssDamage%: 50
+
+作用：刺客条件成立时，按百分比放大对应伤害。可以超过 100%。
+
+组合案例：
+attributes:
+  Attack: 6
+  BackstrikeDamage: 10
+  AssDamage: 8
+  AssDamagePercent: 50
+
+从无仇恨目标背后命中时，会同时计算 Attack、BackstrikeDamage、AssDamage，再应用 50% 刺客伤害加成。
+
+==================================================
+七、弓箭与弩属性
+==================================================
+
+1. BowDamage：弓箭伤害
+
+格式：
+attributes:
+  BowDamage: 12
+
+作用：弓或弩的弹射物命中时追加弓箭物理伤害。弓箭拉力会影响最终倍率，未拉满时最低按约 20% 计算，拉满时按 100% 计算。
+弓箭伤害可以触发暴击、背击、刺客伤害、AttackRange 和元素伤害。
+
+2. EXDraw：追加拉弓阶段
+
+格式：
+attributes:
+  EXDraw: 5
+
+作用：原版弓拉满后，可以继续蓄力。每 1 点 EXDraw 增加 1 个额外阶段，每阶段为 1 秒。
+每完成一个额外阶段，弹射物伤害提高 15%，并提升一阶段拉弓音调。
+
+案例：EXDraw 为 5，最多追加蓄力 5 秒，最高额外增加 75% 弹射物伤害。
+
+弓箭案例：
+id: hunter_bow
+material: BOW
+display-name: "&a猎风长弓"
+attributes:
+  BowDamage: 10
+  EXDraw: 4
+  CritChance: 25
+  CritDamage: 8
+  AttackRange: 1.5
+  ArmorPen: 20
+description:
+  - "&7拉满后可继续蓄力四个阶段。"
+  - "&7箭矢命中会扩散伤害。"
+
+==================================================
+八、元素伤害与元素护甲
+==================================================
+
+元素包括冰、火、光、暗四种。元素固定伤害和元素百分比伤害可以同时存在。
+元素伤害不会再次吃 CritChance，但百分比部分会复制已经完成暴击等计算后的武器伤害。
+元素伤害只受到对应元素护甲、ArmorPen 和 Resistance 影响。
+
+1. 冰元素
+
+attributes:
+  IceDamage: 5
+  IceDamagePercent: 30
+  IceArmor: 4
+  IceArmorPercent: 20
+
+2. 火元素
+
+attributes:
+  FireDamage: 5
+  FireDamagePercent: 30
+  FireArmor: 4
+  FireArmorPercent: 20
+
+3. 光元素
+
+attributes:
+  LightDamage: 5
+  LightDamagePercent: 30
+  LightArmor: 4
+  LightArmorPercent: 20
+
+4. 暗元素
+
+attributes:
+  DarkDamage: 5
+  DarkDamagePercent: 30
+  DarkArmor: 4
+  DarkArmorPercent: 20
+
+百分比属性也可以使用 IceDamage%、FireDamage%、LightDamage%、DarkDamage% 以及对应 Armor% 写法。
+
+元素伤害案例：武器本次可复制伤害为 20，IceDamage 为 5，IceDamagePercent 为 50，则冰伤害计算基础为 5 + 20 × 50% = 15。
+
+元素护甲计算顺序：
+1. ArmorPen 按比例削减元素固定护甲。
+2. 元素伤害减去剩余固定元素护甲。
+3. 再按对应元素护甲百分比减伤。
+4. 最后应用 Resistance。
+
+综合元素武器案例：
+id: elemental_blade
+material: NETHERITE_SWORD
+display-name: "&d四相之刃"
+attributes:
+  Attack: 12
+  CritChance: 20
+  CritDamage: 8
+  IceDamage: 2
+  IceDamagePercent: 25
+  FireDamage: 2
+  FireDamagePercent: 25
+  LightDamagePercent: 15
+  DarkDamagePercent: 15
+description:
+  - "&7一次攻击可以同时造成多种元素伤害。"
+
+==================================================
+九、耐久属性
+==================================================
+
+1. Fix/s：耐久修复
+
+Fix 支持设置每多少秒执行一次：
+attributes:
+  Fix/s: 1
+
+旧格式 Fix/s 默认每 1 秒执行一次，因此 Fix/s: 1 等同于 Fix/1s: 1。
+
+attributes:
+  Fix/1s: 1
+
+表示每 1 秒恢复 1 点原版耐久。
+
+attributes:
+  Fix/5s: 1
+
+表示每 5 秒恢复 1 点原版耐久。
+
+attributes:
+  Fix/5s: -2
+
+表示每 5 秒扣除 2 点原版耐久。负数仍支持损毁保护等现有逻辑。
+秒数最小为 1。Fix 默认只处理原版耐久，不修复 ExDur；是否允许修复附加耐久继续由 durability.fix-repairs-extra-durability 控制。
+
+格式：
+attributes:
+  Fix/s: 2
+
+作用：物品生效时周期性修复原版耐久。正数修复，负数会周期性扣除耐久。
+默认不修复 ExDur；服务器允许修复附加耐久后才会同时修复 ExDur。
+
+2. ExDur：附加耐久
+
+格式：
+attributes:
+  ExDur: 1000
+
+作用：为物品增加独立耐久池，显示为 ExDur:当前值/最大值。
+使用物品时优先消耗 ExDur，ExDur 归零后才消耗原版耐久。
+ExDur 不受原版耐久附魔影响。
+
+3. BreakLimit：损毁保护
+
+格式：
+attributes:
+  BreakLimit: true
+
+作用：物品即将完全损毁时进行保护，阻止 RPGItem 永久消失，并向玩家发送损坏提示。
+耐久达到危险值时物品属性会停止生效。
+
+4. 原版耐久附魔
+
+enchantments:
+  - "UNBREAKING:3"
+
+作用：ExDur 耗尽并开始消耗原版耐久后，插件会计算原版耐久附魔的减免概率。
+创造模式玩家使用武器不会消耗耐久。
+
+耐久工具案例：
+id: renewable_pickaxe
+material: DIAMOND_PICKAXE
+display-name: "&b自愈矿镐"
+attributes:
+  Fix/s: 1
+  ExDur: 500
+  BreakLimit: true
+enchantments:
+  - "EFFICIENCY:4"
+  - "FORTUNE:3"
+  - "UNBREAKING:3"
+description:
+  - "&7拥有附加耐久与周期修复。"
+
+==================================================
+十、条件与绑定属性
+==================================================
+
+1. Level：等级要求
+
+格式：
+requirements:
+  Level: 30
+
+也支持根节点写法：
+Level: 30
+
+作用：玩家经验等级必须大于或等于该数值，物品属性才会生效。等级不足时最多每秒提示一次，不向后台打印。
+
+2. Deputy：副手生效
+
+格式：
+Deputy: true
+
+也支持：
+attributes:
+  Deputy: true
+
+作用：允许该物品放在副手时提供属性。没有 Deputy 的 RPGItem 放在副手不会提供属性。
+
+3. Soulbound：灵魂绑定
+
+格式：
+Soulbound: true
+
+作用：生存模式下物品首次由玩家使用、穿戴或放入有效饰品槽时，绑定该玩家的游戏 ID，例如 EASFXk_SAFQW。
+绑定信息显示在描述底部。非主人装备时属性不生效，非主人也不能拾取；OP 可以绕过拾取限制。
+创造模式不会触发自动绑定。
+
+4. unbreakable：原版无法破坏
+
+格式：
+unbreakable: true
+
+作用：使用原版无法破坏标记，使物品不消耗原版耐久。
+
+==================================================
+十一、完整配装案例
+==================================================
+
+案例一：暴击吸血剑
+
+id: blood_moon_sword
+material: NETHERITE_SWORD
+display-name: "&4血月重剑"
+attributes:
+  Attack: 15
+  CritChance: 35
+  CritDamage: 12
+  AttackSpeed: -20
+  LifeSteal: 1
+  LifeStealPercent: 15
+  ArmorPen: 25
+  BackstrikeDamage: 8
+  ExDur: 800
+  BreakLimit: true
+requirements:
+  Level: 20
+Soulbound: true
+enchantments:
+  - "SHARPNESS:4"
+  - "UNBREAKING:3"
+description:
+  - "&7沉重但危险的吸血武器。"
+  - "&c暴击时可以恢复大量生命。"
+
+案例二：坦克胸甲
+
+id: guardian_chestplate
+material: NETHERITE_CHESTPLATE
+display-name: "&9守护者胸甲"
+attributes:
+  Armor: 8
+  EnvArmor: 3
+  BowArmor: 5
+  CritArmor: 6
+  Resistance: 15
+  Health: 20
+  Recovery: 1
+  Parry: 20
+  IceArmor: 3
+  IceArmorPercent: 20
+  FireArmor: 3
+  FireArmorPercent: 20
+description:
+  - "&7同时提供固定防御与百分比抵抗。"
+
+案例三：刺客匕首
+
+id: shadow_dagger
+material: IRON_SWORD
+display-name: "&8暗影匕首"
+attributes:
+  Attack: 6
+  AttackSpeed: 60
+  CritChance: 25
+  CritDamage: 7
+  BackstrikeDamage: 14
+  AssDamage: 10
+  AssDamagePercent: 40
+  Evasion: 10
+description:
+  - "&7从无仇恨目标背后攻击时最强。"
+
+案例四：格挡反击剑
+
+id: counter_sword
+material: IRON_SWORD
+display-name: "&6反击之剑"
+attributes:
+  Attack: 5
+  Armor: 3
+  Parry: 80
+  CounterAttack: 80
+  AttackSpeed: 0
+description:
+  - "&7格挡成功后有较高概率反击。"
+
+案例五：灵魂绑定攻击戒指
+
+id: soul_ring
+material: ECHO_SHARD
+display-name: "&5灵魂戒指"
+accessory-type: ring
+Soulbound: true
+attributes:
+  Attack: 3
+  Health: 4
+  CritChance: 5
+description:
+  - "&7只有主人放入戒指槽时属性生效。"
+
+==================================================
+十二、常见问题
+==================================================
+
+1. 属性完全不生效
+检查物品是否放在正确目录、YAML 缩进是否正确、Level 是否满足、耐久是否处于危险值、灵魂绑定是否匹配，以及 config.yml 中对应 features 开关是否开启。
+
+2. 副手没有属性
+必须在物品根节点添加 Deputy: true，或写 attributes.Deputy: true。
+
+3. 饰品放在背包有属性吗
+没有。饰品只能在 accessory GUI 对应槽位内生效。
+
+4. 百分比应该写 0.2 还是 20
+写 20。插件把 20 解释为 20%。
+
+5. Armor 和 Resistance 有什么区别
+Armor 是固定减法，Resistance 是护甲结算后的百分比减伤。
+
+6. CritDamage 是倍率吗
+不是。CritDamage 是暴击成功时追加的固定伤害。
+
+7. 元素伤害会再次暴击吗
+不会独立暴击，但元素百分比会复制已经包含暴击结果的可复制武器伤害。
+
+8. AttackRange 会无限连锁吗
+不会。范围内目标会受到一次扩散伤害，但不会以每个副目标再次生成下一层范围伤害。
+
+9. LSkill 后切换武器可以绕过攻速吗
+不可以。AttackSpeed 冷却以玩家为单位全局计算。
+
+10. 为什么已有服务器没有出现新模板
+插件示例文件默认不会覆盖同名旧文件，防止管理员编辑内容丢失。手动新建不同文件名，或在确认备份后处理旧示例文件。
+
+==================================================
+十三、推荐数值范围
+==================================================
+
+以下只是平衡建议，不是代码限制：
+
+Attack：普通武器 3-15，首领武器 15-40。
+Armor：单件 1-8。
+CritChance：5-40，超过 100 会产生非常高的额外暴击伤害。
+CritDamage：3-20。
+AttackSpeed：-60 到 60；高于 80 时应注意服务器战斗频率。
+Health：单件 2-20。
+Recovery：单件 0.5-3。
+LifeStealPercent：5-25。
+Resistance：单件 5-20，全套总值不建议接近 100。
+Evasion、Parry：单件 5-30。
+ArmorPen：10-50。
+PctDamage：1-10，玩家最大生命值较高时应降低。
+PstDamage：1-5，对首领怪物非常强。
+AttackRange：0.5-3，范围过大会增加一次攻击需要处理的实体数量。
+元素固定伤害：2-15。
+元素百分比伤害：10-50。
+
+==================================================
+十四、2.0 新增属性与统一乘区
+==================================================
+
+2.0 新增以下写法：
+
+attributes:
+  Attack: 10
+  AttackPercent: 50
+  MagicDamage: 10
+  MagicDamagePercent: 50
+  Armor: 5
+  ArmorPercent: 25
+  EnvArmor: 2
+  EnvArmorPercent: 10
+  MagicArmor: 5
+  MagicArmorPercent: 30
+  BowArmor: 3
+  BowArmorPercent: 20
+  CritArmor: 3
+  CritArmorPercent: 20
+
+所有 Percent 属性也支持百分号别名：
+Attack%、MagicDamage%、Armor%、EnvArmor%、MagicArmor%、BowArmor%、CritArmor%。
+
+1. AttackPercent：物理攻击百分比乘区
+
+公式：有效 Attack = 固定 Attack 总和 ×（1 + AttackPercent 总和 ÷ 100）。
+案例：Attack 为 10，AttackPercent 为 50，有效 Attack 为 10 × 1.5 = 15。
+多件装备的 AttackPercent 会先相加，再对汇总后的固定 Attack 进行一次乘算。
+有效 Attack 会用于近战、反击和按武器 Attack 百分比计算的技能。
+
+2. MagicDamagePercent：魔法伤害百分比乘区
+
+公式：有效 MagicDamage = 固定 MagicDamage 总和 ×（1 + MagicDamagePercent 总和 ÷ 100）。
+案例：MagicDamage 为 10，MagicDamagePercent 为 50，有效 MagicDamage 为 15。
+有效 MagicDamage 完成乘算后再独立判定魔法暴击，并进入魔法护甲结算。
+
+3. MagicArmor：魔法护甲
+
+MagicArmor 减少玩家造成的 MagicDamage、魔法暴击以及玩家造成的伤害药水/可识别魔法来源伤害。
+MagicArmor 不减少普通物理、弓箭、元素和正 Resistance 下的真实伤害。
+
+公式：
+魔法护甲层结果 = max（0，进入该层的魔法伤害 - MagicArmor）×（1 - MagicArmorPercent ÷ 100）。
+
+案例：进入魔法护甲层的伤害为 20，MagicArmor 为 5，MagicArmorPercent 为 20：
+（20 - 5）× 0.8 = 12 点魔法伤害。
+
+4. 普通护甲百分比
+
+ArmorPercent：普通属性护甲百分比。
+EnvArmorPercent：环境护甲百分比。
+BowArmorPercent：弹射物护甲百分比。
+CritArmorPercent：暴击追加伤害护甲百分比。
+
+所有护甲层都遵循相同顺序：
+第一步，减去当前护甲类型的固定值。
+第二步，对剩余伤害乘以（1 - 当前护甲百分比 ÷ 100）。
+第三步，进入下一种护甲或 Resistance 结算。
+
+普通护甲案例：
+伤害为 25，Armor 为 5，ArmorPercent 为 25。
+先计算 25 - 5 = 20，再计算 20 × 0.75 = 15。
+
+5. 护甲穿透与百分比护甲
+
+ArmorPen 会按比例削弱 Armor、MagicArmor、BowArmor、CritArmor 和元素护甲的固定值与百分比。
+案例：目标 ArmorPercent 为 40，攻击者 ArmorPen 为 50，则本次有效 ArmorPercent 为 20。
+EnvArmor 作为最先结算的环境保护层，不受 ArmorPen 影响。
+ArmorPen 不穿透 Resistance，也不会增强 TrueDamage。
+
+6. 负 Resistance
+
+Resistance 允许小于 0，负数表示玩家受到的所有伤害增加。
+公式：最终伤害 = 护甲结算后伤害 ×（1 - Resistance ÷ 100）。
+
+Resistance: 25 表示乘以 0.75。
+Resistance: 0 表示乘以 1.0。
+Resistance: -25 表示乘以 1.25。
+Resistance: -50 表示乘以 1.5。
+Resistance: -100 表示乘以 2.0。
+
+正数 Resistance 最大按 100% 减伤计算。
+负数 Resistance 不设置下限，可以用于易伤装备或负面状态。
+负 Resistance 会放大物理、魔法、弹射物、元素、环境、技能和真实伤害。
+正 Resistance 仍不能减少 TrueDamage。
+
+7. 2.0 完整结算案例
+
+攻击者：
+attributes:
+  Attack: 20
+  AttackPercent: 50
+
+防御者：
+attributes:
+  EnvArmor: 2
+  EnvArmorPercent: 10
+  Armor: 5
+  ArmorPercent: 20
+  Resistance: 25
+
+只演示新增属性部分：
+有效 Attack = 20 × 1.5 = 30。
+环境护甲层 =（30 - 2）× 0.9 = 25.2。
+普通护甲层 =（25.2 - 5）× 0.8 = 16.16。
+Resistance 层 = 16.16 × 0.75 = 12.12。
+最终四舍五入为 12 点伤害。
+
+8. 2.0 测试物品
+
+Weapon/test_attack_percent_sword.txt：Attack 10、AttackPercent 50。
+Weapon/test_magic_percent_sword.txt：MagicDamage 10、MagicDamagePercent 50。
+Armor/test_percent_armor.txt：普通、环境、弹射物、暴击固定与百分比护甲组合。
+Armor/test_magic_armor.txt：MagicArmor 5、MagicArmorPercent 30。
+Armor/test_negative_resistance.txt：Resistance -50，用于测试全类型承伤放大。
+
+==================================================
+十五、规模伤害与比例伤害叠加
+==================================================
+
+PctDamage 和 PstDamage 可以同时写在同一件物品中，并且两部分伤害会直接相加。
+两种属性都没有 100% 上限，可以填写 150、250 或更高数值。
+
+支持两种文本写法：
+
+attributes:
+  PctDamage: 150
+  PstDamage: 125
+
+或者：
+
+attributes:
+  PctDamage: 150%
+  PstDamage: 125%
+
+两种写法的效果完全相同。
+
+组合公式：
+规模伤害 = 攻击者最大生命值 × PctDamage ÷ 100。
+比例伤害 = 目标最大生命值 × PstDamage ÷ 100。
+百分比物理追加伤害 = 规模伤害 + 比例伤害。
+
+案例：
+攻击者最大生命值为 40，目标最大生命值为 200。
+PctDamage 为 150%，规模伤害为 40 × 1.5 = 60。
+PstDamage 为 125%，比例伤害为 200 × 1.25 = 250。
+两者同时生效，合计追加 60 + 250 = 310 点物理伤害，再进入护甲和 Resistance 结算。
+
+测试物品：
+Weapon/test_pct_pst_over_100_sword.txt
+该测试剑同时具有 PctDamage: 150% 和 PstDamage: 125%。
+
+技能与法杖：
+FSkill、RSkill、LSkill 的 damages 命中同样会触发 PctDamage 和 PstDamage。
+技能规模伤害根据释放者最大生命值计算，技能比例伤害根据当前被命中目标最大生命值计算。
+两项伤害加入技能物理伤害后，再经过目标 EnvArmor、Armor、ArmorPen 和 Resistance。
+穿透光波或范围技能中的每个目标只结算一次，不会因同一条粒子多次采样而重复追加。
+
+技能测试物品：
+Weapon/test_pct_pst_skill_staff.txt
+该法杖使用 LSkill 光波测试 150% 规模伤害与 125% 比例伤害同时生效。
+
+手册结束。

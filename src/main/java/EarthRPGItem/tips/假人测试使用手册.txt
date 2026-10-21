@@ -1,0 +1,24 @@
+EarthRPGItem 假人测试手册（版本 1.4）
+
+一、生成假人
+/EarthRPGitem dummy
+默认生成僵尸假人，假人拥有极高生命值并自动回复，适合测试 RPGItem DPS。
+
+二、切换生物类型
+玩家潜行并右键假人可打开 DummyGui。GUI 内是原版生物刷怪蛋，点击刷怪蛋即可切换假人生物类型。
+如果生物过多，底部会出现上一页、下一页按钮。GUI 内所有物品都无法拿取。
+
+三、删除假人
+/EarthRPGitem dummy del
+删除玩家周围配置半径内的所有假人，默认半径为 32 格。
+
+四、DPS 显示
+假人名字会显示：Dummy [类型] DPS60: 数值
+DPS60 是最近一分钟总伤害除以 60 的平均秒伤。
+
+五、配置
+config.yml:
+dummy:
+  default-type: ZOMBIE
+  clear-radius: 32
+  max-health: 2048

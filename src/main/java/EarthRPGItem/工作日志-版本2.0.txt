@@ -1,0 +1,59 @@
+EarthRPGItem 工作日志 版本2.0
+
+一、版本更新
+1. Gradle 项目版本由 1.9 更新为 2.0。
+2. 插件构建产物更新为 EarthRPGItem-2.0.jar。
+
+二、新增 MagicArmor
+1. 新增 MagicArmor 固定魔法护甲。
+2. 新增 MagicArmorPercent/MagicArmor% 魔法护甲百分比。
+3. 玩家造成的 MagicDamage、魔法暴击、伤害药水和可识别魔法来源进入 MagicArmor 结算。
+4. MagicArmor 使用固定值先减、百分比后乘的统一护甲公式。
+
+三、攻击百分比乘区
+1. 新增 AttackPercent/Attack%，用于放大汇总后的固定 Attack。
+2. 新增 MagicDamagePercent/MagicDamage%，用于放大汇总后的固定 MagicDamage。
+3. 近战、反击、引用武器 Attack 的技能均改用有效 Attack。
+4. 弓弩附加 MagicDamage 使用有效 MagicDamage。
+
+四、护甲百分比乘区
+1. 新增 ArmorPercent/Armor%。
+2. 新增 EnvArmorPercent/EnvArmor%。
+3. 新增 BowArmorPercent/BowArmor%。
+4. 新增 CritArmorPercent/CritArmor%。
+5. 每层护甲统一为先减固定值，再对剩余伤害乘算百分比。
+6. ArmorPen 同时削弱支持穿透的固定护甲和百分比护甲。
+
+五、负完全抵抗
+1. Resistance 不再把负数强制裁剪为 0。
+2. Resistance: -50 会把玩家受到的伤害乘以 1.5。
+3. 负 Resistance 对物理、魔法、弹射物、元素、环境、技能和真实伤害生效。
+4. 正 Resistance 仍按最高 100% 减伤，真实伤害仍不受正 Resistance 减免。
+5. 普通生物使用非 RPG 武器近战时也会进入目标护甲与 Resistance 结算，避免绕过负 Resistance 易伤。
+
+六、测试物品
+1. test_attack_percent_sword：Attack 10、AttackPercent 50。
+2. test_magic_percent_sword：MagicDamage 10、MagicDamagePercent 50。
+3. test_percent_armor：普通、环境、弹射物、暴击固定与百分比护甲组合。
+4. test_magic_armor：MagicArmor 5、MagicArmorPercent 30。
+5. test_negative_resistance：Resistance -50。
+
+七、文档
+1. 属性详细使用手册更新为版本 2.0。
+2. 新增统一乘区公式、结算顺序、别名写法和完整计算案例。
+
+八、物品描述字体修复
+1. RPGItem 文本描述显式关闭 Adventure ITALIC 装饰，不再使用原版物品 lore 的默认斜体。
+2. ExDur 动态耐久描述与 Soulbound 的 bind 玩家 ID 描述同步使用正常字体。
+3. 动态更新 ExDur 或灵魂绑定时，会同时把物品现有 lore 统一修正为非斜体。
+4. 已经存在于玩家背包或装备栏的旧 RPGItem 会在插件首次识别时自动检查并修正字体，不需要重新领取物品。
+
+九、规模与比例伤害修复
+1. PctDamage 与 PstDamage 改为分别计算后明确相加，近战与弓弩使用同一叠加规则。
+2. 两种属性不限制最大值，150、250 等超过 100% 的数值均可生效。
+3. 文本加载同时支持 PctDamage: 150 和 PctDamage: 150% 两种写法，PstDamage 同理。
+4. 修复带百分号的 YAML 字符串过去被 getDouble 读取为 0 的问题。
+5. 新增 test_pct_pst_over_100_sword 测试剑，同时测试 150% 规模伤害与 125% 比例伤害。
+6. FSkill、RSkill、LSkill 的 damages 命中加入 PctDamage 与 PstDamage 计算，法杖技能可以正常触发两种伤害。
+7. 技能百分比生命伤害会经过 EnvArmor、Armor、ArmorPen 和正负 Resistance，并继续受 hit-once-per-cast 防重复命中保护。
+8. 新增 test_pct_pst_skill_staff 法杖模板，用于测试 LSkill 同时触发两种超过 100% 的生命百分比伤害。

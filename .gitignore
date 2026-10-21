@@ -1,0 +1,63 @@
+# Gradle
+.gradle/
+build/
+# gradlew 在找不到 GRADLE_USER_HOME 时会把整个 Gradle 分发（~150MB）解到项目根，
+# 绝不能提交。正常情况它在 ~/.gradle/wrapper/ 下。
+wrapper/
+!gradle/wrapper/gradle-wrapper.jar
+
+# 本地环境（含本机 JDK 绝对路径，不可开源）
+gradle.properties.local
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.classpath
+.project
+
+# 构建产物
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+out/
+bin/
+
+# 运行产物 / 日志
+logs/
+run/
+*.log
+hs_err_pid*.log
+replay_pid*.log
+
+# 操作系统
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 敏感 / 私有内容
+# 服务端运行时配置，含玩家数据与密钥，绝不提交
+plugins/
+server.properties
+ops.json
+whitelist.json
+banned-*.json
+usercache.json
+world*/
+*.bak
+*.bak-*
+
+# 第三方资源包（版权归原作者，禁止随本项目分发）
+*.zip
+!gradle/wrapper/gradle-wrapper.jar
+材质包/
+资源包/
+resourcepacks/
+开拓者材质包/
+
+# 临时文件
+*.tmp
+.tmp-*/
+_tmp/

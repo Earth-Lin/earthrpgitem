@@ -1,0 +1,35 @@
+EarthRPGItem 工作日志
+
+报告版本：1.1
+插件构建版本：1.01
+
+一、本次目标
+本次开发将 EarthRPGItem 从进服广播插件扩展为 RPG 类型武器、护甲、工具的基础框架。
+框架目标是让后续开发者通过编辑文本文件即可新增 RPGItem，不需要每次修改 Java 代码。
+
+二、完成内容
+1. 更新插件版本为 1.01。
+2. 新增服务器启动终端消息，并支持在 config.yml 中修改和关闭。
+3. 新增 Armor、Tool、Weapon 三类 RPGItem 目录。
+4. 每个目录里的 txt 文件会自动作为已注册物品加载。
+5. 新增 +Attack 属性，攻击者主手 RPGItem 的 Attack 会叠加到原版攻击伤害上。
+6. 新增 +Armor 属性，防御者装备栏 RPGItem 的 Armor 会从基础伤害中直接扣除。
+7. 防御计算已排除摔落、弹射物、烧伤、窒息、药水类伤害。
+8. 最终伤害会四舍五入为整数，且最低为 0。
+9. 新增 /EarthRPGitem gui 指令。
+10. 新增 Arthritism 主 GUI、Setting GUI、Armor GUI、Tool GUI、Weapon GUI。
+11. Armor、Tool、Weapon GUI 支持分页，底部一排保留为按钮区域。
+12. GUI 中 RPGItem 点击后复制到玩家背包，按钮无法被拿取。
+13. 新增 Guitips.txt 和使用手册.txt，均为中文说明。
+
+三、关键设计
+RpgItemManager 是当前框架核心，负责创建目录、生成示例文本、读取 txt 文件、构建 ItemStack、识别物品属性。
+RPGItem 使用 PersistentDataContainer 保存 id 和 type，因此物品消耗耐久后属性仍然可以继续识别并生效。
+RpgCombatListener 负责统一处理战斗属性，方便后续继续扩展暴击、吸血、技能触发等战斗逻辑。
+RpgMenu 和 RpgMenuListener 负责 GUI 展示和点击保护，防止按钮被玩家拿走。
+
+四、后续开发建议
+1. 新属性建议继续写入 attributes 节点，例如 Critical、Health、Speed。
+2. 新功能建议继续在 config.yml 的 features 下添加独立开关。
+3. 如果后续 RPGItem 数量变多，可以为文本增加 category、level、quality 等字段。
+4. 如果需要真正的编辑器，可以在 Setting GUI 中扩展“创建物品、保存物品、重载物品”等按钮。

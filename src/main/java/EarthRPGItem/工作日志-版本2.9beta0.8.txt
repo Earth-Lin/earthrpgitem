@@ -1,0 +1,7 @@
+EarthRPGItem 版本 2.9beta0.8 工作日志
+
+1. 技能释放方式的全局冷却默认开启。
+2. 只有 YAML 明确写 global-cooldown: false 时，单个技能才关闭对应释放方式的全局冷却。
+3. 未填写 global-cooldown-seconds 时，使用该技能 cooldown-seconds 作为全局冷却时间。
+4. 使用手册同步说明 F、R、SR、Q、SQ、L 的按键与全局冷却规则。
+5. 版本递增为 2.9beta0.8，正式版本仍为 2.9。

@@ -1,0 +1,349 @@
+================================================================================
+EarthRPGItem 采集经验 API 使用手册
+版本 3.2bate —— 给其他插件开发者
+================================================================================
+
+本文档面向**负责经验等级的插件开发者**（以及想在游戏里送经验 / 查等级的插件）。
+EarthRPGItem 自己不处理经验等级，它只提供三样东西：
+
+  1. 抛「采集经验事件」给别的插件（发经验——这是唯一入口）；
+  2. 一个稳定接口 EarthRPGItemAPI（手动发经验 / 读等级查询入口）；
+  3. 资源点的**采掘等级门槛**（只看手持工具的采掘等级，和你的插件无关）。
+
+三种经验（挖矿 / 砍树 / 农业）**彼此独立**：每个资源点只发一种经验，
+按它的 `type` 分类决定，文案也叫「挖矿采掘等级 ≥ 5」而不是笼统的「采集等级」。
+本手册教你如何把它们接成三条独立的经验轨道。
+
+--------------------------------------------------------------------------------
+一、不要这样做
+--------------------------------------------------------------------------------
+
+不要转换主类或直接访问内部管理器：
+
+    // 不要这样：依赖内部实现，版本升级后可能失效
+    EarthRPGItem plugin = (EarthRPGItem) Bukkit.getPluginManager().getPlugin("EarthRPGItem");
+    plugin.getGatheringSkillManager().awardExperience(...);
+
+请只用公开接口 EarthRPGItemAPI、事件 GatheringExperienceEvent 和接口
+GatheringLevelProvider。这三个类都在 EarthRPGItem.api 包，属于稳定契约。
+
+--------------------------------------------------------------------------------
+二、声明依赖与编译依赖
+--------------------------------------------------------------------------------
+
+plugin.yml（推荐 softdepend：没装 EarthRPGItem 你的插件也要能启动）：
+
+    softdepend: [EarthRPGItem]
+
+编译时需要 EarthRPGItem 的 jar 作 compileOnly（里面有 EarthRPGItem.api.* 和
+EarthRPGItem.collection.CollectionKind）。运行时 EarthRPGItem 加载后即可。
+接口上的 @NotNull 来自 org.jetbrains 注解，只会影响 IDE 提示，不参与运行。
+
+--------------------------------------------------------------------------------
+三、获取 EarthRPGItemAPI
+--------------------------------------------------------------------------------
+
+    import EarthRPGItem.api.EarthRPGItemAPI;
+    import org.bukkit.Bukkit;
+    import org.bukkit.plugin.RegisteredServiceProvider;
+
+    private EarthRPGItemAPI rpgApi;
+
+    @Override
+    public void onEnable() {
+        RegisteredServiceProvider<EarthRPGItemAPI> provider =
+                Bukkit.getServicesManager().getRegistration(EarthRPGItemAPI.class);
+        if (provider != null) {
+            rpgApi = provider.getProvider();
+        } else {
+            getLogger().warning("未找到 EarthRPGItem，手动发经验接口不可用（但经验事件依然收得到）。");
+        }
+    }
+
+EarthRPGItem 在自己的 onEnable 里注册该服务，用 softdepend 声明能保证顺序正确。
+
+--------------------------------------------------------------------------------
+四、分类 CollectionKind（三种经验的名字）
+--------------------------------------------------------------------------------
+
+    import EarthRPGItem.collection.CollectionKind;
+
+    CollectionKind.MINING   挖矿
+    CollectionKind.FOREST   砍树（配置别名 WOODCUTTING / WOOD / LOGGING）
+    CollectionKind.FARMING  农业
+
+    kind.name()         英文常量名（MINING / FOREST / FARMING），适合存盘
+    kind.displayName()  中文显示名（挖矿 / 砍树 / 农业），适合给玩家看
+
+--------------------------------------------------------------------------------
+五、收经验：监听 GatheringExperienceEvent
+--------------------------------------------------------------------------------
+
+这是「给经验」的唯一入口。一个**资源点（采集点）**被成功采集后，EarthRPGItem 按该
+资源点自己的 `experience` 配置抛出事件；你的插件监听它，把经验加进自己的等级系统：
+
+    import EarthRPGItem.api.GatheringExperienceEvent;
+    import org.bukkit.event.EventHandler;
+    import org.bukkit.event.Listener;
+
+    public final class MyLevels implements Listener {
+
+        @EventHandler
+        public void onGathering(GatheringExperienceEvent event) {
+            addExperience(event.getPlayer(),          // 获得经验的玩家
+                          event.getCategory(),        // 挖矿 / 砍树 / 农业 —— 加进对应的轨道
+                          event.getAmount());         // 经验数值
+        }
+    }
+
+事件字段：
+
+    getPlayer()          获得经验的玩家
+    getCategory()        本次经验属于哪个分类（MINING / FOREST / FARMING）
+    getAmount()          经验数值（= 资源点 yml 里 experience 配置的数字）
+    getBlockType()       该资源点的方块材质（如 IRON_ORE）
+    isCollectionPoint()  true = 来自资源点采集完成；false = 来自 API 手动发放
+
+来源：
+  · **资源点采集完成**（主要来源）—— 玩家把资源点方块放下、走完采集进度条时发一次
+  · **API 手动发放** —— 你自己调 awardGatheringExperience 时触发（isCollectionPoint=false）
+
+**原版方块不给经验**：普通挖矿 / 砍树 / 收作物不会触发这个事件（按需求已禁用）。
+采集经验只来自你创建的资源点，所以经验的数值完全由资源点的 `experience` 决定。
+
+数值规则（重要）：
+  · getAmount() 固定等于资源点配置值，EarthRPGItem 不做缩放 / 暴击 / 倍率；
+    经验曲线、倍率加成是你插件的活。
+  · 一个资源点只发一种经验（它的 type 分类决定）。
+  · 事件在主线程同步触发，可以直接安全地操作 Bukkit API。
+
+--------------------------------------------------------------------------------
+六、门槛和你的插件无关：只看工具的采掘等级
+--------------------------------------------------------------------------------
+
+资源点的 `required-level` 门槛**只看手持工具的采掘等级**（工具 attributes 里的
+MiningLevel / ForestLevel / FarmingLevel），**不读取任何插件的玩家等级**：
+
+    · 空手 / 工具采掘等级不够 → 采集被拦截，提示「需要 挖矿采掘等级 ≥ 5，你手里的工具是 …」
+    · 工具采掘等级 ≥ required-level → 开始采集，走进度条，完成时发经验事件
+
+所以：**你只需要收经验**（第五节）。等级曲线、倍率、任务奖励都是你插件自己的事，
+EarthRPGItem 的门槛不依赖你的等级——这避免了「隔壁插件不装/等级为 0 就采不动」的问题。
+
+--------------------------------------------------------------------------------
+七、预留接口 GatheringLevelProvider（API 兼容，不参与门槛）
+--------------------------------------------------------------------------------
+
+GatheringLevelProvider 保留用于 API 兼容和第三方查询，**资源点门槛不读取它**。
+如果你想让别的插件能查「玩家等级」，可以注册：
+
+    import EarthRPGItem.api.GatheringLevelProvider;
+    import EarthRPGItem.collection.CollectionKind;
+    import org.bukkit.entity.Player;
+
+    public final class MyLevels extends JavaPlugin implements GatheringLevelProvider {
+
+        @Override
+        public int getLevel(Player player, CollectionKind category) {
+            return MyStorage.level(player, category);   // 按分类返回各自的等级
+        }
+
+        @Override
+        public void onEnable() {
+            EarthRPGItemAPI api = ...;                  // 见第三节
+            api.registerGatheringLevelProvider(this);
+        }
+
+        @Override
+        public void onDisable() {
+            EarthRPGItemAPI api = ...;
+            api.unregisterGatheringLevelProvider(this); // 注销时务必注销，引用要同一个对象
+        }
+    }
+
+getLevel 契约：
+  · 返回等级，最好 ≥ 0；负数会被按 0 算（clamp）。
+  · 别抛异常——即便抛了，EarthRPGItem 也会捕获并打警告，不会崩。
+  · supports(category) 默认 true（三个分类都负责）；只做了部分分类时重写它，
+    返回「只对自己做的分类返回 true」，别的插件查询时就不会拿到错误数值。
+
+多 provider 注册时，getGatheringLevel 取同一分类下所有 provider 的**最大值**。
+
+--------------------------------------------------------------------------------
+八、读等级：getGatheringLevel（预留查询入口，不影响门槛）
+--------------------------------------------------------------------------------
+
+    int level = api.getGatheringLevel(player, CollectionKind.MINING);
+
+返回注册的 provider 给的等级（没注册返回 0）。仅供你/别的插件查询展示，
+**与采集门槛无关**——门槛只看手持工具的采掘等级（见第六节）。
+
+--------------------------------------------------------------------------------
+九、手动发经验：awardGatheringExperience
+--------------------------------------------------------------------------------
+
+    api.awardGatheringExperience(player, CollectionKind.FARMING, 50.0, Material.WHEAT);
+
+构造并抛出一次 GatheringExperienceEvent（比如任务奖励、活动送经验）。
+blockType 只是事件上下文，可传 Material.AIR。
+注意：必须在主线程调用；amount 会被原样放进事件。
+
+--------------------------------------------------------------------------------
+十、完整示例：MyLevels —— 三条轨道分开存、分开升级
+--------------------------------------------------------------------------------
+
+一个真实可用的最小插件：每 100 经验升 1 级，挖矿 / 砍树 / 农业三条经验各自独立，
+存 levels.yml（玩家 UUID → 分类 → 经验）。它只做一件事：**收经验 + 存等级**，
+不注册 provider（门槛不读它）也能完整工作。
+
+plugin.yml：
+
+    name: MyLevels
+    main: com.example.mylevels.MyLevels
+    api-version: '1.21'
+    version: 1.0
+    softdepend: [EarthRPGItem]
+    commands:
+      mylevel:
+        description: 查看自己的挖矿/砍树/农业等级
+
+MyLevels.java：
+
+    package com.example.mylevels;
+
+    import EarthRPGItem.api.GatheringExperienceEvent;
+    import EarthRPGItem.collection.CollectionKind;
+    import org.bukkit.configuration.file.YamlConfiguration;
+    import org.bukkit.entity.Player;
+    import org.bukkit.event.EventHandler;
+    import org.bukkit.event.Listener;
+    import org.bukkit.plugin.java.JavaPlugin;
+
+    import java.io.File;
+    import java.io.IOException;
+    import java.util.EnumMap;
+    import java.util.HashMap;
+    import java.util.Map;
+    import java.util.UUID;
+
+    public final class MyLevels extends JavaPlugin implements Listener {
+
+        private static final int XP_PER_LEVEL = 100;
+
+        // 玩家 -> 分类 -> 经验（三条轨道藏在同一个 Map 里，但按分类各记各的）
+        private final Map<UUID, Map<CollectionKind, Double>> xp = new HashMap<>();
+        private File dataFile;
+
+        @Override
+        public void onEnable() {
+            dataFile = new File(getDataFolder(), "levels.yml");
+            load();
+            Bukkit.getPluginManager().registerEvents(this, this);   // 自己监听经验事件
+
+            getCommand("mylevel").setExecutor((sender, label, cmd, args) -> {
+                if (!(sender instanceof Player player)) return true;
+                player.sendMessage("§6挖矿 §f" + levelOf(player, CollectionKind.MINING)
+                        + "  §6砍树 §f" + levelOf(player, CollectionKind.FOREST)
+                        + "  §6农业 §f" + levelOf(player, CollectionKind.FARMING));
+                return true;
+            });
+        }
+
+        @Override
+        public void onDisable() {
+            save();
+        }
+
+        // ---------------- 收经验：三条轨道分开加 ----------------
+        @EventHandler
+        public void onGathering(GatheringExperienceEvent event) {
+            addExperience(event.getPlayer(), event.getCategory(), event.getAmount());
+        }
+
+        public void addExperience(Player player, CollectionKind category, double amount) {
+            Map<CollectionKind, Double> playerXp =
+                    xp.computeIfAbsent(player.getUniqueId(), uuid -> new EnumMap<>(CollectionKind.class));
+            double before = playerXp.getOrDefault(category, 0.0);
+            double after = before + amount;
+            playerXp.put(category, after);
+            if ((int) (before / XP_PER_LEVEL) < (int) (after / XP_PER_LEVEL)) {
+                player.sendMessage("§a" + category.displayName() + "等级提升！现在 "
+                        + (int) (after / XP_PER_LEVEL) + " 级");
+            }
+            save();   // 示例直接同步存；正式服建议异步定期存
+        }
+
+        private int levelOf(Player player, CollectionKind category) {
+            Map<CollectionKind, Double> playerXp = xp.get(player.getUniqueId());
+            if (playerXp == null) return 0;
+            return (int) (playerXp.getOrDefault(category, 0.0) / XP_PER_LEVEL);
+        }
+
+        // ---------------- 存取 ----------------
+        private void load() {
+            YamlConfiguration config = YamlConfiguration.loadConfiguration(dataFile);
+            for (String uuid : config.getKeys(false)) {
+                Map<CollectionKind, Double> row = new EnumMap<>(CollectionKind.class);
+                for (CollectionKind kind : CollectionKind.values()) {
+                    row.put(kind, config.getDouble(uuid + "." + kind.name(), 0));
+                }
+                xp.put(UUID.fromString(uuid), row);
+            }
+        }
+
+        private void save() {
+            YamlConfiguration config = new YamlConfiguration();
+            xp.forEach((uuid, row) -> {
+                for (CollectionKind kind : CollectionKind.values()) {
+                    config.set(uuid + "." + kind.name(), row.getOrDefault(kind, 0.0));
+                }
+            });
+            try {
+                config.save(dataFile);
+            } catch (IOException exception) {
+                getLogger().warning("保存等级失败：" + exception.getMessage());
+            }
+        }
+    }
+
+这套代码就是「收经验 → 分轨道存 → 升级」的完整闭环。采集门槛由服务器管理员在
+资源点 yml 里配（required-level），配多少采掘等级的工具才能采，和你无关。
+
+--------------------------------------------------------------------------------
+十一、测试与验证
+--------------------------------------------------------------------------------
+
+1. 服务端装了 EarthRPGItem（自动生成资源点整合文件 `Collection/collection_level_points.yml`，
+   默认铁矿资源点门槛 5、经验 12；工具整合文件 `Tool/collection_level_tools.yml`）；
+2. 装上 MyLevels，/mylevel 显示三轨等级都是 0；
+3. 用 `/rpgitem gui` → Collection 领取「铁矿资源点」方块并放下，**空手**开始采集 →
+   提示「需要 挖矿采掘等级 ≥ 5，你手里的工具是 0」，采不动（门槛生效）；
+4. 手持「铁矿镐」（采掘等级 5）再采集 → 进度条正常走完，采集完成发出 12 点挖矿经验，
+   /mylevel 里挖矿经验慢慢涨，到 100 升 1 级；
+5. /rpgitem gathering 诊断：三分类的「手持工具采掘等级」、资源点数量
+   （带经验/带门槛各几个）、原版方块门槛数。
+
+--------------------------------------------------------------------------------
+十二、线程要求
+--------------------------------------------------------------------------------
+
+  · GatheringExperienceEvent 在主线程同步触发 → 监听器可直接操作 Bukkit API。
+  · awardGatheringExperience 必须在主线程调用；异步任务里请切回主线程。
+  · registerGatheringLevelProvider / unregister / getGatheringLevel（预留接口）
+    同样在主线程调用。
+
+--------------------------------------------------------------------------------
+十三、常见问题
+--------------------------------------------------------------------------------
+
+| 现象 | 原因与处理 |
+|---|---|
+| 挖原版矿物没有经验事件 | 设计如此：原版经验已禁用，经验只来自资源点（原版方块破坏不会触发事件） |
+| 空手 / 工具等级不够采不动资源点 | 设计如此：门槛只看手持工具的采掘等级（MiningLevel / ForestLevel / FarmingLevel），达标工具是唯一条件 |
+| 收到事件但等级不涨 | 检查你的监听器是否注册（registerEvents）、addExperience 是否正确写了存储 |
+| 我方等级和 /rpgitem gathering 显示不一致 | 诊断里显示的是「手持工具采掘等级」；你自己的等级请用 getGatheringLevel 查 |
+| 同一个资源点发两次经验 | 不会：资源点采集完成才发一次（走自定义进度条，不经过普通破坏） |
+| 事件里 amount 为什么这么小 | 等于该资源点 yml 里 experience 配置值，原样发出，不做缩放；倍率请在你的插件里做 |
+| 门槛不生效 | /rpgitem gathering 看资源点有没有 required-level、主手工具采掘等级是否达标；`gathering-levels` 开关是否开着 |
+
+================================================================================

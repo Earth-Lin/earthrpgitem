@@ -1,0 +1,45 @@
+# 横扫 - 独立技能模板
+# 本文件位于 plugins/EarthRPGItem/skills/横扫.yml
+# 插件会自动把本文件注册为一个技能，技能 ID 就是文件名：横扫
+# 不需要在 config.yml 里添加任何配置。
+
+# ---- 技能物品外观与分类 ----
+display-name: "&b横扫"
+material: ENCHANTED_BOOK
+skill-group: "技能组1"
+# 武器类型：ANY = 默认，不限武器。也可写 [SWORD, AXE] / [BOW] / [CROSSBOW] / [STAFF]
+supported-weapons: [ANY]
+
+# ---- 冷却 ----
+# attack-speed-cooldown: true 表示只使用玩家攻速(AttackSpeed)换算冷却，
+# 此时不需要也不能用 cooldown-seconds。
+attack-speed-cooldown: true
+cooldown-name: "横扫"
+cooldown-enabled: true
+messages-enabled: true
+# global-cooldown: false 避免在攻速冷却之外再叠加一层触发类型全局冷却
+global-cooldown: false
+
+# ---- 技能效果 ----
+sweep:
+  damage: 30
+  weapon-percent: 80
+  distance: 2
+  radius: 2
+  height: 2
+  angle-degrees: 110
+  damage-type: PHYSICAL
+  can-crit: true
+  # count = 整条弧的粒子总数（会平均分配到弧上每个采样点），radius = 轨迹粗细。
+  # 不要写 weapon-percent-sources：默认即为全部来源，写了反而会「取消」列出的类型。
+  particle:
+    enabled: true
+    particle: CRIT
+    count: 160
+    radius: 0.08
+    effect: break
+  sound:
+    enabled: true
+    sound: ENTITY_PLAYER_ATTACK_SWEEP
+    volume: 1.0
+    pitch: 1.0

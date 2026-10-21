@@ -1,0 +1,54 @@
+# 十字斩 - 独立技能模板
+# 本文件位于 plugins/EarthRPGItem/skills/十字斩.yml
+# 插件会自动把本文件注册为一个技能，技能 ID 就是文件名：十字斩
+# 不需要在 config.yml 里添加任何配置。
+
+# ---- 技能物品外观与分类 ----
+display-name: "&d十字斩"
+material: ENCHANTED_BOOK
+skill-group: "技能组2"
+# 武器类型：ANY = 默认，不限武器。也可写 [SWORD, AXE] / [BOW] / [CROSSBOW] / [STAFF]
+supported-weapons: [ANY]
+
+# ---- 冷却 ----
+attack-speed-cooldown: true
+cooldown-name: "十字斩"
+cooldown-enabled: true
+messages-enabled: true
+global-cooldown: false
+
+# ---- 技能效果 ----
+cross-slash:
+  distance: 2
+  radius: 2
+  height: 2
+  angle-degrees: 110
+  horizontal:
+    damage: 25
+    weapon-percent: 70
+    damage-type: PHYSICAL
+    can-crit: true
+    # count = 整条水平弧的粒子总数，radius = 轨迹粗细。
+    particle:
+      enabled: true
+      particle: CRIT
+      count: 180
+      radius: 0.08
+      effect: break
+  vertical:
+    damage: 25
+    weapon-percent: 70
+    damage-type: PHYSICAL
+    can-crit: true
+    # count = 整条垂直弧的粒子总数，radius = 轨迹粗细。
+    particle:
+      enabled: true
+      particle: CRIT
+      count: 180
+      radius: 0.08
+      effect: break
+  sound:
+    enabled: true
+    sound: ENTITY_PLAYER_ATTACK_SWEEP
+    volume: 1.0
+    pitch: 1.15

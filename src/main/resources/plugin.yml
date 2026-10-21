@@ -1,0 +1,48 @@
+name: EarthRPGItem
+version: '${version}'
+main: EarthRPGItem.EarthRPGItem
+api-version: '1.21'
+author: Earth_lin
+description: EarthRPGItem - RPG weapons, armor, tools, accessories, dummy, and slash particles
+# EarthExp 是可选附属（技能点 = 天赋点），声明在这里有两个作用：
+#   1. 让 Bukkit 知道本插件可以访问 EarthExp 的类；
+#   2. 提示加载顺序。
+# ⚠️ 注意：EarthExp 自己也 softdepend EarthRPGItem，两边【互为 softdepend = 成环】，
+#    所以环上的加载顺序由 Bukkit 任意决定，【不能】指望 EarthExp 一定先加载。
+#    因此插件不依赖顺序：EarthExp 的类通过它自己的类加载器解析，并监听它的
+#    启用事件自动补一次接入（见 EarthExpBridge.resolveClass / onPluginEnable）。
+# softdepend 表示「有就先加载，没有也照常启动」——不装 EarthExp 时功能不受影响。
+softdepend: [EarthExp]
+commands:
+  EarthRPGitem:
+    description: EarthRPGItem commands
+    usage: /EarthRPGitem <my|gui|skills|skillforge|gathering|accessorygui|dummy|give|puton|enhance|gems|reload>
+    aliases: [erpgitem, rpgitem]
+permissions:
+  earthrpgitem.my:
+    description: Allows viewing own RPG stats
+    default: true
+  earthrpgitem.gui:
+    description: Allows opening admin GUI
+    default: op
+  earthrpgitem.dummy:
+    description: Allows spawning and managing RPG dummy entities
+    default: op
+  earthrpgitem.skills:
+    description: Allows opening the player skill panel
+    default: true
+  earthrpgitem.admin:
+    description: Allows reloading the plugin
+    default: op
+  earthrpgitem.enhance:
+    description: Allows using the enhancement station GUI
+    default: true
+  earthrpgitem.gem:
+    description: Allows using the gem station GUI
+    default: true
+  earthrpgitem.skillforge:
+    description: Allows using the skill forge (skill leveling) GUI
+    default: true
+  earthrpgitem.accessory.admin:
+    description: Allows viewing and editing other players' accessory slots
+    default: op

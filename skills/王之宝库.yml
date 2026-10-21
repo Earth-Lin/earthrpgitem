@@ -1,0 +1,166 @@
+# 王之宝库 - 独立技能模板
+# 本文件位于 plugins/EarthRPGItem/skills/王之宝库.yml
+# 插件会自动把本文件注册为一个技能，技能 ID 就是文件名：王之宝库
+# 不需要在 config.yml 里添加任何配置。
+# ---- 技能物品外观与分类 ----
+display-name: "&6王之宝库"
+material: ENCHANTED_BOOK
+skill-group: "技能组3"
+# 武器类型：ANY = 默认，不限武器。也可写 [SWORD, AXE] / [BOW] / [CROSSBOW] / [STAFF]
+supported-weapons: [ANY]
+# ---- 冷却 ----
+# 使用玩家攻速（AttackSpeed）换算冷却；此时不需要也不能用 cooldown-seconds。
+attack-speed-cooldown: true
+cooldown-name: "王之宝库"
+cooldown-enabled: true
+messages-enabled: true
+global-cooldown: false
+# ---- 技能效果：gate-of-babylon（王之宝库）----
+# 武器在施法者背后、或落点上方的空中生成（见 spawn-mode），短暂停留后射向准星所指的位置；
+# 剑尖始终朝向自己的落点。飞行过程可以穿过方块（天花板、墙都不会阻挡），
+# 落地产生一次不破坏方块的小爆炸并对周围目标结算一次技能伤害，停留 linger-seconds 秒后消失。
+gate-of-babylon:
+  # 伤害走与其它技能完全相同的结算管线：damage 固定值 + weapon-percent 武器面板百分比。
+  # 每个落点会结算一次；同一目标本次施放最多被打中 max-hits-per-target 次。
+  # 与横扫/冲击波一样，落点范围内的所有生物都会被结算（施法者自己除外），不做敌我筛选。
+  damage: 0
+  weapon-percent: 60
+  damage-type: PHYSICAL
+  can-crit: true
+  # 不要写 weapon-percent-sources：默认即为全部来源，写了反而会「取消」列出的类型。
+  # 一次施放生成多少把武器（单次施放上限 32，写更大也会被截断）
+  weapon-count: 16
+  # ---- 落点：跟随准星 ----
+  # 从眼睛沿视线做射线，命中方块就用命中点、没命中就用最大距离处，
+  # 再从这个位置往下找地面。所以瞄准哪里就砸哪里，头顶有方块也不会把落点顶到天花板上。
+  # 调大 = 砸得更远（对着远处地面施放时落点会更远）；调小 = 砸在脚边。
+  distance: 16.0
+  # 落点相对准星落点的散布半径。
+  # 调小会让整批武器「汇聚」到同一个点，看起来是瞄准一个位置砸下去；
+  # 调大则变成一片覆盖，武器之间的朝向差异也会明显变大。
+  spread-radius: 2.5
+  # ---- 生成点：背后 / 天上，二选一或混合 ----
+  # behind = 只在施法者背后扇形内生成；sky = 只在落点上方的空中生成；mixed = 每把武器随机二选一。
+  # 两套参数互不相干，切换方式不需要改另一套的数值。
+  # 别名：back/rear = behind，air/above/top = sky，both/random/mix = mixed。
+  spawn-mode: mixed
+  # 背后生成（spawn-mode 为 behind 或 mixed 时生效）
+  # 背后的水平距离（会再乘以 0.5~1.5 的随机系数）
+  spawn-distance: 4.5
+  # 脚上方的高度（会再乘以 0.4~1.4 的随机系数）
+  spawn-height: 4.5
+  # 相对「正后方」的扇形张角，360 = 整圈随机
+  spawn-fan-degrees: 180
+  # 天上生成（spawn-mode 为 sky 或 mixed 时生效）
+  # 落点上方多少格（会再乘以 0.85~1.15 的随机系数）
+  sky-height: 14.0
+  # 相对落点的水平偏移半径
+  sky-offset: 2.5
+  # 生成后等待 0~N tick 再发射，每把武器随机取值；0 = 立刻发射
+  launch-delay-ticks: 15
+  # 飞行时每 tick 前进多少格。调小能看清武器姿态，调大更像瞬间命中。
+  fall-speed: 0.8
+  # 落地后停留几秒再消失
+  linger-seconds: 2.0
+  # 落点伤害半径 / 高度
+  impact-radius: 2.5
+  impact-height: 2.0
+  # 同一目标在本次施放中最多被打中几次。
+  # 16 把武器各结算一次会把伤害放大 16 倍，所以这里必须有上限。
+  max-hits-per-target: 3
+  # ---- 武器姿态 ----
+  # 剑贴图里的剑刃是「斜的」，不先把它在贴图平面内摆正，后面「瞄准落点」就会整体偏一个固定角度，
+  # 表现就是剑刃斜着指向别处、而不是指向落点。
+  # 默认 -45 是把剑刃摆到竖直（原版剑贴图在显示实体里读出来是 135°）。
+  # 如果实测发现剑刃还是斜的，只改这一个值即可，不需要重新编译：看着偏 45° 就改成 0 或 -90。
+  blade-tilt-degrees: -45
+  # 武器外观池，每次生成随机取一个。
+  # **同一个材质写多次 = 提高它的出现概率**，所以下面把金剑金斧多写了几行。
+  # 远程武器（BOW / CROSSBOW）刻意没有列：它们的贴图横过来之后不像武器，
+  # 想要的话可以自己加回来。
+  # 留空或全部无法识别时会回退到内置武器池并在控制台警告。
+  weapon-materials:
+    - GOLDEN_SWORD
+    - GOLDEN_SWORD
+    - GOLDEN_SWORD
+    - GOLDEN_SWORD
+    - GOLDEN_SWORD
+    - GOLDEN_AXE
+    - GOLDEN_AXE
+    - GOLDEN_AXE
+    - GOLDEN_AXE
+    - NETHERITE_SWORD
+    - DIAMOND_SWORD
+    - IRON_SWORD
+    - STONE_SWORD
+    - WOODEN_SWORD
+    - NETHERITE_AXE
+    - DIAMOND_AXE
+    - IRON_AXE
+    - STONE_AXE
+    - TRIDENT
+    - MACE
+  # ---- 粒子与音效 ----
+  # 通用规则：count = 粒子数量，radius = 散布半径；两者都直接生效，越小越不挡视野。
+  # 飞行轨迹粒子（金色）。count = 每经过一格路径撒多少粒子，radius = 轨迹粗细（上限 1）
+  trail:
+    enabled: true
+    particle: DUST
+    block: "255,215,0"
+    count: 4
+    radius: 0.25
+  # 武器出现时的金色特效，让「宝库打开」看得见
+  spawn-particle:
+    enabled: true
+    particle: DUST
+    block: "255,215,0"
+    count: 8
+    radius: 0.4
+  # ---- 悬停期：剑柄处的平面金色圆环 ----
+  # 武器生成后到发射前会悬停一小段时间（launch-delay-ticks），这期间在**剑柄**位置画一个平面圆环，
+  # 模仿「武器正从宝库的圆形门里被拔出来」。注意圆环画在剑柄、不是武器中心，所以它套在握把上。
+  # count = 圆环上的粒子数（越大越连续），radius = 圆环半径（格），两个值都按字面生效。
+  ripple:
+    enabled: true
+    particle: DUST
+    block: "255,215,0"
+    count: 12
+    radius: 0.35
+    # 圆环所在的平面：
+    #   blade      = 垂直于剑刃，剑身穿过环心，像从圆形门里拔出（默认，推荐）
+    #   horizontal = 平躺的水平圆环，像脚下的法阵
+    plane: blade
+  # 落地金色上升粒子。radius 会被放大成上升高度（约 radius × 8）
+  impact-particle:
+    enabled: true
+    particle: DUST
+    block: "255,215,0"
+    count: 6
+    radius: 0.4
+  # 落地爆炸：纯粒子，不会破坏方块、不会伤害掉落物，也不会生成爆炸实体。
+  # 粒子正好炸在落点上（不会像以前那样飘到落点上方一格），count/radius 按字面生效：
+  # count 个粒子散布在 radius 格半径的球内。
+  # 用 EXPLOSION = 原版那种白色爆炸烟团，这才是「爆炸」的观感；
+  # 之前用 FLAME / SMALL_FLAME 只有火苗、看起来不像爆炸。
+  # EXPLOSION 的贴图将近一格大，所以 count 不要写大，2 就够；想要更夸张的爆炸就调到 3~4。
+  explosion-particle:
+    enabled: true
+    particle: EXPLOSION
+    count: 2
+    radius: 0.6
+  # 想要「火焰砸地」而不是白色爆炸烟团，就换成下面这组：
+  #   particle: FLAME
+  #   count: 32
+  #   radius: 0.9
+  # 施放时的音效
+  sound:
+    enabled: true
+    sound: ENTITY_ENDER_DRAGON_FLAP
+    volume: 1.0
+    pitch: 1.0
+  # 每把武器落地的音效
+  impact-sound:
+    enabled: true
+    sound: ENTITY_GENERIC_EXPLODE
+    volume: 0.7
+    pitch: 1.3

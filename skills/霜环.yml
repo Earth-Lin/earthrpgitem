@@ -1,0 +1,95 @@
+# 霜环 - 法师独立技能模板
+# 本文件位于 plugins/EarthRPGItem/skills/霜环.yml
+# 插件会自动把本文件注册为一个技能，技能 ID 就是文件名：霜环
+#
+# 定位：控场。伤害很低，价值在于把贴脸的敌人拖慢，给法师拉开施法距离。
+# 技能组2：与烈焰法阵（技能组3）、护盾/大招（技能组4）互斥，玩家只能选其中一档。
+
+display-name: "&b霜环"
+material: ENCHANTED_BOOK
+skill-group: "技能组2"
+supported-weapons: [STAFF]
+
+# 0.2 秒读条：几乎瞬发，但足以在施法时被打断，不能当成完全无风险。
+cast-time-seconds: 0.2
+cooldown-seconds: 9
+cooldown-name: "霜环"
+cooldown-enabled: true
+messages-enabled: true
+global-cooldown: false
+
+# ---- 成长规则（技能强化台升级时生效） ----
+# Lv.1 = 文件里原本写的值；每升一级叠加。
+# 三个维度一起长：范围、控制时长、伤害各占一份，避免出现「升满级只是变大了」的空成长。
+# Lv.10：半径 5 + 9×0.25 = 7.25 格；减速 3 + 9×0.5 = 7.5 秒；倍率 40 + 9×4 = 76%。
+# 注意：buff 时长读的是 buffs.<key>.duration-seconds，所以成长路径必须写到那一层，
+# 写成 magic-circle.buff-duration-seconds 是无效的（只有在 buff 自己没写时长时才生效）。
+leveling:
+  max-level: 10
+  per-level:
+    magic-circle.weapon-percent: 4
+    magic-circle.radius: 0.25
+    magic-circle.buffs.frost-slow.duration-seconds: 0.5
+
+# ---- 技能效果：瞬发减速法阵 ----
+magic-circle:
+  # 固定伤害 0 + 低倍率：霜环不是输出技能，倍率给太高会让法师不需要别的技能。
+  # 注意 interval-seconds 同时控制【伤害轮数】：0.8 秒 / 0.2 秒 = 4 轮，
+  # 所以单轮倍率必须按 4 轮来配，否则总伤害会是设计值的 4 倍。
+  # 10% × 4 轮 = 满级前总计 40%，与原本「一轮 40%」持平。
+  damage: 0
+  weapon-percent: 10
+  damage-type: MAGIC
+  # 排除 PHYSICAL(近战面板) 与 PROJECTILE(弓术词条)，法术只吃魔法/元素伤害。
+  # 这是排除列表：写进去的项会被移除，不是「只用这些」。
+  weapon-percent-sources: [PHYSICAL, PROJECTILE]
+  can-crit: true
+  # 施法距离：以准星落点为中心展开，4 格。
+  distance: 4
+  # 法阵半径：5 格，足够覆盖法师身前一个身位。
+  radius: 5
+  height: 3
+  # 持续时间 0.8 秒：仍然是一次「环」而不是「场」，但足够让外环、冰柱都看得见。
+  # 原先是 0.2 秒 —— 只活 4 tick，配合 interval 1 秒，burst 一次都不会触发，
+  # 冰柱和溅射粒子全都出不来，这就是「霜环没有特效」的直接原因。
+  duration-seconds: 0.8
+  # 0.2 秒结算一次：0.8 秒内触发 4 轮，冰柱才会一根根冒出来而不是只闪一下。
+  interval-seconds: 0.2
+  # 中心展示物：蓝色冰晶，让法阵中心看得见。
+  center-material: BLUE_ICE
+  use-armor-stand: true
+  # ENEMY：只对敌人生效，不会把队友和村民一起冻住。
+  # 铁傀儡与训练假人算敌人（见 FSkills 的 isFriendlyTarget）。
+  target: ENEMY
+  include-self: false
+  # ---- 减速效果 ----
+  # SLOWNESS amplifier 2 = 缓慢 III（原版 amplifier 从 0 开始计数）。
+  buffs:
+    frost-slow:
+      type: SLOWNESS
+      amplifier: 2
+      duration-seconds: 3
+  # 减速总时长；buffs 里没写 duration-seconds 时用这个值。
+  buff-duration-seconds: 3
+  # magic-circle 的法阵由私有 drawCircle() 绘制：只读 particle 与 count，
+  # 【不读 effect 与 radius】——环的大小由上面 magic-circle.radius 决定。
+  particle:
+    enabled: true
+    particle: SNOWFLAKE
+    count: 160
+  # ---- 冰柱：从地面向上长出的竖直粒子柱 ----
+  # burst-count 是【每一轮】迸发几处，不是总量。
+  # 本技能 0.8 秒 / 0.2 秒 = 4 轮，所以 burst-count 4 = 一场霜环共 16 处冰柱
+  # （位置每轮重新随机，观感是连锁炸开的冰刺）。
+  # 单根柱子的粗细/高度由 burst-particle 的 radius 决定（高度 ≈ radius × 8，这里约 4.8 格）。
+  burst-count: 4
+  burst-particle:
+    enabled: true
+    particle: SNOWFLAKE
+    count: 40
+    radius: 0.6
+  sound:
+    enabled: true
+    sound: BLOCK_GLASS_BREAK
+    volume: 0.9
+    pitch: 1.5

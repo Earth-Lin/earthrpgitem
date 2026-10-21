@@ -1,0 +1,76 @@
+# 烈焰法阵 - 法师独立技能模板
+# 本文件位于 plugins/EarthRPGItem/skills/烈焰法阵.yml
+# 插件会自动把本文件注册为一个技能，技能 ID 就是文件名：烈焰法阵
+#
+# 定位：法师的主要输出。阵地型持续伤害，敌人要么绕开要么吃满。
+# 技能组3：与霜环（技能组2）、护盾/大招（技能组4）互斥。
+
+display-name: "&6烈焰法阵"
+material: ENCHANTED_BOOK
+skill-group: "技能组3"
+supported-weapons: [STAFF]
+
+# 1 秒读条：需要站定才能铺开法阵，这是法师输出的代价。
+cast-time-seconds: 1
+cooldown-seconds: 16
+cooldown-name: "烈焰法阵"
+cooldown-enabled: true
+messages-enabled: true
+global-cooldown: false
+
+# ---- 成长规则 ----
+# 每级伤害倍率 +5%、半径 +0.15 格、持续 +0.3 秒。
+# 持续时间是最敏感的成长项：每多 1 秒就多结算一轮，等于再乘一次倍率，
+# 所以每级只给 +0.3 秒，满级从 6 秒长到 8.7 秒（6 轮 → 8 轮），而不是翻倍。
+# Lv.10 时：倍率 45 + 9×5 = 90%，半径 4 + 9×0.15 = 5.35 格，持续 6 + 9×0.3 = 8.7 秒。
+leveling:
+  max-level: 10
+  per-level:
+    magic-circle.weapon-percent: 5
+    magic-circle.radius: 0.15
+    magic-circle.duration-seconds: 0.3
+
+# ---- 技能效果：持续伤害法阵 ----
+magic-circle:
+  damage: 0
+  # 每轮结算 45% 武器面板；6 秒 6 轮，全吃满约 270%。
+  # 单轮倍率刻意压低，因为这是「站着不动就持续掉血」的地面效果。
+  weapon-percent: 45
+  damage-type: MAGIC
+  # 排除 PHYSICAL(近战面板) 与 PROJECTILE(弓术词条)，法术只吃魔法/元素伤害。
+  # 这是排除列表：写进去的项会被移除，不是「只用这些」。
+  weapon-percent-sources: [PHYSICAL, PROJECTILE]
+  can-crit: true
+  # 施法距离：准星落点为中心。
+  distance: 8
+  radius: 4
+  height: 2
+  # 持续 6 秒，每 1 秒结算一轮。
+  duration-seconds: 6
+  interval-seconds: 1
+  # 每轮额外迸发的特效次数。
+  burst-count: 3
+  center-material: BLAZE_POWDER
+  use-armor-stand: true
+  # ENEMY：只烧敌人。include-self=false 确保法师站在自己法阵里不会被烧。
+  target: ENEMY
+  include-self: false
+  # 不要写 weapon-percent-sources：默认吃全部来源（含元素专用词条）。
+  # magic-circle 的法阵由私有 drawCircle() 绘制：只读 particle 与 count，
+  # 【不读 effect 与 radius】——环的大小由上面 magic-circle.radius 决定。
+  particle:
+    enabled: true
+    particle: FLAME
+    count: 90
+  # 每次迸发在法阵内随机一点向上炸开（playRisingBurst，高度 ≈ radius × 8 ≈ 12 格）。
+  # 用 FLAME 而不是 LAVA：LAVA 在 1.21 是整块方块贴图，count 大了会糊成一堵墙。
+  burst-particle:
+    enabled: true
+    particle: FLAME
+    count: 30
+    radius: 0.7
+  sound:
+    enabled: true
+    sound: ITEM_FIRECHARGE_USE
+    volume: 1.0
+    pitch: 0.9

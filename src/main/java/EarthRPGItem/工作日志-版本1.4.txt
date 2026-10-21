@@ -1,0 +1,39 @@
+EarthRPGItem 工作日志（版本 1.4）
+
+一、版本与构建
+1. Gradle 项目版本更新为 1.4。
+2. plugin.yml 命令说明更新为 /EarthRPGitem <my|gui|dummy|reload>。
+
+二、战斗修复
+1. 修复 RPGItem 武器命中后缺少原版跳劈粒子和附魔命中粒子的问题。
+2. RPGItem 自定义伤害仍通过玩家作为伤害来源触发，保证其他插件能识别玩家伤害。
+3. 修复 RPGItem 战斗事件被取消后原版耐久不消耗的问题，现在命中后会手动消耗耐久。
+4. ExDur 仍优先于原版耐久消耗；ExDur 不存在或归零时再消耗原版耐久。
+
+三、物品显示规则
+1. RPGItem 生成物品时不再自动显示攻击、防御、暴击、魔法等战斗属性，方便后续直接编辑描述文本。
+2. 仍保留耐久类、修复类、附加耐久、损毁保护、灵魂绑定相关描述。
+3. 新增 hide-enchantments 配置，可在单个 RPGItem 文本中关闭原版附魔描述显示。
+4. 新增 rpgitem.hide-enchantments-default，可控制默认是否隐藏 RPGItem 附魔描述。
+
+四、测试假人
+1. 新增 /EarthRPGitem dummy 生成测试假人，默认类型为 ZOMBIE。
+2. 新增 /EarthRPGitem dummy del 删除周围假人。
+3. 假人拥有高生命值并在受击后恢复，可用于持续 DPS 测试。
+4. 假人名字显示最近一分钟平均 DPS。
+5. 玩家潜行右键假人可打开 DummyGui，通过刷怪蛋切换生物类型。
+6. DummyGui 支持分页，且所有 GUI 物品不可拿取。
+
+五、挥砍粒子
+1. 新增 SlashParticleEffectPlayer，用于剑、斧、三叉戟的挥砍轨迹。
+2. 玩家挥砍 RPGItem 武器时立即进入 AttackSpeed 冷却。
+3. 普通剑/斧随机生成横扫或下落弧形刀波。
+4. 疾跑攻击或三叉戟攻击会生成直线突刺刀波。
+5. 刀波成型时间受 +AttackSpeed 影响：-100 约 5 秒，0 约 1 秒，100 约 0.1 秒。
+6. 粒子密度、直径、半径、起始随机范围、玩家前方起点距离均可在 config.yml 调整。
+7. Setting GUI 新增 Slash Particles 全局开关。
+
+六、后续建议
+1. 如果后续要支持自定义刀波颜色渐变，可以在 ParticleConfig 中增加 secondary-color。
+2. 如果服务器安装大型战斗插件，建议实服测试它们对玩家归属伤害与取消原始事件的兼容性。
+3. 假人 DPS 当前使用实体 PDC 记录最近一分钟伤害，适合轻量测试，不建议当长期数据库统计使用。

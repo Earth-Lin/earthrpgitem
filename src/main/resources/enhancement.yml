@@ -1,0 +1,175 @@
+# ==========================================================================
+#  强化系统（Enhancement）
+# ==========================================================================
+#  设计要点（改配置前请先读一遍）：
+#
+#  1. 强化等级只在物品里存【一个整数】，属性加成每次按等级从
+#     levels.<N>.percent 推导。所以改这里的数值后，全服已经存在的物品
+#     会【立刻】跟着变，不需要重刷物品，也不需要回收玩家装备。
+#
+#  2. 强化等级是【每件物品独立】的。同 id 的两把剑，一把 +7、一把 +3，
+#     互不影响，也不影响以后新生成的同类物品。
+#
+#  3. 强化按【百分比缩放物品自身的全部属性】。规则：
+#       · 每一条属性独立计算，先四舍五入到整数，再拼接，所以
+#         1.5 + 1.5 会显示成 [+2][+2] 而不是 [+3]。
+#       · 负数属性按【绝对值】缩放，并以【正数】给予：
+#         AttackSpeed 基础 -60，该级 +20% → 实际 -60 + 12 = -48，
+#         显示为 -60[+12]。强化永远不会让缺点变得更强。
+#       · 先算强化量、再和基础值相加，最后才显示。
+#
+#  4. 物品 lore 上【基础值和强化量分开显示】：
+#         ◆ 攻击 Attack +286 [+200]
+#                             ^^^^^^ 蓝色，这一部分来自强化
+#     所以玩家一眼就能看出这件装备本身多强、又被强化了多少。
+#     没有可强化属性的物品（比如纯防御装备）不会出现中括号。
+#     概率类属性（暴击率等）即便有加成，也会按 1% 取整；不足 1% 时
+#     显示 [+0%] 而不是省略——省略会让玩家以为这条属性没被强化。
+#
+# --------------------------------------------------------------------------
+
+# 是否开启强化系统。
+# 注意：这里只控制【能不能继续强化】。已经强化过的物品仍然保留加成——
+# 关掉系统不应该静默削弱全服玩家已经投入过的装备。
+# 要清空某件装备的强化，用 /rpgitem enhance set 0。
+enabled: true
+
+# 强化上限（阶段数）。levels 里没有定义的等级一律不可强化。
+max-level: 20
+
+# 强化石（自定义物品）。item-id 填物品配置里的 id。
+# 留空字符串 "" 表示不消耗物品，只做概率判定。
+stone:
+  item-id: "enhance_stone"
+  amount: 1
+
+# 强化量后缀的颜色（显示为 "&9[+12]" 这样的蓝色数字）。
+# 必须是带 & 的颜色代码，供物品 lore 渲染使用。
+bonus-color: "&9"
+
+# 强化【只作用于】哪些属性（白名单）。
+#   · 这里列出的属性才会被强化，没列出的一律不动。
+#   · 留空（included-stats: []）表示"除 excluded-stats 外全部强化"，即回到全属性口径。
+#
+# 默认强化【伤害类】属性：攻击、各类伤害加成、元素伤害、暴击伤害；
+# 同时包含核心防御属性：护甲（armor/armorpercent）与抗性（resistance）。
+# 刻意不含暴击率 / 生命 / 闪避等——那些属于概率或生存属性，
+# 放大它们会让强度膨胀得比伤害快得多（详见 excluded-stats）。
+# 如需其它防御属性（魔法护甲 magicarmor、元素护甲 icearmor/firearmor/lightarmor/darkarmor、
+# 弓弩抗性 bowarmor、暴击抗性 critarmor、环境抗性 envarmor 等），把它们加到下面列表里即可。
+included-stats:
+  # 物理 / 通用
+  - attack
+  - attackpercent
+  - truedamage
+  - pctdamage
+  - pstdamage
+  # 背刺 / 刺客
+  - backstrikedamage
+  - backstrikedamagepercent
+  - assdamage
+  - assdamagepercent
+  # 魔法 / 弓弩
+  - magicdamage
+  - magicdamagepercent
+  - bowdamage
+  - bowdamagepercent
+  # 元素伤害
+  - icedamage
+  - icedamagepercent
+  - firedamage
+  - firedamagepercent
+  - lightdamage
+  - lightdamagepercent
+  - darkdamage
+  - darkdamagepercent
+  # 暴击伤害（注意：是暴击【伤害】，不是暴击【率】）
+  - critdamage
+  - critdamagepercent
+  # 护甲 / 抗性（防御核心）
+  - armor
+  - armorpercent
+  - resistance
+
+# 额外排除哪些属性。这张表【优先级高于】included-stats：
+# 即使某个属性写进了 included-stats，只要也在这张表里，就不会被强化。
+# 默认排除的是「放大会破坏平衡或手感」的那几类：
+#   · 概率类防御（格挡/闪避/招架/反击/决意/反击伤害）：堆高后会让战斗变成掷骰子
+#   · 攻击速度：本插件的攻速冷却在 100 处就已经封顶，放大没有意义；
+#               而且重剑的 AttackSpeed -60 是刻意设计的缺点
+#   · 攻击范围：直接改变实际够得到的距离，属于手感参数
+#   · 额外耐久 / 修复速度：放大后会让装备几乎不会坏
+excluded-stats:
+  - block
+  - dodge
+  - evasion
+  - parry
+  - counterattack
+  - determination
+  - cad
+  - critchance
+  - attackspeed
+  - attackrange
+  - exdur
+  - fix
+
+# 每一级的数据，key = 目标等级（也就是「强化到 +N」）。
+#   success-rate : 0.0 ~ 1.0，本次强化成功的概率
+#   penalty      : 失败惩罚
+#                    none      = 不惩罚，等级不变（安全区）
+#                    downgrade = 掉 1 级
+#                    destroy   = 物品直接破坏（消失）
+#   percent      : 该级的强化量，= 物品属性 × percent
+#                  1.0 = +100%（也就是翻倍）
+#                  3.0 = +300%（满级）
+#
+# 默认曲线：20 级几何增长，从 +5% 到约 +302%（每级 ×1.24），
+# 成功率从 100% 逐步降到 15%，失败惩罚从无到掉级再到破坏。
+# 逐级写出来（而不是写一个公式）是为了让每个阶段都能单独微调。
+levels:
+  1:  { success-rate: 1.00, penalty: none,      percent: 0.05 }
+  2:  { success-rate: 1.00, penalty: none,      percent: 0.07 }
+  3:  { success-rate: 1.00, penalty: none,      percent: 0.09 }
+  4:  { success-rate: 1.00, penalty: none,      percent: 0.11 }
+  5:  { success-rate: 1.00, penalty: none,      percent: 0.14 }
+  6:  { success-rate: 0.95, penalty: none,      percent: 0.17 }
+  7:  { success-rate: 0.90, penalty: none,      percent: 0.21 }
+  8:  { success-rate: 0.85, penalty: downgrade, percent: 0.26 }
+  9:  { success-rate: 0.80, penalty: downgrade, percent: 0.32 }
+  10: { success-rate: 0.75, penalty: downgrade, percent: 0.40 }
+  11: { success-rate: 0.70, penalty: downgrade, percent: 0.50 }
+  12: { success-rate: 0.65, penalty: downgrade, percent: 0.62 }
+  13: { success-rate: 0.60, penalty: downgrade, percent: 0.76 }
+  14: { success-rate: 0.55, penalty: downgrade, percent: 0.94 }
+  15: { success-rate: 0.50, penalty: destroy,   percent: 1.17 }
+  16: { success-rate: 0.45, penalty: destroy,   percent: 1.45 }
+  17: { success-rate: 0.40, penalty: destroy,   percent: 1.80 }
+  18: { success-rate: 0.33, penalty: destroy,   percent: 2.23 }
+  19: { success-rate: 0.25, penalty: destroy,   percent: 2.60 }
+  20: { success-rate: 0.15, penalty: destroy,   percent: 3.02 }
+
+# 物品 lore 上的显示。
+lore:
+  # 是否显示「✦ 强化 +N」这一行。
+  level-line-enabled: true
+  level-line: "&6&l✦ 强化 +{level}"
+  # 是否在属性行后面追加蓝色 [+数值]。关掉的话玩家就看不到强化了多少。
+  show-bonus: true
+
+# 提示文本。可用占位符：{item} 物品名 / {level} 目标等级 / {current} 当前等级
+#                          / {rate} 成功率百分比 / {stone} 强化石 id / {amount} 需要数量
+#                          / {percent} 该级强化量百分比
+messages:
+  no-item: "&c请手持一件可强化的 RPG 物品。"
+  not-rpg-item: "&c这个物品不是 RPG 物品，无法强化。"
+  disabled: "&c强化系统当前未开启。"
+  max-level: "&e这件物品已经达到强化上限 &f+{level}&e。"
+  no-level-data: "&c配置里没有定义 +{level} 这一级，无法继续强化。"
+  no-stone: "&c强化需要 &f{amount} &c个 &f{stone}&c。"
+  already-max: "&e已经满强化了。"
+  # 成功
+  success: "&a&l强化成功！&r &f{item} &7→ &6+{level} &7（全属性 &f+{percent}%&7）"
+  # 失败
+  fail-safe: "&c强化失败。&7（安全区，等级不变）&f{item} &7仍然 &6+{current}"
+  fail-downgrade: "&c&l强化失败！&r &f{item} &7掉到了 &c+{current}"
+  fail-destroy: "&4&l强化失败！&r &f{item} &4被破坏了……"

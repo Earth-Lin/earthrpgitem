@@ -1,0 +1,7 @@
+EarthRPGItem 版本 2.9beta0.11 工作日志
+
+1. 主手持有 RPGItem 时，丢弃保护改为无条件生效，不再读取 rpgitem.prevent-hotkey-drop 开关。
+2. 主手 RPGItem 的 Q 丢弃事件在技能分流前立即取消，避免技能未加载或未配置时把 RPGItem 丢弃出去。
+3. 空手或仅副手持有 RPGItem 时仍可正常丢弃物品。
+4. 中文使用手册同步到 2.9beta0.11，并补充丢弃保护与 Q 键说明。
+5. 版本递增为 2.9beta0.11，正式版本仍为 2.9。

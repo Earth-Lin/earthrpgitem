@@ -1,0 +1,540 @@
+config-version: 2
+
+startup-message:
+  enabled: true
+  lines:
+    - "&aEarthRPGItem &fVersion &e${version} &aenabled"
+    - "&7RPG item framework, dummy and slash particles loaded"
+
+features:
+  rpgitems: true
+  gui: true
+  accessory: true
+  fskill: true
+  attack: true
+  armor: true
+  crit-chance: true
+  crit-damage: true
+  physical-crit: true
+  magic-crit: true
+  attack-speed: true
+  health: true
+  vitality: true
+  lore-attributes: true
+  recovery: true
+  life-steal: true
+  magic-damage: true
+  magic-armor: true
+  bow-damage: true
+  exdraw: true
+  fix: true
+  ex-dur: true
+  break-limit: true
+  env-armor: true
+  resistance: true
+  bow-armor: true
+  crit-armor: true
+  evasion: true
+  armor-pen: true
+  true-damage: true
+  backstrike-damage: true
+  ass-damage: true
+  pct-damage: true
+  pst-damage: true
+  attack-range: true
+  parry: true
+  counter-attack: true
+  dodge: true
+  block: true
+  determination: true
+  cad: true
+  ice-damage: true
+  fire-damage: true
+  light-damage: true
+  dark-damage: true
+  ice-armor: true
+  fire-armor: true
+  light-armor: true
+  dark-armor: true
+  hit-buffs: true
+  slash-particles: true
+  projectile-trail-particles: true
+  projectile-hit-particles: false
+  projectile-sounds: false
+  parry-particles: true
+  # 等级要求：物品 yml 里的 level 字段。比对的是【EarthExp 的战斗等级】
+  # （com.earthexp.api.Stat.COMBAT），不是原版等级；没装 EarthExp 时自动退回原版等级，
+  # 避免所有带等级要求的物品突然全部失效。
+  level: true
+  soulbound: true
+  particles: true
+  sounds: true
+  buffs: true
+  collection: true
+  # 宝石系统总开关。关闭后宝石台会说明原因，已镶嵌的宝石不再提供属性（但不会从装备里消失，
+  # 重新打开就恢复）。
+  gemstones: true
+  farming-speed: true
+  mining-speed: true
+  forest-speed: true
+  farming-fortune: true
+  mining-fortune: true
+  forest-fortune: true
+  # 采集经验：资源点采集完成后按该资源点 yml 里的 experience 配置发经验事件给其他插件。
+  # 本插件不处理经验等级，只负责发。（原版矿物的经验已禁用）
+  gathering-xp: true
+  # 采掘等级门槛：按资源点 yml 里的 required-level 判断能否采集该资源点。
+  # 门槛只看【手持工具】attributes 里的 MiningLevel / ForestLevel / FarmingLevel
+  # （采掘等级档位），和其他插件的玩家等级无关。
+  gathering-levels: true
+  # 手持工具提供的采掘等级（物品 attributes 里的 FarmingLevel / MiningLevel /
+  # ForestLevel）。关闭后工具采掘等级视为 0，所有带门槛的资源点都采不动。
+  farming-level: true
+  mining-level: true
+  forest-level: true
+  # 采集点的破坏纹理（裂纹）动画：服务端按「硬度 × 20 ÷ 采集速度」推进的进度动画。
+  # 关闭后挖采集点不再显示裂纹，同时会主动擦掉客户端本地预测画出来的原版裂纹。
+  collection-break-animation: true
+  # 客户端纠正：每 tick 把「玩家正在挖的采集点」按回真实方块状态，并擦掉客户端自己
+  # 预测出来的裂纹。解决两个原版客户端本地预测造成的现象：
+  #   1. 方块被挖掉——客户端按原版硬度算够了就在本地删掉方块，服务端取消破坏事件
+  #      并不会告诉它「你猜错了」，于是方块在客户端一直是空气，直到我们重发一次；
+  #   2. 裂纹速度跟原版硬度走而不是跟采集速度走——客户端把自己那份进度画在
+  #      「玩家自己实体 id」的槽位里，和我们用的假 id 是两个条目，两个都会画。
+  # 代价：正在挖采集点的玩家每 tick 多收 2 个包（只发给挖掘者本人，不影响其他人）。
+  # 关闭后回到旧行为：方块可能被客户端本地删掉、裂纹按原版硬度显示。
+  collection-client-guard: true
+  # 挖掘疲劳：给「正在挖采集点」的玩家续一个短时挖掘疲劳（IV 级，速度 ×0.00081）。
+  # 这是比上面的「事后纠正」更根本的一层——疲劳让【客户端自己】算不出「挖穿了」，
+  # 于是它压根不会在本地删方块，也就不存在要按回去的问题。
+  #   石头在疲劳 IV 下从 0.4 秒变成约 19 分钟，等于挖不掉。
+  # 只作用于「正在挖采集点」的玩家：每 tick 续期 1 秒，停手后最多残留 1 秒自己消失。
+  # 粒子与 HUD 图标已隐藏；不主动移除效果，避免误删别的插件给的同名效果。
+  # 关闭后只剩 collection-client-guard 在事后纠正，方块可能仍会闪一下。
+  collection-mining-fatigue: true
+
+lore-templates:
+  enabled: true
+  hide-zero: true
+  defaults:
+    prefix: "  "
+    icon: "&7◆"
+    zh-color: "&6"
+    en-color: "&7"
+    value-color: "&f"
+    name-separator: " "
+    positive-prefix: "+"
+  attribute-box:
+    top: "&7┌──────────────────────────────────────┐"
+    bottom: "&7└──────────────────────────────────────┘"
+  separator:
+    enabled: true
+    lines:
+      - "&8&m──────────────────────────────────────"
+  # 宝石槽位那一行的显示。空槽位永远是白色 [   ]；已镶嵌的槽位把宝石自己的颜色和图标放进白色括号里，
+  # 所以括号本身颜色不变，变化的是宝石——这是两颗不同宝石能被一眼区分的原因。
+  socket-line:
+    enabled: true
+    label: "&7宝石槽: "
+    bracket-color: "&f"
+    gem-color: "&a"
+  # 可按属性覆盖 zh、en、icon、zh-color、en-color、value-color
+  attributes:
+    exdraw:
+      zh: "追加拉弓"
+      en: "Extra Draw"
+  # 原版属性修饰符（vanilla-attributes / minecraft-attributes）是否显示在属性框里
+  show-vanilla-attributes: true
+  # 药水 buff（buffs 配置）是否显示在属性框里
+  show-buffs: true
+  # 原版属性中文名（键名同 vanilla-attributes 键；未列出的键用英文原样显示）
+  vanilla-attribute-names:
+    max_health: "最大生命值"
+    movement_speed: "移动速度"
+    attack_damage: "攻击力"
+    attack_speed: "攻击速度"
+    armor: "护甲"
+    armor_toughness: "护甲韧性"
+    knockback_resistance: "击退抗性"
+    luck: "幸运"
+    attack_knockback: "攻击击退"
+    jump_strength: "跳跃强度"
+
+durability:
+  warning-message: "&cItem is nearly broken, attributes are disabled"
+  break-limit-message: "&cItem broke, BreakLimit protection triggered"
+  fix-repairs-extra-durability: false
+
+rpgitem:
+  hide-enchantments-default: false
+  prevent-hotkey-drop: true
+  random-attributes:
+    # true  = 每次属性结算（近战、弓箭、受到伤害、技能）都按范围重新随机
+    # false = 只在物品生成时随机一次，之后永久固定
+    # 被动刷新（每秒的血量同步）始终使用固定值，避免最大生命每秒抖动。
+    reroll-on-use: true
+
+defensive-actions:
+  timing-window-seconds: 0.3
+  invalid-window-seconds: 1.0
+  repeat-guard-seconds: 1.0
+  resistance-duration-seconds: 1.0
+  dodge:
+    cooldown-seconds: 1.0
+    particles-enabled: true
+    particle-count: 48
+    particle-radius: 1.0
+    sound-enabled: true
+    sound: ENTITY_ENDERMAN_TELEPORT
+    volume: 1.0
+    pitch: 1.2
+  block:
+    cooldown-seconds: 1.0
+    particles-enabled: true
+    particle-count: 48
+    particle-radius: 0.8
+    sound-enabled: true
+    sound: BLOCK_ANVIL_LAND
+    volume: 1.0
+    pitch: 0.4
+
+accessory:
+  types:
+    ring: "戒指 Ring"
+    earring: "耳饰 Earring"
+    chest: "胸饰 Chest Ornament"
+    hand: "手饰 Hand Ornament"
+    necklace: "项链 Necklace"
+    belt: "腰饰 Belt"
+    cloak: "披风 Cloak"
+
+damage-display:
+  enabled: true
+  prefix-enabled: false
+  duration-seconds: 3
+  random-range: 1.0
+  physical-color: "&c"
+  physical-crit-color: "&6"
+  magic-color: "&d"
+  magic-crit-color: "&5"
+  bow-color: "&a"
+  bow-crit-color: "&2"
+  assassin-color: "&c"
+  assassin-format: "☠刺客-{damage}"
+  backstrike-color: "&e"
+  backstrike-format: "🗡背击-{damage}"
+  true-color: "&c"
+  ice-color: "&9"
+  fire-color: "&c"
+  dark-color: "&0"
+  light-color: "&e"
+  physical-prefix: "\uD83D\uDDE1\u2764-"
+  physical-crit-prefix: "\u2694\u2764-"
+  magic-prefix: "\u2721\u2764-"
+  magic-crit-prefix: "\uD83D\uDD2F\u2764-"
+  bow-prefix: "\uD83C\uDFF9\u2764-"
+  bow-crit-prefix: "\uD83C\uDFF9\u2B50\u2764-"
+  true-prefix: "\u2620\u2764-"
+  ice-prefix: "\uD83E\uDDCA\u2764-"
+  fire-prefix: "\uD83D\uDD25\u2764-"
+  dark-prefix: "\uD83C\uDF18\u2764-"
+  light-prefix: "\u2600\u2764-"
+  physical-format: "\uD83D\uDDE1\u2764-{damage}"
+  physical-crit-format: "\u2694\u2764-{damage}"
+  magic-format: "\u2721\u2764-{damage}"
+  magic-crit-format: "\uD83D\uDD2F\u2764-{damage}"
+  bow-format: "\uD83C\uDFF9\u2764-{damage}"
+  bow-crit-format: "\uD83C\uDFF9\u2B50\u2764-{damage}"
+  true-format: "\u2620\u2764-{damage}"
+  ice-format: "\uD83E\uDDCA\u2764-{damage}"
+  fire-format: "\uD83D\uDD25\u2764-{damage}"
+  dark-format: "\uD83C\uDF18\u2764-{damage}"
+  light-format: "\u2600\u2764-{damage}"
+
+particles:
+  enabled: true
+  particle: BLOCK
+  block: IRON_BLOCK
+  effect: break
+  count: 12
+  radius: 1.5
+
+slash-particles:
+  enabled: true
+  particle: DUST
+  color: "128,128,128"
+  count: 160
+  count-multiplier: 4.0
+  speed-multiplier: 0.65
+  duration-seconds: 3
+  slash-diameter: 2.0
+  slash-radius: 0.08
+  length: 1.2
+  thrust-diameter: 1.5
+  thrust-radius: 0.18
+  start-random-radius: 0.5
+  start-forward-distance: 1.0
+
+projectile-draw-sound:
+  enabled: true
+  sound: BLOCK_NOTE_BLOCK_PLING
+  volume: 0.35
+  low-pitch: 0.6
+  high-pitch: 1.4
+  stage-pitch-step: 0.08
+
+projectile-launch-sound:
+  enabled: true
+  sound: ENTITY_WITHER_SHOOT
+  volume: 0.7
+  pitch: 1.0
+
+projectile-trail-particles:
+  enabled: true
+  particle: DUST
+  color: "128,128,128"
+  count: 2
+  radius: 0.05
+
+projectile-trail-sound:
+  enabled: false
+  sound: ENTITY_WITHER_SHOOT
+  volume: 0.18
+  pitch: 1.2
+  interval-ticks: 4
+
+projectile-hit-feedback:
+  allow: false
+
+projectile-hit-particles:
+  enabled: false
+  particle: FIREWORK
+  color: "128,128,128"
+  effect: current
+  count: 80
+  radius: 1.2
+
+projectile-hit-sound:
+  enabled: false
+  sound: ENTITY_FIREWORK_ROCKET_BLAST
+  volume: 1.0
+  pitch: 1.0
+
+parry-particles:
+  enabled: true
+  count: 48
+  radius: 0.8
+  duration-seconds: 3
+
+parry-sound:
+  enabled: true
+  sound: BLOCK_ANVIL_LAND
+  volume: 1.0
+  pitch: 0.5
+
+parry:
+  attack-speed-penalty: -20
+
+counter-attack-sound:
+  enabled: true
+  sound: ENTITY_WITHER_HURT
+  volume: 1.0
+  pitch: 0.8
+
+sounds:
+  enabled: true
+  sound: ENTITY_PLAYER_ATTACK_STRONG
+  volume: 1.0
+  pitch: 1.0
+
+buffs:
+  enabled: true
+  refresh-interval-seconds: 10
+  duration-seconds: 13
+
+hit-buffs:
+  enabled: true
+
+dummy:
+  default-type: ZOMBIE
+  clear-radius: 32
+  max-health: 1000000
+
+join-broadcast:
+  enabled: true
+  message: "&aWelcome &e{player} &ato the game"
+fskill:
+  default-cooldown-seconds: 5
+  chant-interrupted-message: "&c切换物品，吟唱已中断，技能冷却已重置。"
+  max-ray-length: 512
+  ray-step: 0.4
+  # 「王之宝库」全服同时存在的武器实体上限（每个武器 = 一个 ItemDisplay 实体）。
+  # 单次施放的上限固定为 32；这里是所有施放加起来的残留上限，用于防止刷技能把实体数堆爆。
+  # 满攻速连续施放做压力测试时会被这个值挡住，需要更高就调大（调大 = 实体更多 = 服务端压力更大）。
+  gate-max-live-displays: 512
+  activation-message-enabled: true
+  fskill-messages-enabled: true
+  rskill-messages-enabled: true
+  srskill-messages-enabled: true
+  qskill-messages-enabled: true
+  sqskill-messages-enabled: true
+  lskill-messages-enabled: true
+  sfskill-messages-enabled: true
+  slskill-messages-enabled: true
+  # 冷却提示开关：控制“冷却中 / 全局冷却 / 技能释放中”这类暂时无法释放的提示
+  cooldown-message-enabled: true
+  # 技能就绪提示开关：控制“技能已就绪”提示
+  ready-message-enabled: true
+  activation-message: "&b{item}&f释放了F技能"
+  ready-message: "&a{item}&fF技能已就绪"
+  cooldown-message: "&e{item}&cF技能冷却: &f{seconds}秒"
+  fskill-activation-message: "&b{item}&f释放了F技能"
+  fskill-ready-message: "&a{item}&fF技能已就绪"
+  fskill-cooldown-message: "&e{item}&cF技能冷却: &f{seconds}秒"
+  rskill-activation-message: "&b{item}&f释放了R技能"
+  rskill-ready-message: "&a{item}&fR技能已就绪"
+  rskill-cooldown-message: "&e{item}&cR技能冷却: &f{seconds}秒"
+  srskill-activation-message: "&b{item}&f释放了SR技能"
+  srskill-ready-message: "&a{item}&fSR技能已就绪"
+  srskill-cooldown-message: "&e{item}&cSR技能冷却: &f{seconds}秒"
+  qskill-activation-message: "&b{item}&f释放了Q技能"
+  qskill-ready-message: "&a{item}&fQ技能已就绪"
+  qskill-cooldown-message: "&e{item}&cQ技能冷却: &f{seconds}秒"
+  sqskill-activation-message: "&b{item}&f释放了SQ技能"
+  sqskill-ready-message: "&a{item}&fSQ技能已就绪"
+  sqskill-cooldown-message: "&e{item}&cSQ技能冷却: &f{seconds}秒"
+  lskill-activation-message: "&b{item}&f释放了L技能"
+  lskill-ready-message: "&a{item}&fL技能已就绪"
+  lskill-cooldown-message: "&e{item}&cL技能冷却: &f{seconds}秒"
+  sfskill-activation-message: "&b{item}&f释放了SF技能"
+  sfskill-ready-message: "&a{item}&fSF技能已就绪"
+  sfskill-cooldown-message: "&e{item}&cSF技能冷却: &f{seconds}秒"
+  slskill-activation-message: "&b{item}&f释放了SL技能"
+  slskill-ready-message: "&a{item}&fSL技能已就绪"
+  slskill-cooldown-message: "&e{item}&cSL技能冷却: &f{seconds}秒"
+  global-cooldown-message: "&e{skill}同类型全局冷却: &f{seconds}秒"
+  cooldown-name-placeholder: "{skill}"
+  particle-default-duration-seconds: 3
+  # 技能暴击的族排除表。留空（默认）＝物理族与魔法族都可暴击。
+  # 暴击按族结算，与普通攻击一致：物理族（物理/弓）一次判定，魔法族（魔法/药水）一次判定；
+  # 元素（冰/火/光/暗）与真实伤害不单独暴击，只会从翻倍后的基数按百分比放大。
+  # 写 PHYSICAL 取消物理族暴击，写 MAGIC 取消魔法族暴击。
+  crit-excluded-damage-types: []
+
+skill-panel:
+  default-enabled: false
+  default-trigger-enabled: true
+  # ------------------------------------------------------------------------
+  #  仅手持 RPG 物品才能放技能（require-held-rpgitem）
+  # ------------------------------------------------------------------------
+  #  true（默认）= 主手必须拿着本插件的 RPG 物品（含技能书等独立技能物品），
+  #                面板键位技能与物品自带技能才会触发。
+  #  false        = 旧行为：不看手里拿什么，随时可放。
+  #
+  #  为什么默认开：不限制的话，绑了右键技能的玩家一「右键吃食物」就会放技能，
+  #  而且事件被取消、食物还吃不到——严重破坏游戏体验。
+  #
+  #  判定只看【主手】：饰品（ACCESSORY）不算；副手拿着 RPG 物品也不算，
+  #  所以主手拿食物右键吃饭不会触发副手的技能。
+  #  丢弃键（Q/SQ）特殊处理：判定用的是「被丢掉的那件」，所以丢弃 RPG 物品照常放技能。
+  #
+  #  被这道限制拦下时【不会】给玩家发提示（他可能只是想吃个饭），
+  #  要查为什么放不出技能请用 /rpgitem skillcheck。
+  require-held-rpgitem: true
+  # ------------------------------------------------------------------------
+  #  对着方块左键时不触发 L/SL 技能（suppress-left-click-on-block）
+  # ------------------------------------------------------------------------
+  #  true（默认）= 对着【方块】左键时不放 L/SL 技能（视为在挖矿），
+  #                对着【空气】左键、或左键【实体】照常放技能。
+  #  false        = 旧行为：对着方块左键也会放技能。
+  #
+  #  为什么默认开：原版「左键方块」就是开始挖掘，而技能触发会把
+  #  PlayerInteractEvent 取消掉——方块于是完全挖不动（连挖掘进度都不开始）。
+  #  玩家拿着带 L/SL 技能的 RPG 工具挖矿时技能不断触发、挖掘被打断，根因就在这里。
+  #  战斗场景用的是「左键空气 / 左键怪物」，两者都不受影响。
+  suppress-left-click-on-block: true
+  # 新玩家的技能面板提示开关默认值（可在技能面板里逐个切换）
+  default-cooldown-message-enabled: true
+  default-ready-message-enabled: true
+  # 每个键位独立的「释放提示」默认值；玩家可在技能面板按 Q/SQ/F/SF/R/SR/L/SL 逐键关闭
+  default-activation-message-enabled: true
+  # 技能注册默认不需要在这里配置。
+  # 插件会自动扫描 plugins/EarthRPGItem/skills 下的所有 .yml 文件，
+  # 每个文件自动注册为一个技能，技能 ID 就是文件名（不含 .yml）。
+  # 技能名称、材质、技能组、武器限制都可以直接写在技能文件里：
+  #   display-name: "&b横扫"
+  #   material: ENCHANTED_BOOK
+  #   skill-group: "技能组1"
+  #   supported-weapons: [SWORD, AXE]
+  #   description:
+  #     - "&7向前横扫，对前方扇形范围内的敌人造成伤害。"
+  #     - "&7冷却随攻速变化。"
+  #
+  # description 会显示在技能物品的 lore 最上方（技能面板 / 技能库 / 技能背包 / 发给玩家的
+  # 技能物品都是同一份 lore）。也可以写在下面 skills.<id>.description 里覆盖技能文件的写法。
+  #
+  # 只有在需要覆盖技能文件设置，或把技能绑定到已有 RPGItem 时，才需要下面的写法：
+  # skills:
+  #   sweep:
+  #     skill-file: "横扫.yml"
+  #     display-name: "&b横扫"
+  #     material: ENCHANTED_BOOK
+  #     skill-group: "技能组1"
+  #     description: ["&7向前横扫，对前方扇形范围内的敌人造成伤害。"]
+  #   cross-slash:
+  #     skill-file: "十字斩.yml"
+  #     display-name: "&d十字斩"
+  #     material: ENCHANTED_BOOK
+  #     skill-group: "技能组2"
+
+# ==========================================================================
+#  EarthExp 附属（天赋点 = 技能点）
+# ==========================================================================
+#  装了这个附属插件后，技能升级改用「天赋点」扣费，不再消耗宝石；
+#  技能等级上限默认 Lv.10（skill-leveling.yml 的 max-level）。
+#
+#  装了 EarthExp 就【自动接入】，不需要你填类名：下面两个类名留空时，插件会按
+#  EarthExp 的标准类名（com.earthexp.api.EarthExpAPI / com.earthexp.api.Stat）自动探测。
+#
+#  启动日志会明确告诉你接没接上：
+#    · 「EarthExp 已接入：技能升级消耗【战斗】天赋点（轨道 COMBAT）」 = 成功；
+#    · 「未检测到 EarthExp（可选附属）：技能升级使用宝石消耗」 = 没装上（不装也能正常玩）；
+#    · 「找到了 ... 但它没有把 EarthExpAPI 注册到服务管理器」 = 装上了但没启用成功，
+#      去看 EarthExp 自己的启动日志有没有报错。
+#
+#  一般不需要动下面两个类名。只有 EarthExp 换了包名时才需要手填。
+#
+#  想【强制】用宝石消耗（即使装了 EarthExp）：把 earthexp.enabled 改成 false。
+#
+# --------------------------------------------------------------------------
+#  技能点用哪条天赋池（skill-point-stat）
+# --------------------------------------------------------------------------
+#  ⚠️ 先确认你的 EarthExp 版本支持哪条轨道（见下）。
+#
+#  EarthExp 0.5.1 起，外部扣点【按轨道分开记账】，两条轨道互不干扰：
+#    · skill-point-stat: COMBAT     → 扣战斗池（eexp_combat_tp），不碰冒险池；
+#    · skill-point-stat: ADVENTURE  → 扣冒险池（eexp_adv_tp），不碰战斗池。
+#  每条轨道的可用点数 = 该轨道等级 − 该轨道外部扣点；退款也不能跨轨道。
+#
+#  ⚠️ 如果你的 EarthExp 是 0.5.0 或更早：那时外部扣点【只允许 ADVENTURE】，
+#     配成 COMBAT 会在升级时被 EarthExp 拒绝（提示「EarthExp 拒绝了这次扣点」）。
+#     解决办法：把 EarthExp 升级到 0.5.1+（推荐，之后 COMBAT 可用），
+#     或把这里改成 ADVENTURE。
+#
+#  本插件扣点时用的来源名是 earthrpgitem_skills（写死在代码里，跨重启必须稳定）。
+#  EarthExp 按来源分账，退款上限就是该来源【在该轨道上】实际扣过的量——所以
+#  「重置技能等级能退多少点」取决于账本，而不是 skill-levels.yml 里的等级。
+#  升级发生在扣点接口出现之前的技能，账上没有记录，重置时退不出点数。
+#
+#  旧键名 combat-stat 仍然兼容（skill-point-stat 没写时读它），但新配置请用 skill-point-stat。
+earthexp:
+  # 总开关：true（默认）= 装了 EarthExp 就自动接入；false = 强制用宝石消耗。
+  enabled: true
+  # 留空 = 自动探测 EarthExp 的标准类名（推荐）。EarthExp 换包名时才手填。
+  api-class: ""
+  stat-class: ""
+  # 技能点走哪条天赋轨道：COMBAT（战斗天赋点，默认）或 ADVENTURE（冒险天赋点）。
+  skill-point-stat: COMBAT
+  # 旧键名，保留兼容；skill-point-stat 有值时忽略这里。
+  combat-stat: COMBAT
+

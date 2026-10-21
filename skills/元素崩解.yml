@@ -1,0 +1,101 @@
+# 元素崩解 - 法师独立技能模板（大招）
+# 本文件位于 plugins/EarthRPGItem/skills/元素崩解.yml
+# 插件会自动把本文件注册为一个技能，技能 ID 就是文件名：元素崩解
+#
+# 定位：法师大招。2 秒读条 + 35 秒长冷却，读条期间被攻击会打断。
+# 技能组4：与护盾屏障同组互斥 —— 玩家必须在「保命」和「爆发」之间二选一。
+#
+# 设计意图：这是全法师池子伤害最高的技能，代价是施法期间几乎无法自保。
+
+display-name: "&5元素崩解"
+material: ENCHANTED_BOOK
+skill-group: "技能组4"
+supported-weapons: [STAFF]
+
+# 2 秒读条：这是整个技能的风险所在，也是它倍率远高于其它技能的原因。
+cast-time-seconds: 2
+cooldown-seconds: 35
+cooldown-name: "元素崩解"
+cooldown-enabled: true
+messages-enabled: true
+global-cooldown: false
+
+# ---- 成长规则 ----
+# 每级伤害倍率 +15%、半径 +0.2 格。
+# Lv.10 时：倍率 120 + 9×12 = 228%，半径 7 + 9×0.2 = 8.8 格，
+#          持续 3 + 9×0.15 = 4.35 秒（3 轮 → 4 轮）。
+# 倍率每级只给 +12：这是全法师池子倍率最高的技能，长太快会让大招变成唯一解。
+leveling:
+  max-level: 10
+  per-level:
+    magic-circle.weapon-percent: 12
+    magic-circle.radius: 0.2
+    magic-circle.duration-seconds: 0.15
+
+# ---- 读条表现：3 段咒文，每 0.5 秒推进一段 ----
+# release-at: end = 读条结束才结算（配合 cast-time-seconds）。
+chants:
+  incantation:
+    interval-seconds: 0.5
+    release-at: end
+    # 读条期间切换物品会中断（默认 true），防止读条时偷偷换武器。
+    interrupt-on-item-switch: true
+    texts:
+      - "&5&o元素汇聚…"
+      - "&d&o符文成型…"
+      - "&c&o崩解！"
+    particles:
+      enabled: true
+      particle: ENCHANT
+      count: 24
+      radius: 1.2
+      effect: sphere
+    sound:
+      enabled: true
+      sound: BLOCK_BEACON_ACTIVATE
+      volume: 0.8
+      pitch: 1.3
+
+# ---- 技能效果：大范围持续崩解 ----
+magic-circle:
+  damage: 0
+  # 每轮 120% 武器面板；持续 3 秒 3 轮，全吃满约 360%。
+  weapon-percent: 120
+  damage-type: MAGIC
+  # 排除 PHYSICAL(近战面板) 与 PROJECTILE(弓术词条)，法术只吃魔法/元素伤害。
+  # 这是排除列表：写进去的项会被移除，不是「只用这些」。
+  weapon-percent-sources: [PHYSICAL, PROJECTILE]
+  can-crit: true
+  # 施法距离与半径都拉到最大一档：这是法师的「清场」技能。
+  distance: 10
+  radius: 7
+  height: 3
+  duration-seconds: 3
+  interval-seconds: 1
+  burst-count: 4
+  center-material: NETHER_STAR
+  use-armor-stand: true
+  # ENEMY：只打敌人，include-self=false 保证法师自己不会被自己的大招炸到。
+  target: ENEMY
+  include-self: false
+  # 不要写 weapon-percent-sources：元素系法术有专属伤害词条，
+  # 写过滤会让这些词条读不到。默认吃全部来源即可。
+  # magic-circle 的法阵由私有 drawCircle() 绘制：只读 particle 与 count，
+  # 【不读 effect 与 radius】——环的大小由上面 magic-circle.radius 决定。
+  particle:
+    enabled: true
+    particle: DRAGON_BREATH
+    count: 160
+  # 每次迸发在法阵内随机一点向上炸开（playRisingBurst，高度 ≈ radius × 8）。
+  # 用 EXPLOSION 而不是 EXPLOSION_EMITTER：后者在 1.21 需要特殊的 vibration 数据，
+  # 走通用 spawnParticle 路径存在报错风险，而且它的贴图是一整片白，不如 EXPLOSION 干净。
+  burst-particle:
+    enabled: true
+    particle: EXPLOSION
+    count: 6
+    radius: 0.8
+  sound:
+    enabled: true
+    sound: ENTITY_WITHER_DEATH
+    volume: 0.7
+    pitch: 1.4

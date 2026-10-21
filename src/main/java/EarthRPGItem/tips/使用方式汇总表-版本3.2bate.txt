@@ -1,0 +1,265 @@
+EarthRPGItem 使用方式汇总表
+版本：3.2bate（在 3.0 表基础上新增技能点/技能背包/属性API手册/采掘等级门槛条目，
+后撤 / 次元斩连锁 / 上挑 / 蹦山击四个技能形态，以及技能预设（一键保存/还原整套技能配置）；
+3.0 旧表仍保留在《使用方式汇总表-版本3.0.txt》）
+
+一、安装与更新
+
+| 场景 | 操作 | 说明 |
+|---|---|---|
+| 安装插件 | 将 EarthRPGItem-3.2bate.jar 放入服务器 plugins 目录后启动 | 目标为 Paper 1.21.1、Java 21 |
+| 更新插件 | 完全停止服务器，替换旧 JAR，再启动 | 不建议使用 /reload 更新 JAR |
+| 修改 RPGItem YAML | 修改 plugins/EarthRPGItem 下对应分类文件 | 修改后执行 /rpgitem reload |
+| 接入 EarthExp（技能点模式） | **装了就自动接入**：config.yml 的 `earthexp.api-class` / `stat-class` 默认留空，留空时按标准类名（`com.earthexp.api.EarthExpAPI` / `com.earthexp.api.Stat`）自动探测；类通过 **EarthExp 自己的类加载器**解析，并监听其启用事件自动重试 | 不用手填类名。启动日志会写明「已接入 / 未检测到 / 服务没注册」，`/rpgitem skillcheck` 与 `/rpgitem reload` 也会回报状态。⚠️ 本插件与 EarthExp **互为 softdepend（成环）**，加载顺序无保证——所以接入**刻意不依赖**加载顺序 |
+| 技能点用哪条天赋池 | config.yml 的 `earthexp.skill-point-stat`（默认 `COMBAT`；旧键名 `combat-stat` 仍兼容） | ⚠️ **EarthExp 0.5.1+ 按轨道分开记账**：COMBAT 扣战斗池、ADVENTURE 扣冒险池，互不干扰；**0.5.0 及更早只支持 `ADVENTURE`**，配 COMBAT 会被拒。挖矿/砍树/农业没有天赋池，配上去必失败（启动日志会警告） |
+| 查看版本 | 查看启动消息 | 启动消息会显示版本号 |
+
+二、命令表
+
+| 命令 | 权限 | 作用 |
+|---|---|---|
+| /rpgitem my | earthrpgitem.my | 查看自己的 RPG 属性统计 |
+| /rpgitem gui | earthrpgitem.gui | 打开 RPGItem 管理 GUI |
+| /rpgitem accessorygui | 无（需 features.accessory） | 打开饰品 GUI |
+| /rpgitem accessory <玩家> [open\|list\|clear] | 他人需 earthrpgitem.accessory.admin | 查看/管理玩家饰品栏；list 离线可看 |
+| /rpgitem dummy | earthrpgitem.dummy | 假人测试相关操作 |
+| /rpgitem give | 管理权限 | 管理员领取 RPGItem |
+| /rpgitem puton | 管理权限 | 管理员为目标装备物品 |
+| /rpgitem reload | earthrpgitem.admin | 重载配置、RPGItem 和采集数据 |
+| /rpgitem collection refresh [世界名|all] | 管理权限 | 刷新采集点 |
+| /rpgitem skillforge | earthrpgitem.skillforge | 打开技能强化台：升级技能、查看成长表、一键重置技能点 |
+| /rpgitem gathering [玩家] | 本人可用，查别人需 earthrpgitem.admin | 采集诊断：三分类手持工具采掘等级 / 资源点数量（带经验/带门槛各几个） |
+
+命令别名：/EarthRPGitem、/erpgitem、/rpgitem。具体参数以服务器 tab 补全为准。
+
+三、RPGItem YAML 基础表
+
+| 配置 | 示例 | 作用 |
+|---|---|---|
+| id | id: flame_staff | 物品唯一 ID |
+| material | material: BLAZE_ROD | 物品材质 |
+| display-name | display-name: "&c火焰法杖" | 显示名称 |
+| description | description: ["&7说明"] | 物品 Lore |
+| attributes | attributes: {Attack: 10} | RPG 属性 |
+| fskill/rskill/srskill | fskill: | F、站立右键、蹲下右键技能 |
+| qskill/sqskill | qskill: | Q、蹲下 Q 技能 |
+| lskill | lskill: | 左键/近战技能 |
+| buffs | buffs: | 持有或装备时提供药水效果 |
+| hit-buffs | hit-buffs: | 命中时施加效果 |
+| vanilla-attributes | vanilla-attributes: | 原版 AttributeModifier |
+| soulbound | soulbound: true | 生存模式首次生效后绑定 UUID |
+| consumables | consumables: true | 技能释放时按配置消耗 |
+| unbreakable | unbreakable: true | 不按普通耐久损坏 |
+| level | level: 10 | 等级限制 |
+| Deputy | Deputy: true | 副手/辅助装备定位 |
+
+四、技能触发表
+
+| 节点 | 触发方式 | 说明 |
+|---|---|---|
+| fskill | F/换手键 | F 技能 |
+| rskill | 站立右键 | 普通右键技能 |
+| srskill | 蹲下右键 | 蹲下右键技能 |
+| qskill | Q/丢弃键 | 站立 Q 技能 |
+| sqskill | 蹲下 Q | 蹲下 Q 技能 |
+| lskill | 左键或近战命中 | 近战技能 |
+
+主手和副手同时有 RPGItem 时，Q/SQ 优先使用拥有当前对应技能的主手物品，否则回退到副手物品。空手或仅副手持有 RPGItem 时允许正常丢弃。
+
+**⚠️ 仅手持 RPG 物品才能放技能**（`skill-panel.require-held-rpgitem`，默认 `true`）：
+
+| 手里的东西 | 能否放技能 |
+|---|---|
+| 主手 RPG 武器 / 工具 / 物品 / 技能书 | ✅ |
+| 主手食物、方块、原版物品 | ❌（可以正常吃饭、放方块） |
+| 主手饰品（ACCESSORY） | ❌（饰品是纯被动的） |
+| 主手空、副手 RPG 物品 | ❌（**只看主手**） |
+
+不限制的话，绑了右键技能的玩家一「右键吃食物」就会放技能，而且事件被取消、**食物还吃不到**。
+**只看主手**是刻意的，这样主手拿食物、副手拿 RPG 物品时右键吃饭不会误触发。
+**丢弃键 Q/SQ 用「被丢掉的那件」判定**，所以丢 RPG 物品照常放技能、丢食物不会触发副手技能。
+被拦下时**静默**（不放技能、不取消事件、不发提示）；要查原因用 `/rpgitem skillcheck`。
+
+**`features.fskill` 是技能总开关**：设成 `false` 后技能系统完全关闭，
+**不取消任何事件**，玩家体验与没装插件一样（连食物都能正常吃）。
+
+五、技能效果节点
+
+| 节点 | 常用字段 | 作用 |
+|---|---|---|
+| particles | particle、effect、count、duration | 播放粒子 |
+| sounds | sound、volume、pitch | 播放声音 |
+| messages | texts、self-only、radius | 发送消息 |
+| broadcasts | text、color、duration | 广播文本 |
+| commands | commands、as-op | 执行命令或消息 |
+| buffs | type、amplifier、duration-seconds | 施加药水效果 |
+| damages | mode、damage、damage-type、radius、length、**knockback** | 造成技能伤害；`knockback`（格，默认 0）命中后把目标从施法者身边水平推开——踢击用它 |
+| dash | distance、duration-ticks、invulnerability-ticks | 直线突进（跟随视线方向） |
+| backstep | distance、duration-ticks、invulnerability-ticks | 后撤：与 dash 同参数，方向固定向后（不看视线朝向） |
+| roll | distance、duration-ticks、invulnerability-ticks | 翻滚（吃移动输入） |
+| uppercut | damage、weapon-percent、distance、radius、height、launch | 上挑：固定上挑刀路，命中者略微击飞（竖直 launch + 0.4×launch 朝前水平分量） |
+| leap-strike | leap-height、dive-angle-degrees、impact-radius、knock-up、explosion-radius、sound、**impact-sound** | 蹦山击：跃到指定高度 → 俯冲 → 落地缩减冲击波 + 轻微击飞 + 小爆炸；`sound` = 起跳音、`impact-sound` = 落地音（缺省沿用 sound） |
+| shortbow / shortbow-cd | arrow-count、speed、weapon-percent、launch-sound、trail、**projectile（物品名）**、**projectile-item（glow/pierce/collide-blocks/hit-radius/max-distance/tilt-degrees/scale/impact-particle/impact-sound）**、**spread-mode / spread-degrees**、**volleys / volley-interval-ticks**、**impact-explosion（radius/damage/weapon-percent/particle/sound）** | 短弓（弹射物技能）：shortbow 走攻速冷却、shortbow-cd 走固定冷却。3.2bate 起弹射物是**插件自己的物品弹射物**（与王之宝库同一套 ItemDisplay 机制），不是原版箭实体：`projectile` 写**物品名**（`ARROW`/`SPECTRAL_ARROW`/…）；`projectile-item.pierce` 穿透生物数、`collide-blocks` 是否被方块挡住、`tilt-degrees` 贴图摆正角、**`scale` 本体缩放**（只影响视觉）；`spread-mode: line` 水平方向（**缺省**，穿透箭/爆炸箭/三连射）、`cone` 霰弹锥形（抬头整个锥跟着抬，**只有分裂箭用**）；`volleys`+`volley-interval-ticks` 分批连射（每批各播一次发射音、各重读一次视线，三连射用）；`impact-explosion` 命中粒子模拟爆炸 + 范围伤害（爆炸箭用）——`particle` 只管火球体，原版爆炸云/黑烟/冲击环/火苗柱自动补齐，`sound.enabled` 缺省 true |
+| dimensional-slash | damage、weapon-percent、distance、radius、height、line-particle | 次元斩：射线落点范围伤害；爆炸只放 1 颗 EXPLOSION；line-particle = 爆炸附近任意方向的粒子线（默认蓝，音效默认龙息） |
+| chain | after、next、delay-seconds | 技能连锁：本段跑完后延迟释放下一段；after 支持 cast/start 与段名 |
+| range-buffs | radius、height、target、effects | 范围增益/治疗 |
+| chants | stages、interval、release-at-start/end | 吟唱分阶段执行 |
+| switches | rpgitem、material、duration | 切换物品或材质效果 |
+
+六、全局冷却表
+
+| 项目 | 默认值 | 说明 |
+|---|---|---|
+| global-cooldown | true | 每个技能节点默认开启 |
+| global-cooldown-seconds | 未填写 | 默认使用 cooldown-seconds |
+| 触发类型 | F/R/SR/Q/SQ/L 分开 | 同类型技能共享，不同类型互不影响 |
+| 关闭方式 | global-cooldown: false | 写在具体技能节点内 |
+| 额外注册 | 不需要 | YAML 配置后执行 /rpgitem reload |
+
+示例：
+qskill:
+  cooldown-seconds: 5
+  global-cooldown: true
+  global-cooldown-seconds: 8
+  dash:
+    distance: 5
+
+七、属性使用流程
+
+| 步骤 | 操作 |
+|---|---|
+| 1 | 在 Armor、Tool、Weapon、Items 或 Accessory 对应目录创建 .yml/.yaml/.txt |
+| 2 | 写入 id、material、display-name 和属性/技能节点 |
+| 3 | 执行 /rpgitem reload |
+| 4 | 使用 GUI 或管理员命令领取物品 |
+| 5 | 用 /rpgitem my 查看汇总属性 |
+| 6 | 用假人或实际战斗测试伤害、冷却和效果 |
+
+八、采集系统
+
+| 内容 | 使用方式 |
+|---|---|
+| 采集类型 | 农业、挖掘、伐木 |
+| 采集属性 | FarmingSpeed、MiningSpeed、ForestSpeed、FarmingFortune、MiningFortune、ForestFortune |
+| 采掘等级门槛 | 只看手持工具（Tool）的 MiningLevel / ForestLevel / FarmingLevel，达标是采动资源点的唯一条件；和玩家等级无关 |
+| 采集点数据 | plugins/EarthRPGItem/collection-points.yml |
+| 刷新命令 | /rpgitem collection refresh [world|all] |
+| 放置与删除 | 按权限在创造模式操作 |
+| 农业采集 | 右键采集，避免普通小麦掉落逻辑干扰 |
+
+九、技能背包、技能强化台与技能预设
+
+| 功能 | 使用方式 |
+|---|---|
+| 获得技能书 | 管理员 /rpgitem gui 技能物品库发放；或直接给玩家已注册技能的物品 |
+| 技能书描述 | 显示技能类型 / 冷却触发 / 冷却时间 / 技能组 / 武器类型 / **伤害构成** / 伤害类型；只作用于技能物品 |
+| 伤害构成 | 技能伤害 = **固定伤害 + 攻击力 × 倍率**，两项都显示：`固定 10 + 攻击 100%`；只配倍率 → `攻击 60%`；只配固定 → `固定 10`；都为 0 → `无（纯特效 / 增益技能）` |
+| 描述提示「段落已配置但未启用」 | 该技能段必填项不满足（武器数量 / 材质列表 / 持续时间等），**技能不会释放**；去补该段必填项，而不是找伤害为什么是 0 |
+| 技能类型与伤害来源 | 两者来自**同一张识别表**，永远指向同一个技能段；一个键位配了多个技能段时按表内顺序取靠前的 |
+| 武器类型限定 | `supported-weapons`，写在技能文件或 config 的 `skill-panel.skills.<ID>`（config 优先） |
+| 武器限定：写法 | 不写或 `[ANY]`/`[不限]` = 不限武器类型；列表中任一类型匹配即可（**或**，不是全部都要）；仍须通过独立的 `require-held-rpgitem` 门槛 |
+| 武器限定：类别名 | 剑/`SWORD`、斧/`AXE`、弓/`BOW`、弩/`CROSSBOW`、法杖/`STAFF`、匕首/`DAGGER`（中英等价，另认「驽/杖/短刀」）；也支持自定义标签 |
+| 武器限定：看哪只手 | 主手**或**副手任意一个符合就通过；背包里不算；主手 RPGItem 门槛另行检查 |
+| RPGItem 武器类型 | `Weapon/*.txt`、`.yml`、`.yaml` 等定义顶层可选 `weapon-type: 法杖`；按 `identityId -> findById` 查注册定义，**已填类型优先于材质** |
+| 武器限定：兼容回退 | 仅未填注册类型时使用旧材质推断或精确 Material 匹配；例如无类型的 `FISHING_ROD` 仍推断为 STAFF。已注册类型不能被材质绕过 |
+| 武器限定：写错了 | **静默不匹配**，不报错，表现是「技能怎么也放不出来」；用 `/rpgitem skillcheck` 看 |
+| 武器限定：装备 vs 施放 | 装备时武器不符**仍成功**（只给黄色提示）；施放时才拦下 |
+| 学习技能 | 手持技能书右键空气/方块，技能书消耗、技能直接进技能背包；重复/已满/保存失败不消耗 |
+| 技能背包 | 技能面板 GUI 第 45 格「技能背包」按钮打开；技能**不能取出** |
+| 删除技能 | 背包底部「删除模式」开关 → 点击技能打开**独立确认界面** → 「确认删除」才真删（清面板槽位、等级回 Lv.1、退还技能点）。取消/关闭不误删；预计退还是预览，确认后才退款；退还量 = EarthExp 账本上本插件**实际扣过**的量，可能少于按等级算出来的数 |
+| 升级消耗 | 接入了 EarthExp = 技能点（升到第 N 级花 N 点，上限 10 级）；未接入 = 宝石（skill-leveling.yml 的 cost.tiers） |
+| 一键重置 | 技能强化台列表页按钮（仅技能点模式可用）：所有已存储等级回 Lv.1、退还 EarthExp 账本上实际扣过的点数 |
+| 技能预设入口 | 技能面板 GUI 第 47 格「技能预设」按钮（底行，技能背包与关闭之间） |
+| 保存预设 | 预设界面第 0 行 9 个格子：空位左键 = 保存当前配置；已保存的右键 = 覆盖保存 |
+| 加载预设 | 左键点击已保存的预设：还原八个键位的技能+等级+四个提示开关+面板总开关 |
+| 预设与天赋 | 只在「EarthExp 已接入**且它的接口真的会扣点**」时才做天赋重分配：重置不在预设里的技能等级，再按预设分配；**剩余点数不删除**，留给玩家 |
+| 未实装扣点时 | EarthExp 0.5.0 之前没有外部扣点接口，花点数并没有真的扣走。此时**刻意不重置**（重置换不回点数，只会白洗等级），改为**直接套用预设等级、其他技能原样保留**，聊天栏会说明 |
+| 点数不够 | **直接拒绝加载、什么都不改**，提示还差多少点（先算后做，不会重置到一半卡住） |
+| 等级上限调低 | 预设等级按**当前**上限收敛后再计费与套用（预设存的是 Lv.20、上限调到 Lv.10 → 按 Lv.10 算，不会按 209 点收费只给 10 级） |
+| 预设失效 | 预设里有技能被删除 / 注册失效 / 不再提供该键位 / 两个启用键位技能组冲突 → 红色羊毛，无法加载 |
+| 预设存储 | plugins/EarthRPGItem/skill-presets.yml，按玩家 UUID 存，索引 1–9 对齐界面；**手改后要 `/rpgitem reload`**，否则会被玩家下次保存覆盖 |
+
+十、GUI、饰品与测试
+
+| 功能 | 使用方式 |
+|---|---|
+| 主 GUI | /rpgitem gui，按 Armor、Tool、Weapon、Items、Accessory、Collection 浏览 |
+| 饰品 | /rpgitem accessorygui，按饰品槽规则装备 |
+| 属性查看 | /rpgitem my |
+| 假人测试 | /rpgitem dummy，测试伤害、暴击、抗性和技能 |
+| 资源模板 | 使用项目根目录或手动模板中的 YAML，复制到服务器插件目录 |
+| 给其他插件的 API | JAR 内 tips 目录：《属性API使用手册-版本3.2bate.txt》（属性附加值/原版属性）、《采集经验API使用手册-版本3.2bate.txt》（经验事件/等级/门槛 provider） |
+
+十之一、采集点：方块不破，只走我们的动画
+
+| 功能 | 使用方式 |
+|---|---|
+| 挖采集点方块会不会破 | **不会破**，这是设计：服务端取消破坏事件，掉落按采集速度计时发，时间到了自动进背包 |
+| 裂纹动画开关 | `features.collection-break-animation`（默认开）：按「硬度 × 20 ÷ 采集速度」推进裂纹 |
+| 挖掘疲劳开关（治本） | `features.collection-mining-fatigue`（默认开）：给正在挖采集点的玩家续疲劳 IV，客户端自己算不出「挖穿了」就不会删方块 |
+| 疲劳的作用范围 | **只给正在挖采集点的玩家**；正常挖土建房子、挖普通矿物完全不受影响 |
+| 疲劳的强度 / 残留 | 速度 ×0.00081（石头 0.4 秒 → 约 19 分钟）；每 tick 续 1 秒，停手后最多残留 1 秒 |
+| 疲劳可见吗 | 看不见：粒子与 HUD 图标都已隐藏。部分界面仍可能列出「挖掘疲劳」字样 |
+| 与别的插件共存 | 别人给了同级或更强的疲劳时跳过、不顶掉；也不主动移除效果（避免误删） |
+| 客户端纠正开关（兜底） | `features.collection-client-guard`（默认开）：每 tick 把玩家正在挖的采集点按回真实状态，并擦掉客户端自己预测的裂纹 |
+| 两个开关怎么配合 | 疲劳治本（不让客户端删方块），纠正兜底（真删了也按回去）。**建议都开** |
+| 疲劳会不会卡住不消失 | 有兜底：每 tick 自检「还瞄着这个点吗」，连续 20 tick 没瞄着就撤销追踪 |
+| 纠正只发给谁 | 只发给**正在挖这个点的玩家本人**，不对附近玩家广播 |
+| 纠正的代价 | 挖掘者每 tick 多收 2 个包；不挖的时候不发 |
+| 追踪何时撤销 | 停止挖掘、改挖别的方块、方块被删、玩家下线，全部自动撤销 |
+| 没有采集速度 / 门槛不达标 | 方块同样不会被挖掉（以前那种情况只在事件里擦一次，客户端下一帧又预测出来） |
+| 挖矿时技能开关 | `skill-panel.suppress-left-click-on-block`（默认开）：对着**方块**左键 = 挖矿，不触发 L/SL 技能 |
+| 打怪还放得出技能吗 | 放得出。左键**空气** / 左键**实体**照常触发，只有「对着方块左键」被放行给挖矿 |
+
+十一、常见问题
+
+| 问题 | 处理 |
+|---|---|
+| YAML 修改后没生效 | 确认目录正确并执行 /rpgitem reload |
+| JAR 更新后代码没变化 | 完全停止服务器后替换 JAR 并重启 |
+| 技能不释放 | 检查 features.fskill、**主手是否拿着 RPG 物品**、节点名称、冷却和玩家姿态；用 /rpgitem skillcheck 看具体原因 |
+| 右键吃食物却放出了技能 | 确认 `skill-panel.require-held-rpgitem: true` 并已 /rpgitem reload（默认就是 true；若已开启仍复现请反馈） |
+| 关掉 features.fskill 后吃不了食物 | 旧版缺陷，已修复：现在总开关在取消事件之前检查，关掉后与没装插件一样 |
+| 主手空着也想放技能 | 把 `skill-panel.require-held-rpgitem` 改成 `false`（不推荐：吃食物会误触发） |
+| 丢弃 RPG 物品不放技能了 | 不该发生：丢弃键用「被丢掉的那件」判定；用 /rpgitem skillcheck 查 Q/SQ 键位 |
+| 拿着 RPG 工具挖矿时技能乱放 / 方块挖不动 | 已修复：对着**方块**左键视为挖矿，不再触发 L/SL 技能、也不取消事件。开关 `skill-panel.suppress-left-click-on-block`（默认开）。原版左键方块就是挖掘，技能触发会取消事件导致方块完全挖不动 |
+| 挖矿时 L/SL 技能还能打怪吗 | 能。只有「对着方块左键」被放行给挖矿；左键**空气**、左键**实体**照常触发技能 |
+| 想恢复旧行为（对着方块左键也放技能） | 把 `skill-panel.suppress-left-click-on-block` 改成 `false`（不推荐：会导致方块挖不动） |
+| 全局冷却疑问 | 默认 true；具体技能写 global-cooldown: false 可关闭 |
+| 物品无法使用 | 检查 type、level、soulbound、耐久和配置 |
+| 技能书右键没反应 | 确认物品是已注册技能的物品（默认附魔书材质）；重复学习会提示已有，背包满提示已满（都不消耗书） |
+| 技能书看不到固定伤害 | 旧版描述只有「攻击倍率」一行；已修复为「伤害构成：固定 X + 攻击 Y%」，用最新 JAR 重新生成的技能书可见 |
+| 王之宝库伤害显示为 0 | 旧版漏了 gate-of-babylon 的识别分支（技能本身正常，只是描述错了）；已修复为「攻击 60%」，用最新 JAR |
+| 技能书描述有「段落已配置但未启用」 | 该技能段必填项不满足，技能不会释放；按提示补 weapon-count / weapon-materials / duration-seconds 等 |
+| 技能类型与伤害对不上 | 已修复：两者现在来自同一张识别表，不可能指向两个不同技能段 |
+| 挖采集点方块被挖掉了 | 检查 `features.collection-mining-fatigue` 与 `features.collection-client-guard`（默认都开）。前者让客户端算不出「挖穿了」，后者事后按回去 |
+| 挖采集点裂纹速度像原版硬度 | 由 `collection-client-guard` 每 tick 擦掉客户端自己那份预测；关掉就回到旧行为 |
+| 挖采集点半天没掉东西 | 方块不破是设计如此；掉落由服务端按采集速度计时发放，到点自动进背包 |
+| 采集点方块消失一下又弹回来 | 事后纠正要等下一 tick 才到，中间那一帧就是空气。开 `collection-mining-fatigue`（默认开）可治本 |
+| 拿着 RPG 工具挖矿技能乱放 / 方块挖不动 | 已修复：对着方块左键不再触发 L/SL 技能（`skill-panel.suppress-left-click-on-block`，默认开） |
+| 停手后挖普通方块变慢一下 | 疲劳每 tick 续 1 秒，停手后最多残留 1 秒，属预期 |
+| 想全局禁止原版破坏方块 | 挖掘疲劳做不到：硬度 0 的方块（花/火把/草/农作物）不受影响。需额外拦 `BlockBreakEvent`，目前没做 |
+| 玩家喝牛奶能解除疲劳吗 | 能解除，但每 tick 续期，下一 tick 就回来，实际绕不过去 |
+| 升级提示「战斗天赋点不足」 | 已接入但天赋点不够（升级所需 = 目标等级数）。若显示的是「未接入」，先看启动日志的接入状态那一行 |
+| 装了 EarthExp 却显示「未接入」 | 看启动日志是哪一句：①「未检测到」→ EarthExp 没加载成功；②「服务没注册」→ EarthExp 启用了但自己报错；③确认 `plugin.yml` 有 `softdepend: [EarthExp]`；改完 `/rpgitem reload` |
+| 一键重置按钮置灰 | 未接入 EarthExp（宝石模式下删除/重置不退还实扣宝石，刻意禁用） |
+| 后撤反而往前冲 | 检查节点是不是写成了 dash；backstep 才是固定向后 |
+| 次元斩一次施放打了两次 | chain.after 要写 cast：写成 cast 时即时那次会被跳过，只由连锁延迟释放 |
+| 次元斩的刀没出来 | chain.next 必须写 dimensional-slash；cast-time-seconds 与 chain.delay-seconds 要一致 |
+| 次元斩的粒子线是灰的 | 别显式写灰色的 color；不写 color/block 时默认就是蓝色 80,140,255 |
+| 次元斩的粒子线都朝一个方向 | 已修复为任意朝向；确认用的是最新 JAR |
+| 次元斩还有白墙爆炸 / 没龙息声 | 爆炸只放 1 颗 EXPLOSION、音效默认龙息 ENTITY_ENDER_DRAGON_GROWL；旧 yml 删掉重建模板 |
+| 上挑把人打飞不了 / 飞太高 | launch 默认 0.7（约 3 格）；击飞带 0.4×launch 朝前水平分量，不再是纯竖直 |
+| 后撤/上挑/蹦山击释放时间不对 | 模板分别是 0.5 / 0.5 / 2 秒；已有服务器需手动补 cast-time-seconds |
+| 蹦山击跳不高或不落地 | leap-height 调大；俯冲角上限 89°，上方有方块会撞头提前落下 |
+| 蹦山击落地太吵 | 调小 shockwave-particle 的 count / radius，或 enabled: false |
+| 四个新形态没注册 | 模板只在文件不存在时写出：删掉对应 skills/*.yml 后 reload，或手动补段落 |
+| 技能预设点不了 / 是红的 | 预设里有技能不在背包、注册失效、不再提供该键位、或两个启用键位技能组冲突；按提示修好后右键覆盖保存 |
+| 加载预设提示「还差 N 点」 | 天赋点不够按预设分配；已取消，什么都没改。去刷战斗等级，或右键把预设覆盖成低配版 |
+| 加载预设后别的技能变 Lv.1 | 设计行为：EarthExp 真的会扣点时，不在预设里的技能会被重置，点数释放出来给预设用（见手册第三十二节） |
+| 加载预设后别的技能**没**变 Lv.1 | 说明 EarthExp 还没实装扣点接口：刻意不重置，因为重置换不回点数；此时预设等级是直接套用的 |
+| 预设剩余的点数去哪了 | 还在玩家手里，没被删除也没被强行花掉；可在技能强化台自己分配 |
+| 保存预设提示「没有任何技能绑定」 | 八个键位都是空的，先装技能再保存 |
+| 宝石模式下加载预设等级没变 | 宝石模式没有天赋可重置，加载只还原绑定与开关（技能等级保持原样） |
+| 手改了 skill-presets.yml 没生效 | 改完要 `/rpgitem reload`；插件重载时会整份重读，不重载会被玩家下次保存覆盖 |
+| 技能预设数据在哪 | plugins/EarthRPGItem/skill-presets.yml（首次使用自动生成，索引 1–9 对齐界面） |

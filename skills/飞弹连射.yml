@@ -1,0 +1,85 @@
+# 飞弹连射 - 法师独立技能模板
+# 本文件位于 plugins/EarthRPGItem/skills/飞弹连射.yml
+# 插件会自动把本文件注册为一个技能，技能 ID 就是文件名：飞弹连射
+#
+# 定位：法师的连发输出。与奥术飞弹（普通攻击档）刻意区分：
+#   · 奥术飞弹 = 跟随攻速的持续平A，单发；
+#   · 飞弹连射 = 固定冷却的爆发技能，一次 3 发。
+# 技能组1：与霜环（技能组2）、烈焰法阵（技能组3）、护盾/大招（技能组4）互斥。
+#
+# 类型：shortbow（投射物）。连发由 volleys + volley-interval-ticks 实现——
+# 每一批都会重新读取玩家视线，所以连射期间可以追着移动目标打。
+
+display-name: "&d飞弹连射"
+material: ENCHANTED_BOOK
+skill-group: "技能组1"
+supported-weapons: [STAFF]
+
+# 0.3 秒读条：几乎瞬发，但施法瞬间被打断会吃掉冷却。
+cast-time-seconds: 0.3
+cooldown-seconds: 12
+cooldown-name: "飞弹连射"
+cooldown-enabled: true
+messages-enabled: true
+global-cooldown: false
+
+# ---- 成长规则 ----
+# 每级单发倍率 +6%、判定半径 +0.03、射程 +1 格。
+# 三发各自结算，所以单发倍率的成长会被发数放大——增幅必须比单体技能保守。
+# Lv.10：单发 55 + 9×6 = 109%，三发全中约 327%；判定 0.7 + 9×0.03 = 0.97 格。
+leveling:
+  max-level: 10
+  per-level:
+    shortbow.weapon-percent: 6
+    shortbow.projectile-item.hit-radius: 0.03
+    shortbow.projectile-item.max-distance: 1
+
+shortbow:
+  # 每批 1 发，打 3 批 = 一次施放共 3 发。
+  arrow-count: 1
+  # ---- 连发节奏（方案 A：依次飞出） ----
+  # 3 批，每 4 tick（0.2 秒）一批。总耗时 0.4 秒，有清晰的连发节奏感。
+  volleys: 3
+  volley-interval-ticks: 4
+  # 飞行速度比奥术飞弹更快，连发才有「追射」的手感。
+  speed: 3.2
+  # 单发 55%：三发全吃满约 165%，介于普通攻击与法阵之间。
+  weapon-percent: 55
+  # 排除 PHYSICAL(近战面板) 与 PROJECTILE(弓术词条)，法术只吃魔法/元素伤害。
+  # 这是排除列表：写进去的项会被移除，不是「只用这些」。
+  weapon-percent-sources: [PHYSICAL, PROJECTILE]
+  # 命中伤害类型：MAGIC。走魔法护甲/魔法暴击。
+  damage-type: MAGIC
+  damage-enabled: true
+  spread-mode: line
+  spread-degrees: 0
+  projectile: SPECTRAL_ARROW
+  projectile-item:
+    glow: true
+    # 连发技能不给穿透：否则三发穿透叠起来收益过高。
+    pierce: 0
+    collide-blocks: false
+    hit-radius: 0.7
+    max-distance: 20
+    scale: 0.75
+    tilt-degrees: -45
+    impact-particle:
+      enabled: true
+      particle: END_ROD
+      count: 14
+      radius: 0.4
+    impact-sound:
+      enabled: true
+      sound: ENTITY_FIREWORK_ROCKET_BLAST
+      volume: 0.5
+      pitch: 1.9
+  # 拖尾用洋红色，与奥术飞弹的紫色区分，一眼能看出是哪个技能。
+  trail:
+    enabled: true
+    particle: DUST
+    count: 10
+    radius: 0.07
+    color: "255,80,220"
+  launch-sound: ENTITY_ILLUSIONER_CAST_SPELL
+  launch-volume: 0.6
+  launch-pitch: 1.9

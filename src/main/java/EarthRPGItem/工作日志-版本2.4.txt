@@ -1,0 +1,97 @@
+EarthRPGItem 2.4 工作日志
+========================
+
+一、Consumables 消耗品
+---------------------
+1. RpgItem 新增 consumables 字段，支持根节点 `Consumables: true` 和 `attributes.Consumables: true`。
+2. FSkill、RSkill、LSkill 触发成功后统一消耗主手一件物品。
+3. 堆叠物品减少数量，单件物品直接清空主手。
+4. 冷却中、技能不存在或触发失败时不消耗。
+5. 吟唱技能在吟唱成功开始时消耗，避免同一技能重复消耗。
+6. Consumables 参与属性指纹，注册配置变更后旧物品会按当前规则自动更新。
+
+二、技能魔法暴击
+----------------
+1. 修复 F/R/L 技能伤害入口完全跳过 CritChance 的问题。
+2. MAGIC 和 POTION 类型的技能伤害独立进行魔法暴击判定。
+3. 魔法暴击使用 CritChance、CritDamage、目标 CritArmor 和 ArmorPen。
+4. 魔法暴击伤害先进入魔法护甲结算，并使用魔法暴击数字样式。
+5. 物理、弓箭和元素技能的原有结算路径保持不变。
+
+三、F/R/L 独立提示
+-----------------
+1. 新增 fskill-ready-message、fskill-cooldown-message、fskill-activation-message。
+2. 新增 rskill-ready-message、rskill-cooldown-message、rskill-activation-message。
+3. 新增 lskill-ready-message、lskill-cooldown-message、lskill-activation-message。
+4. F、R、L 的消息开关继续由 fskill-messages-enabled、rskill-messages-enabled、lskill-messages-enabled 独立控制。
+5. LSkill 使用全局攻速冷却时也会发送冷却完成提示。
+6. 旧版 ready-message、cooldown-message 和 activation-message 继续作为回退配置。
+
+四、文档与构建
+--------------
+1. 新增 tips/属性详细使用手册-版本2.4.txt。
+2. 项目版本更新为 2.4。
+3. 目标产物为 EarthRPGItem-2.4.jar。
+
+五、护甲与饰品自动迁移修复
+--------------------------
+1. 属性汇总前不再只检查主手与副手，同时检查玩家四个护甲栏位。
+2. 发现 item-version 或属性签名过期时，直接在原装备栏位更新物品并重新设置护甲内容。
+3. 饰品缓存中的旧版物品也会自动更新并立即写回 accessories.yml。
+4. 自动迁移继续保留原版耐久、附加耐久消耗进度、堆叠数量和灵魂绑定主人。
+5. 修复升级插件后必须把护甲取下并重新拿到手上，属性才恢复的问题。
+
+六、RSkill 与 LSkill 冷却提示修复
+-------------------------------
+1. 默认配置中的 rskill-messages-enabled 与 lskill-messages-enabled 改为 true。
+2. 插件启动时自动把新默认项合并到旧 config.yml，已有自定义值不会被覆盖。
+3. F、R、L 分别读取各自的释放提示、冷却中提示与冷却完成提示。
+4. RSkill 使用 cooldown-seconds，LSkill 继续使用玩家全局 AttackSpeed 冷却，两者都能显示剩余秒数和就绪消息。
+
+七、技能可配置暴击
+------------------
+1. DamageSkill 新增 can-crit 布尔配置，默认 false，避免升级后旧技能伤害突然提高。
+2. can-crit: true 时，技能读取 CritChance、CritDamage、CritArmor 与 ArmorPen。
+3. 魔法、药水、弓箭和物理技能分别使用对应的暴击伤害数字样式。
+4. 同一个技能包含多种伤害类型时，每种伤害都会按照该技能的 can-crit 配置参与暴击结算和显示。
+
+八、技能冷却开关与同类型全局冷却
+--------------------------------
+1. FSkill、RSkill、LSkill 新增 cooldown-enabled，可单独关闭某个物品技能的普通冷却。
+2. 新增 messages-enabled，可单独关闭某个物品技能的释放、冷却中和冷却完成提示。
+3. 新增 global-cooldown 和 global-cooldown-seconds。
+4. 全局冷却按 F、R、L 三种触发类型分别保存，F 不会锁定 R 或 L。
+5. 只有同类型且同样开启 global-cooldown 的技能会互相阻止；未开启全局冷却的技能不受影响。
+6. 吟唱技能被切换物品中断时，会同步清理本次技能的全局冷却状态。
+7. 修复 MAGIC 技能包含 LIGHT_DAMAGE 来源时误走物理暴击的问题，暴击类别现在以技能的 damage-type 为准。
+
+八、物理/魔法暴击分流与技能名称
+------------------------------
+1. 新增 features.physical-crit 和 features.magic-crit 两个独立总开关，并加入 Setting GUI。
+2. 近战物理暴击只在直接攻击且存在 Attack 时判定；近战物品拥有 MagicDamage 不会额外触发魔法暴击。
+3. 魔法暴击只在魔法来源或技能 MAGIC/POTION 伤害中判定；法杖不会凭空产生物理暴击。
+4. 弓箭暴击受 physical-crit 控制，弓箭附加的 MagicDamage 暴击受 magic-crit 控制，两者独立结算。
+5. FSkill、RSkill、LSkill 节点新增 cooldown-name、skill-name、name 三种兼容写法，优先读取 cooldown-name。
+6. 配置自定义名称后，默认提示显示“技能名冷却就绪”和“技能名冷却时间: 秒数”；未配置时保持旧提示。
+7. 自定义消息支持 `{skill}`、`{item}`、`{trigger}` 和 `{seconds}` 占位符。
+九、后续问题修复记录（本次补充）
+--------------------------------
+1. DamageSkill 新增 pierce-blocks 配置。默认值为 true，旧物品不填写时保持原有行为；设置为 false 时，技能不能穿透不可通行方块。
+2. wave 光波在生成每个粒子点前检查方块，遇到阻挡方块后停止继续生成粒子和伤害。
+3. area 范围技能关闭 pierce-blocks 后，使用玩家与目标之间的可视线判断，隔墙目标不会受到伤害；范围粒子也会过滤被方块遮挡的位置。
+4. 修复技能暴击按技能根类型重复套用的问题。MAGIC_DAMAGE 与 LIGHT_DAMAGE 同时存在时，光属性不会被重复显示为第二次魔法暴击；元素伤害不参与技能暴击。
+5. 修复 LSkill 冷却结束后仍发送“L技能已就绪”提示的问题。LSkill 不再发送该默认就绪提示，FSkill 与 RSkill 的自定义 cooldown-name 提示保持不变。
+6. 已重新执行 Gradle 构建，产物为 build/libs/EarthRPGItem-2.4.jar。
+十、本次技能释放提示修复
+--------------------------
+1. FSkill、RSkill、LSkill 配置 cooldown-name、skill-name 或 name 后，释放提示会使用自定义技能名称。
+2. 例如 cooldown-name: "裂地斩" 时，提示改为“释放了裂地斩”，不再显示“物品名释放了 F 技能”。
+3. 未配置自定义名称时，继续使用原有 F/R/L 技能释放提示。
+十一、命令技能多轮执行与兑换书
+-------------------------------
+1. CommandSkill 支持多条命令按列表顺序执行，并通过 `delay <tick>` 累计延迟后续步骤。
+2. 新增 MythicMobs 风格兼容语法 `command{c="..."} @self` 和 `message{m="..."} @self`。
+3. 命令支持 `${player}`、`{player}`、`@self` 三种玩家变量，都会替换为释放者游戏 ID。
+4. 新增 Weapon 示例 `meteor_iron_sword_exchange_book.txt`，材质为 BOOK，设置 `Consumables: true`。
+5. 兑换书包含三段间隔 60 tick 的公告、龙息音效、发放陨铁剑指令和个人成功消息。
+6. 命令步骤通过 Bukkit 延迟任务执行，玩家下线时后续步骤自动跳过。

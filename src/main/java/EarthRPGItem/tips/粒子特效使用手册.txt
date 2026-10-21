@@ -1,0 +1,95 @@
+EarthRPGItem 粒子与音效使用手册
+
+版本：1.2 续写
+
+一、粒子用途
+RPGItem 武器造成 RPG 属性伤害时，可以在目标附近生成一次性粒子。
+粒子不使用常驻循环任务，避免长期占用服务器资源。
+
+二、全局粒子配置
+config.yml：
+particles:
+  enabled: true
+  particle: BLOCK
+  block: IRON_BLOCK
+  effect: break
+  count: 12
+  radius: 1.5
+
+三、单个武器粒子配置
+particles:
+  enabled: true
+  particle: BLOCK
+  block: IRON_BLOCK
+  effect: break
+  count: 18
+  radius: 1.8
+
+四、支持的粒子形态
+default / break / 破坏：随机破坏散开。
+splash / 飞溅：向周围随机飞溅。
+contract / 收缩：从周围向中心聚拢。
+fall / 跌落：从高处向下分布。
+rise / 飞升：从低处向上分布。
+spin / 旋转：围绕目标旋转分布。
+compress / 压缩：集中在目标附近小范围。
+grow / 变大：从中心向外扩张。
+
+radius 的含义随用途而变，上限也不同（这是刻意设计，不是遗漏）：
+
+- 形状类（effect 为 default / break / splash 等）：radius 是**形状的大小**，上限 3。球形写 radius: 3 表示半径 3 格的球。
+- 爆发类（effect 为 circle / sphere / round / 圆形）：radius 是**扩散环的半径**，上限 6。
+- 轨迹类（技能弧线、投射物拖尾）：radius 是**轨迹的粗细**，不是长度，写 0.08 表示很细的一条线，写大了会糊成团。
+  - **`trail` 段（弹射物拖尾）默认 `0.05`、上限 `0.5`**：超过上限会被收窄到 `0.5`，并在后台打印一条告警（不再静默）。
+  - **历史 bug（已修）**：这里曾经继承**形状类**的默认值 `1.5`，再被运行时上限截成 `1.0` —— 于是「`trail` 段没写 `radius`」的弹射物周围会出现 **±1 格**的一团雾。
+    玩家实测反馈原话「拖尾粒子范围怎么是 1 格，他应该跟原版箭射出去差不多是 0.几格」说的就是这个。
+    现在轨迹有自己的一套默认值与上限，不再借用形状类的数值。
+
+DUST 粒子的颜色与颗粒大小都写在 block 里：`block: "r,g,b"` 或 `block: "r,g,b,size"`。
+
+- 颜色 `r,g,b` 各 0~255，例如粉色 `"255,105,180"`。
+- `size` 是**每一颗粒子自身的大小**，默认 `0.55`，可用范围 `0.05 ~ 4`。省略就用默认值。
+- 【重要】`size` 与 `radius` 是两件完全不同的事：
+  - `radius` = **散布抖动**：粒子撒在多宽的范围里（由 playJittered / playTrail 等使用）；
+  - `size` = **粒子本身多大**：每一颗 DUST 点有多大。
+
+  轨迹看起来「范围太大」时，几乎总是 `size` 大而不是 `radius` 大，所以**把 `radius` 调成 0 不会有任何变化**。
+  要缩小观感请调 `size`，例如 `block: "255,105,180,0.35"`。
+- 兜底规则：颜色非法（不是三段数字）→ 整体回退灰色 `128,128,128`；
+  **只有 size 非法时保留颜色、size 回退默认值**，不会把颜色一起丢掉。
+
+历史说明：这里曾经有两份 `dust()` 实现，`SlashParticleEffectPlayer`（挥砍/剑气）用 `0.55F`、
+`ParticleEffectPlayer`（投射物/箭雨轨迹）用 `1.0F`。同样是 DUST 轨迹，弹射物拖出来比剑气粗了近一倍。
+现已合并为唯一实现，默认值统一为 `0.55`。
+
+技能形态（sweep / cross-slash 的弧线）里，count 表示**整条弧的粒子总数**，会平均分配到弧上的各个采样点，而不是每个采样点都生成 count 个。所以 count: 160 是「整条弧一共 160 个」，不是「每个点 160 个」。
+
+五、音效用途
+RPGItem 武器造成 RPG 属性伤害时，可以播放一次命中音效。
+音效和粒子一样只在攻击命中时触发，不使用循环任务。
+
+六、全局音效配置
+config.yml：
+sounds:
+  enabled: true
+  sound: ENTITY_PLAYER_ATTACK_STRONG
+  volume: 1.0
+  pitch: 1.0
+
+七、单个武器音效配置
+sounds:
+  enabled: true
+  sound: BLOCK_ANVIL_LAND
+  volume: 1.0
+  pitch: 1.0
+
+sound：原版 Bukkit Sound 名称，例如 BLOCK_ANVIL_LAND、ENTITY_PLAYER_ATTACK_STRONG。
+volume：音量。
+pitch：音调。
+
+八、铁块破坏粒子 + 铁砧音效模板
+插件会生成：
+plugins/EarthRPGItem/Weapon/iron_break_particle_weapon.txt
+
+该模板材质为 IRON_SWORD。
+攻击时生成 IRON_BLOCK 破坏粒子，并播放 BLOCK_ANVIL_LAND 铁砧落地音效。

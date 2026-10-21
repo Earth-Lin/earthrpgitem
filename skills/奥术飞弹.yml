@@ -1,0 +1,102 @@
+# 奥术飞弹 - 法师独立技能模板
+# 本文件位于 plugins/EarthRPGItem/skills/奥术飞弹.yml
+# 插件会自动把本文件注册为一个技能，技能 ID 就是文件名：奥术飞弹
+#
+# 定位：法师的「普通攻击」。不读条、冷却跟随攻速，是法杖平A打不痛时的持续输出手段。
+# 与剑士的挥击、弓手的代达罗斯弓同一档（普通攻击组），三者互斥。
+#
+# 类型：shortbow（真正的投射物），不是 dimensional-slash。
+#   dimensional-slash 是「次元斩」专属的近战位移斩，它在命中点会强制放一颗 EXPLOSION，
+#   所以拿它做飞弹的表现就是「一放就炸」，既不是飞弹也不是激光。
+#   shortbow 有真正的飞行体（ItemDisplay）、逐 tick 推进、线段命中判定与穿透，
+#   拖尾粒子才能真正连成一道光束。
+
+display-name: "&5奥术飞弹"
+material: ENCHANTED_BOOK
+skill-group: "普通攻击"
+supported-weapons: [STAFF]
+
+# ---- 冷却 ----
+# 使用玩家攻速（AttackSpeed）换算冷却；此时不需要也不能写 cooldown-seconds。
+attack-speed-cooldown: true
+cooldown-name: "奥术飞弹"
+cooldown-enabled: true
+messages-enabled: true
+global-cooldown: false
+
+# ---- 成长规则 ----
+# 成长方向选「弹速 + 判定半径 + 射程」，不堆伤害倍率：
+# 普通攻击技能冷却跟随攻速，倍率一旦成长就会和攻速叠乘，高频暴击下极易失衡。
+# Lv.10：弹速 2.6 + 9×0.12 = 3.68 格/tick，判定 0.85 + 9×0.04 = 1.21 格，射程 24 + 9×1.2 = 34.8 格。
+leveling:
+  max-level: 10
+  per-level:
+    shortbow.speed: 0.12
+    shortbow.projectile-item.hit-radius: 0.04
+    shortbow.projectile-item.max-distance: 1.2
+
+# ---- 技能效果：紫色激光弹 ----
+shortbow:
+  # 一次一发（普通攻击不该是连发，连发是另一个技能的事）。
+  arrow-count: 1
+  # 飞行速度：2.6 格/tick。太快看不清激光，太慢追不上移动目标。
+  speed: 2.6
+  # 固定 100% 武器面板。
+  weapon-percent: 100
+  # ---- 伤害来源过滤 ----
+  # 注意 weapon-percent-sources 是【排除列表】，写进去的项会被移除，不是「只用这些」。
+  # PHYSICAL(=ATTACK) 和 PROJECTILE(=BOW_DAMAGE) 都被排除：
+  #   法术倍率不参与近战面板与弓术词条的结算，只吃魔法/元素伤害。
+  # 写 ALL 或不写 = 一个都不排除（旧行为）。
+  weapon-percent-sources: [PHYSICAL, PROJECTILE]
+  # 命中伤害类型：MAGIC。走魔法护甲/魔法暴击。
+  # 这一项以前即使写了也不生效（代码里写死 PHYSICAL），现在会真正读取。
+  damage-type: MAGIC
+  damage-enabled: true
+  # 连发批次数：1 = 只打一发。
+  volleys: 1
+  volley-interval-ticks: 0
+  # 单发不散布。
+  spread-mode: line
+  spread-degrees: 0
+  # 本体用光灵箭：贴图细长、自带紫白色调，最接近「一束光」。
+  projectile: SPECTRAL_ARROW
+  # 发光：让本体在暗处也清晰可见。
+  projectile-item:
+    glow: true
+    # 不穿透：命中第一个目标就停。
+    # 奥术飞弹是普通攻击档（冷却跟随攻速），一旦穿透，每一次挥杖都会按
+    # 「命中的目标数 × 100% 面板」结算，贴脸打一群敌人时总伤害直接翻几倍，
+    # 远超这个档位的设计预期。要打群体请用霜环/烈焰法阵/元素崩解。
+    pierce: 0
+    # 不撞方块：飞弹是魔法光束，被墙挡住反而奇怪。
+    collide-blocks: false
+    hit-radius: 0.85
+    max-distance: 24
+    # 本体缩放：略小一点，避免挡视野。
+    scale: 0.8
+    # 贴图摆正角（光灵箭的箭头在贴图里是斜的）。
+    tilt-degrees: -45
+    impact-particle:
+      enabled: true
+      particle: END_ROD
+      count: 18
+      radius: 0.5
+    impact-sound:
+      enabled: true
+      sound: ENTITY_FIREWORK_ROCKET_BLAST
+      volume: 0.6
+      pitch: 1.8
+  # 不要写 impact-explosion：那会让命中变成爆炸，正是要避免的表现。
+  # ---- 拖尾：这就是「紫色激光」本体 ----
+  # drawItemTrail 会按 1 格采样点铺 count 颗粒子，所以 count 是「每一格的粒子数」。
+  # 12 颗/格足以连成一条连续光束；太小会变成断续的点。
+  trail:
+    enabled: true
+    particle: DUST
+    count: 12
+    radius: 0.08
+    color: "170,70,255"
+  launch-sound: ENTITY_ILLUSIONER_CAST_SPELL
+  launch-volume: 0.7
+  launch-pitch: 1.7

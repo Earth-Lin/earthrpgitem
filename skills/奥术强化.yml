@@ -1,0 +1,80 @@
+# 奥术强化 - 法师增益技能模板
+# 本文件位于 plugins/EarthRPGItem/skills/奥术强化.yml
+# 插件会自动把本文件注册为一个技能，技能 ID 就是文件名：奥术强化
+#
+# 定位：法师的爆发增益。短时间大幅提升魔法伤害与暴击，配合法阵/崩解打出爆发窗口。
+# 技能组1：与其它主动技能互斥。
+#
+# attribute-boost 只改属性、本身不绘制粒子，
+# 所以同时挂 magic-circle 段当视觉载体（紫色奥术环 + 上升粒子爆发）。
+
+display-name: "&5奥术强化"
+material: ENCHANTED_BOOK
+skill-group: "技能组1"
+supported-weapons: [STAFF]
+
+cast-time-seconds: 0.3
+cooldown-seconds: 24
+cooldown-name: "奥术强化"
+cooldown-enabled: true
+messages-enabled: true
+global-cooldown: false
+
+# ---- 成长规则 ----
+# 每级：魔法伤害 +4、魔法伤害% +2、暴击率 +0.7、暴击伤害 +4、持续 +0.4 秒。
+# Lv.10：魔伤 25+36=61、魔伤% 15+18=33%、暴击率 10+6.3=16.3%、
+#        暴伤 30+36=66、持续 6 + 9×0.4 = 9.6 秒。
+leveling:
+  max-level: 10
+  per-level:
+    attribute-boost.magicdamage: 4
+    attribute-boost.magicdamagepercent: 2
+    attribute-boost.critchance: 0.7
+    attribute-boost.critdamage: 4
+    attribute-boost.duration-seconds: 0.4
+
+# ---- 属性增益 ----
+attribute-boost:
+  magicdamage: 25
+  magicdamagepercent: 15
+  critchance: 10
+  critdamage: 30
+  duration-seconds: 6
+  stackable: false
+
+# ---- 视觉载体：紫色奥术爆发 ----
+magic-circle:
+  damage: 0
+  weapon-percent: 0
+  distance: 0.5
+  radius: 2.2
+  height: 2.4
+  duration-seconds: 0.9
+  interval-seconds: 0.3
+  burst-count: 4
+  use-armor-stand: false
+  target: ENEMY
+  include-self: false
+  # 视觉锚点 buff：让 magic-circle 通过 enabled() 判定，实际增益来自上面的 attribute-boost。
+  buffs:
+    anchor:
+      type: SPEED
+      amplifier: 0
+      duration-seconds: 1
+  # 外环用紫色 DUST（只读 particle 与 count）。
+  particle:
+    enabled: true
+    particle: DUST
+    block: "170,70,255"
+    count: 72
+  # 上升爆发：ENCHANT 是附魔符文，最贴合「奥术」。
+  burst-particle:
+    enabled: true
+    particle: ENCHANT
+    count: 30
+    radius: 0.45
+  sound:
+    enabled: true
+    sound: BLOCK_ENCHANTMENT_TABLE_USE
+    volume: 0.9
+    pitch: 1.5

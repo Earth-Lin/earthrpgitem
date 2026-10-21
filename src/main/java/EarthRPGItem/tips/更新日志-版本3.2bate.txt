@@ -1,0 +1,3285 @@
+EarthRPGItem 3.2bate 更新日志
+
+版本：3.2bate
+适用环境：Paper 1.21.1、Java 21
+更新日期：2026-10-01
+
+一、版本定位
+
+3.2bate 主要增加技能面板和技能物品测试入口，用于把已经配置在 RPGItem 内的技能集中绑定到固定键位，并方便管理员领取技能物品进行测试。
+
+本版本仍然是 Paper 服务端插件功能，不需要玩家安装客户端 Mod。技能效果仍由原有 RPGItem 技能配置执行，技能面板只负责注册、绑定、开关和触发路由。
+
+二、新增功能
+
+1. 玩家技能面板
+
+新增命令：
+
+/rpgitem skills
+
+命令别名：
+
+/erpgitem skills
+/EarthRPGitem skills
+
+权限节点：
+
+earthrpgitem.skills
+
+默认权限：true
+
+技能面板支持 8 个技能触发位：
+
+- Q：普通丢弃键
+- SQ：潜行状态下丢弃键
+- F：切换副手键
+- SF：潜行状态下切换副手键
+- R：普通右键
+- SR：潜行状态下右键
+- L：普通左键/近战左键
+- SL：潜行状态下左键
+
+2. 面板总开关
+
+技能面板加入独立总开关。总开关关闭时，技能输入回到 EarthRPGItem 原有 RPGItem 技能逻辑，不再由面板接管。
+
+默认配置：
+
+skill-panel:
+  default-enabled: false
+
+玩家可以在技能面板中手动开启或关闭总开关。玩家自己的选择保存在 PDC 中，不会因为服务器重启丢失。
+
+3. 独立键位开关
+
+每个 Q、SQ、F、SF、R、SR、L、SL 键位都有独立启用开关，不再只能通过总开关统一控制。
+
+开关语义：
+
+- 总开关关闭：全部键位使用旧 RPGItem 技能路径。
+- 总开关开启、某键位关闭：该键位不由技能面板接管，恢复旧 RPGItem 技能逻辑。
+- 总开关开启、某键位开启：该键位尝试执行对应面板绑定技能。
+
+默认配置：
+
+skill-panel:
+  default-trigger-enabled: true
+
+绿色羊毛表示键位启用，红色羊毛表示键位禁用。点击键位按钮后会在聊天栏提示“键位已启用”或“键位已禁用”。
+
+4. 已注册技能选择列表
+
+技能面板可以从配置中的 `skill-panel.skills` 注册表选择技能，而不是要求玩家手动输入 RPGItem ID。
+
+选择技能时支持：
+
+- 左键打开当前键位的注册技能列表；
+- 点击列表中的技能绑定到当前键位；
+- 右键技能槽清除绑定；
+- 将已识别的技能物品放在光标上后直接放入技能槽；
+- 将技能物品拖拽到技能槽；
+- 注册技能超过 45 个时使用上一页/下一页翻页。
+
+5. 管理员技能物品库
+
+主 RPGItem GUI 新增“Skill Items 技能物品”入口。
+
+管理员可以：
+
+- 浏览 `skill-panel.skills` 中有效的注册技能；
+- 使用分页查看大量技能；
+- 点击技能物品，将对应 RPGItem 物品领取到背包；
+- 用领取到的物品测试原 RPGItem 技能或技能面板技能。
+
+技能物品库与技能绑定列表用途不同：
+
+- 技能物品库：领取实体 RPGItem 物品。
+- 技能绑定列表：把注册技能 ID 写入玩家的技能槽。
+
+6. 技能组冲突
+
+每个注册技能可以配置 `skill-group`。同一个玩家不能在多个启用键位中同时使用相同技能组的技能。
+
+技能组名称支持中文，并且比较时会忽略首尾空格和大小写差异。
+
+本版本同时修复：关闭某个键位后，该键位不再继续参与技能组冲突判断，不会阻塞其他仍启用的键位。
+
+7. 武器类型限制
+
+每个注册技能可以配置 `supported-weapons`，限制技能只能在指定武器类型下触发。
+
+支持类别示例：
+
+- SWORD
+- AXE
+- BOW
+- CROSSBOW
+- STAFF
+- ANY
+
+也可以直接填写具体 Bukkit Material 名称，例如 `DIAMOND_SWORD`、`BOW`。
+
+配置为空或包含 `ANY` 时，不限制武器类型。
+
+9. 玩家技能背包
+
+技能面板不再直接列出所有已注册技能。面板槽位只能装备玩家自己技能背包中的技能。
+
+- 技能面板第 40 格新增“技能背包 / Skill Backpack”按钮。
+- 点击技能面板空槽会进入该键位的技能背包装备界面。
+- 把技能物品放到光标上点击技能背包界面，或直接点击自己背包里的技能物品，即可放入。
+- 技能背包按注册技能 ID 去重，同一个注册技能只能存在一份，重复放入会被拒绝。
+- 技能背包容量 45，按玩家保存在 `skill-backpack.yml`。
+
+10. 技能槽位唯一规则
+
+一种技能只能占用一个槽位。把已经装备在其他键位的技能再装备到新键位时会提示“该技能已经装备在其他槽位”，并且不会生效。右键槽位可以卸下，技能回到技能背包。
+
+11. 技能物品描述
+
+技能物品会显示技能类型、冷却时间、冷却触发方式、技能组、攻击倍率和伤害类型。这些描述只作用于技能物品，普通 RPGItem 不受影响。
+
+12. 技能级攻速冷却声明
+
+新增技能根节点配置 `attack-speed-cooldown`：
+
+- 为 `true` 时，该技能在任意触发键位都使用玩家 RPG `AttackSpeed` 换算冷却，`cooldown-seconds` 不再生效。
+- 默认 `false`，原有固定冷却技能行为不变。
+- `skills/横扫.yml` 与 `skills/十字斩.yml` 已改为 `attack-speed-cooldown: true`，移除了 `cooldown-seconds`，并把 `global-cooldown` 设为 `false`，不再出现“攻速触发却还显示固定冷却时间”的情况。
+
+13. 伤害类型中文显示
+
+技能物品描述中的伤害类型改为中文：物理、魔法、药水、真实、弓、弹射物、冰、火、光、暗。攻速冷却的技能不再显示固定冷却秒数，改为显示“由攻速属性决定”。
+
+14. 武器类型显示与技能组中文
+
+- 技能物品描述新增“武器类型”，未配置或为 `ANY` 时显示“默认（不限武器）”，否则显示中文类别：剑、斧、弓、弩、法杖。
+- `skill-group` 支持自由中文文本，例如 `技能组1`、`技能组2`，判定忽略大小写与首尾空格。
+
+15. skills 文件夹自动注册
+
+技能注册不再依赖 `config.yml`。插件会自动扫描 `plugins/EarthRPGItem/skills` 下的所有 `.yml` 文件，每个文件自动注册为一个技能：
+
+- 技能 ID = 文件名（不含 `.yml`），例如 `横扫.yml` 的 ID 就是 `横扫`。
+- `display-name`、`material`、`skill-group`、`supported-weapons` 都可以直接写在技能文件顶部，改一个文件即可生效。
+- `skill-panel.skills` 默认留空，只在需要覆盖技能文件设置或绑定已有 RPGItem 时才需要填写。
+- 被 config 条目引用的技能文件不再参与自动扫描，避免同一技能重复出现。
+- `config.yml` 中 `skill-panel.skills` 改为注释示例，不再默认写入条目。
+
+`横扫.yml` 与 `十字斩.yml` 顶部已补充 `display-name`、`material`、`skill-group`、`supported-weapons: [ANY]`，两个模板默认不限武器，可直接测试。
+
+16. 本版本修复（技能背包与注册）
+
+- 修复技能面板第 40 格“技能背包”按钮点击无反应：该槽位此前没有对应的事件处理分支。
+- 修复 `skills` 文件夹中除第一个之外的文件不会出现在 Skill Items 列表中的问题。此前列表只遍历 `config.yml` 的注册条目，未被引用的技能文件永远不会显示。
+- 修复技能背包无法放入技能：背包界面的点击此前被全局取消，被取消的事件不会提交 `setCurrentItem`/`setCursor` 的改动，导致物品既拖不进去也拿不起来。现在改为直接操作玩家背包，并支持左键或右键点击放入，不需要拖动。
+- 修复拖拽：技能背包的拖拽此前被取消后无任何处理，现在拖入技能物品也会直接收纳。
+- `/rpgitem skillcheck` 的注册列表新增“冷却”一栏，显示生效的冷却模式（攻速冷却 / 固定冷却秒数），用于核对技能文件是否已更新。
+- 横扫与十字斩模板确认只使用攻速冷却：`attack-speed-cooldown: true`，无 `cooldown-seconds`，`global-cooldown: false`。
+
+17. 安全与稳定性修复
+
+本版本对插件源码做了一次安全审计，修复以下高危缺陷：
+
+- 修复技能背包放入失败会销毁物品：此前先移除实体物品再判断能否放入，背包已有该技能、背包已满或存档失败时物品直接消失。现在只有收纳成功才消耗实体物品，堆叠物品只扣除一个。
+- 修复 RPG 物品丢弃保护永久失效：`RpgDropListener` 只在打开/关闭界面时维护状态，没有处理玩家退出。开着任意界面退出或掉线后，该玩家会被永久留在“界面打开中”集合里，之后可随意丢弃 RPG 物品。现在退出时清理该状态。
+- 修复伤害绕过保护插件与无敌实体：`applyAttributedDamage` 在补足伤害差值时直接调用 `setHealth`。当其他插件把伤害归零（未取消事件）或实体处于无敌状态时，`applied` 为 0，插件会强行写血造成全额伤害。现在探针会记录嵌套事件的最终伤害，被归零或目标无敌时不再补足。玩家近战与弹射物两条路径均已修复。
+- 修复生成的示例武器 YAML 损坏：`test_parry_counter_weapon` 的 `display-name` 引号未闭合且描述为乱码，导致该示例物品被静默注册成默认 `STONE`。现改用与相邻示例一致的 Unicode 转义写法。
+- 新增 `util/YamlStore` 统一持久化：存档改为临时文件 + 原子改名，避免崩溃时写出半截文件；加载时若文件非空却解析不出任何数据，判定为损坏并先备份为 `<文件名>.corrupt-<时间戳>`，不再让下一次保存用空数据覆盖。已接入技能背包、饰品、采集点三处存档。
+- 技能背包、饰品的存档失败不再被吞：`add`/`remove` 现在在保存失败时回滚内存改动并返回失败，调用方据此保留物品而不是静默丢失。
+- 修复饰品栏槽位校验可被数字键绕过：`AccessoryManager.onClick` 原先只校验 `event.getCursor()`，而数字键交换（`HOTBAR_SWAP`）与副手交换不经过光标，此时光标为空，校验被整体跳过。结果是任意物品都能塞进饰品槽、可绕过槽位类型匹配，也可绕过灵魂绑定归属校验。现在改为按 `InventoryAction` 分派：放置类动作校验光标，数字键/副手交换校验热键栏或副手物品，取出类动作放行，其余一律取消。
+- 饰品界面关闭时增加持久化校验：槽位中任何未通过校验的物品会退还玩家（背包满则掉落原地），不再被写进饰品栏存档。
+
+说明：`accessorygui` 没有权限检查属于设计意图——它是面向玩家的饰品菜单，用于让玩家自行佩戴饰品提升属性，并非管理员菜单，因此不视为缺陷。上面的绕过修复针对的是该菜单自身的槽位校验，与权限无关。
+
+审计中确认无路径穿越风险：`skills` 文件读取使用 `getCanonicalFile()` 前缀校验，Windows 下大小写不敏感，未发现可达的目录穿越。
+
+18. 第二轮审计修复（属性、技能、性能）
+
+- **修复随机属性每秒重掷**：`RpgItemManager.resolvedRandomAttributes` 接收了物品参数却完全未使用，直接对每个随机范围重新 `roll()`。该方法是所有实际属性计算的唯一来源——每秒由 `PlayerAttributeTask` 调用一次，每次挥击由战斗监听调用一次，饰品栏也走这里。而 `createItem` 在创建时掷出的结果已写入 `random_attributes` PDC，并据此渲染物品描述。两边不一致导致：描述写着 `+攻击 12` 而实际数值每秒变化，玩家无法得知真实属性；随机属性形同虚设，等于每秒重新抽奖；战斗中伤害无理由跳动。现改为读取存档值，仅在缺失时退化为范围最小值，绝不重新掷。旧物品由 `updateOutdatedItem` 重建并重新掷一次，迁移路径完整。
+- **修复技能冷却在效果之后才写入**：`triggerSkill` 原先先执行 `runSkills` 再 `applySkillCooldown`。任一效果抛异常时冷却与施法锁定都不会设置，玩家每次输入都会重放故障技能，形成报错刷屏循环。现改为在效果执行前算好冷却，并用 `try/finally` 保证必定写入；这同时关闭了 L/SL 技能同一 tick 的双重施放窗口（此前仅靠交互事件取消来阻挡，依赖 Paper 事件顺序）。
+- **修复采集点每 tick 全量扫描**：`CollectionManager.tick()` 原先每 tick 对每个采集点执行 `getWorld`+`getBlockAt`+`getType`（100 个点即每秒 2000 次方块读取），并在循环内同步写整份存档文件，还对每个采集会话向全部在线玩家发送 `sendBlockDamage` 封包。现改为：刷新检查每 tick 只遍历未就绪的点；方块校正降为每 10 tick 一次；存档合并为最多每秒一次；进度封包只发给 32 格内的玩家。
+- **修复假人每次受击重写整段 NBT**：`DummyManager.recordDamage` 原先每击都解析整条 `;` 拼接的 PDC 日志、重新序列化写回、两次全量 stream 求和、刷新实体名，并额外调度一个任务。快速武器下每秒数次，且 PDC 写入会让实体在世界保存时变脏。现改为每个假人维护内存有界队列，日志与名称显示节流写入；`absorbDamage` 本就同步恢复血量，因此每击调度任务为纯冗余，已移除。
+- **修复两处玩家状态泄漏**：`AttackCooldownManager.readyTimes` 与 `RpgCombatListener.swingGraceTimes` 只增不减，每个攻击过的 UUID 都会永久留一条。新增 `AttackCooldownManager.clear(UUID)` 并在 `RpgCombatListener.onQuit` 中清理。
+
+19. 技能物品无法放入技能背包（修复）
+
+- **现象**：从技能库取出的技能物品，点击后无法放入技能背包，面板槽位也无法用光标放置，全程无任何提示。
+- **原因**：`SkillPanelManager.registeredSkillId` 通过 `findItemByIdentity` → `RpgItemManager.findById` 识别物品，而 `findById` 只搜索普通物品注册表 `items`。技能物品由 `loadIndependentSkill` 按需构建，仅存在于 `independentSkillCache`，**从不进入该注册表**。因此 `findById("横扫")` 恒为 null，`registeredSkillId` 返回 null，点击被当作普通物品处理，什么都不发生。
+- **为何此前未暴露**：在 `config.yml` 里用 `rpgitem:` 关联到普通 RPGItem 的注册项不受影响，因为那条路径的物品确实在注册表中。只有自动扫描 `skills` 文件夹得到的技能（横扫、十字斩）会命中此缺陷。
+- **修复**：新增 `RpgItemManager.identityId(ItemStack)`，直接读取物品 PDC 中的身份 id，不经注册表解析；`registeredSkillId` 改为将该 id 与各注册项的身份 id 比对。配置关联型注册项仍按其 `rpgitem` 的实际 id 比对，因此两种注册方式都可用。同时保留"两个注册项共用同一物品时拒绝猜测"的原有行为。
+- **顺带发现**：`RpgMenuType.SKILL_ITEMS` 菜单没有任何入口（`openSkillItems` 仅被自身翻页逻辑调用），属于死代码，实际可达的技能物品获取路径是主菜单第 36 格的技能库。本版本未改动该菜单。
+
+20. 技能武器倍率不含手持武器伤害（修复）
+
+- **现象**：横扫与十字斩切换武器后伤害不变，看不出武器差异。
+- **澄清伤害构成**：技能伤害 = `damage`（固定值）+ `weapon-percent` × 武器伤害。两者可同时生效，示例模板为 `damage: 8` + `weapon-percent: 100`，即“固定 8 点 + 100% 武器伤害”。
+- **原因**：`FSkills.skillDamageByType` 计算倍率基数时只取 `stats.effectiveAttack()`，也就是 RPG `Attack` 属性；`weapon-percent-sources` 默认的 `ATTACK` 来源同样只解析该属性。而普通近战在 `RpgCombatListener.calculateDamage` 中的算法是 `penetratedIncoming`（原版事件伤害，即手持武器攻击力）+ `effectiveAttack()`。两边不一致：近战会随手持武器变化，技能不会。手持普通原版武器时 RPG `Attack` 为 0，`weapon-percent` 整项贡献 0，技能实际只剩下固定 `damage`。
+- **第一次修复（不完整）**：新增 `weaponBaseDamage(Player, RpgStats)` 与 `heldWeaponDamage(Player)`，倍率基数改为“手持武器原版攻击力 + RPG `Attack` 属性”。但原版攻击力取自 `GENERIC_ATTACK_DAMAGE` 的 `getValue()`，实测无效，见第 21 条。
+- **未改动**：短弓技能（`ShortbowSkill`）的投射物路径仍以 `effectiveAttack()` 为基数。弓的 `GENERIC_ATTACK_DAMAGE` 恒为 1，纳入后只会给所有弓箭技能加 1 点固定值，语义与近战武器不同，故本次未一并调整。如需统一请另行说明。
+
+21. 技能伤害仍为固定值（修复 `getValue()` 不返回武器攻击力）
+
+- **现象**：第 20 条的修复上线后，切换任意武器，横扫仍为 9、十字斩仍为 7，伤害不变。
+- **从数值反推**：横扫配置 `damage: 8` + `weapon-percent: 100`，得到 9，说明倍率基数 = 1；十字斩 `damage: 6` + `weapon-percent: 80`，得到 7，同样对应基数 = 1（`6 + 0.8 × 1 = 6.8`，四舍五入为 7）。两处一致指向：手持武器的原版攻击力被读成了 1，也就是玩家 `GENERIC_ATTACK_DAMAGE` 的裸手基础值。
+- **真正原因**：`AttributeInstance#getValue()` 在该 Paper 构建上只返回玩家自身的基础值 1.0，**不包含手持物品提供的攻击力修饰符**。第 20 条的修复把 `getValue()` 当作武器伤害来源，因此武器部分恒为 1，倍率基数恒为 1，伤害自然固定。这也解释了为什么“+1”始终存在：它来自基础值，而非武器。
+- **修复**：武器原版伤害改为三个来源取最大值，不再依赖单一 API：
+  1. 属性实时值 `getValue()`（若该构建包含物品修饰符，则此项即正确值）；
+  2. 物品自身修饰符：`attribute.getBaseValue()` + `ItemMeta#getAttributeModifiers(GENERIC_ATTACK_DAMAGE)` 中 `ADD_NUMBER` 修饰符之和；
+  3. 材质原版攻击力查表（剑 4/4/5/6/7/8，斧 7/7/9/9/9/10，镐 2/2/3/4/5/6，锹 2.5/2.5/3.5/4.5/5.5/6.5，三叉戟 9，重锤 6，其余为 1）。
+  三者取最大值可覆盖各种服务端行为：无论 `getValue()` 是否包含物品修饰符，都能得到武器真实攻击力。锋利加成（`0.5 × 等级 + 0.5`）在取最大值之后叠加，与近战路径 `missingSharpnessDamage` 的公式一致。
+- **新增诊断命令**：`/rpgitem skilldamage` 会逐项打印上述每个输入（手持材质、base 值、getValue、物品修饰符、材质攻击力、锋利加成、最终武器伤害、RPG `Attack`、倍率基数）。若伤害仍不对，执行该命令即可直接定位是哪一项异常，无需再靠推测。
+- **影响**：技能伤害现在会随手持武器变化。以 `damage: 8` + `weapon-percent: 100` 为例，空手约 9、木剑约 12、铁剑约 14、下界合金剑约 16、下界合金剑+锋利 V 约 19。若希望技能为纯固定伤害，把 `weapon-percent` 设为 0。
+- **说明**：本次未在真实 Paper 服务端验证（工作区无服务端可供运行），修复依据是从 9 / 7 两个实测值反推出的基数恒为 1，以及三来源取最大值对两种 `getValue()` 行为都成立。请以 `/rpgitem skilldamage` 的输出为准复核。
+
+22. 随机属性 `reroll-on-use` 从未生效（BowDamage 40-60 只取一个数）
+
+- **现象**：`BowDamage: "40-60"` 只在生成时随机一次，之后伤害永久固定；属性面板也不显示 `40-60` 这种范围格式。
+- **真正原因（两个独立缺陷）**：
+  1. `rpgitem.random-attributes.reroll-on-use` 这个键**在 Java 源码里零引用**。文档《属性详细使用手册》第三节和第六节都描述了它，`config.yml` 里也写了默认值，但没有任何代码读取它。所以无论玩家填 `true` 还是 `false`，行为恒等于 `false`：`createItem` 生成时掷一次并写入 `random_attributes` PDC，此后永远读这个存档值。
+  2. `/rpgitem my` 面板的 `statLines` 只对 `attack` 一个属性做了范围显示（`if (randomRanges.containsKey("attack"))`），其余全部走 `addFlatPercent`/`add` 输出单个数字。所以即使随机值在变，BowDamage 也只会显示一个数，看起来像没生效。
+- **修复**：
+  1. 新增 `RpgItemManager.rerollOnUse()` 读取该配置（默认 `true`，与手册一致），`resolvedRandomAttributes` 在开启时对每个范围调用 `range.roll()`。该方法是一切实时属性计算的唯一入口——装备栏、主副手、饰品、每秒刷新、近战、弓箭、技能都走它，因此改动一处即全局生效。
+  2. 面板改为范围感知：新增 `randomText`/`addRanged`/`addFlatPercentRanged`，`statLines` 中全部约 45 个属性统一改为带 canonical key 调用（`%`→`percent`，`/` 去掉，与 `RpgItemManager.normalizeLoreAttribute` 对齐）。有范围且开关开启时显示 `40-60`，否则回退到原来的单值输出，行为完全不变。
+  3. 物品描述同步：`addTemplateAttribute` 之前无条件显示范围，现在改为仅在 `reroll-on-use: true` 时显示范围，为 `false` 时显示生成时掷出的固定值，与面板口径一致。该函数原本就接收 `randomValues` 参数却从未使用，现已用上。
+- **重要取舍：被动刷新不重掷**。`PlayerAttributeTask` 每秒调用一次 `collectActiveStats`，并用 `stats.health()` 重写最大生命（`attribute.setBaseValue((20 + stats.health()) * ...)`）。若这里也重掷，一件 `Health: "10-20"` 的装备会让最大生命每秒跳动，且 `player.setHealth(effectiveMaxHealth)` 会在最大值下降时反复压低玩家血量——等于每秒扣血。因此新增 `collectActiveStats(player, notifyLevel, rerollRandom)` 重载：战斗、技能、命令走重掷，被动刷新传 `false` 使用固定值。`config.yml` 默认值同步改为 `true`。
+- **需要手动操作**：`config.yml` 的 `copyDefaults` 只补缺失键，不会覆盖已有值。服务器上 `plugins/EarthRPGItem/config.yml` 里若仍是旧的 `reroll-on-use: false`，必须手动改成 `true` 再 `/rpgitem reload`，否则仍表现为固定值。这一条是本次生效的前提。
+- **影响**：`BowDamage: "40-60"` 每次结算独立取 40~60 的整数；面板与物品描述显示 `40-60`。想要固定值就把开关设为 `false`，此时物品生成时掷一次并永久保存，面板与描述都显示那个固定数。
+
+23. 开启技能面板后，RPGItem 自带的技能全部失效（面板遮蔽手持物品技能）
+
+- **现象**：手持一件在自身配置里写了 `fskill`/`rskill`/`srskill`/`qskill` 的 RPGItem（例如技能形态测试剑），按对应键位没有任何技能效果、不造成伤害。
+- **真正原因**：五个按键处理器（`onSwap` 对应 F/SF、`onDropSkill` 对应 Q/SQ、`onRightClick` 对应 R/SR、`onLeftClick` 与 `onMeleeHit` 对应 L/SL）都是这个结构：
+
+  ```
+  RpgItem panelItem = resolve(player, trigger);
+  if (面板已开启 && 该键位已启用) {
+      if (panelItem == null) return;   // ← 直接返回，不再往下走
+      ...触发面板技能...
+      return;
+  }
+  ...手持物品自身的技能...
+  ```
+
+  `resolve` 在「该键位没有绑定技能」「绑定的技能不在技能背包里」「技能组冲突」「武器类型不匹配」时都会返回 `null`。此时处理器**直接 return**，永远不会走到下面的「手持物品自身技能」分支。
+
+  后果：**只要技能面板总开关是开的、且该键位处于启用状态，玩家手持物品自带的全部技能都会被屏蔽**。面板本来只是可选的一层绑定，却把物品自身的技能彻底覆盖了。这也解释了为什么通过面板绑定的独立技能文件能打出伤害，而直接在武器里写技能却毫无反应。
+- **修复**：把 `resolve` 调用移入条件内，并且只在真正拿到 `panelItem` 时才取消事件并触发；`panelItem == null` 时不再 return，而是继续向下走手持物品自身的技能分支。五个处理器全部按此调整。语义变为：面板绑定优先，未绑定时回退到物品自带技能。
+- **附带修复**：`loadDimensionalSlash` 的 `weapon-percent-sources` 之前被硬编码为 `List.of("ATTACK")`，配置里写了也无效；现改为与 `loadShapeDamage` 一致，读取 `weapon-percent-sources` / `weapon-percent-source`。
+- **说明**：技能形态测试剑这类「RPGItem 内嵌多形态」的写法本身是受支持的——`shockwave`、`sweep`、`cross-slash`（含 horizontal/vertical 子段）、`dimensional-slash` 四个形态都有独立的执行与配置解析，`weapon-percent-sources`、`can-crit`、`knockback`、`distance`、`radius`、`height`、`angle-degrees`、`particle` 均会被读取。本次问题不在形态支持，而在触发入口被面板短路。
+
+24. 随机范围仍然固定（config.yml 旧值无法被 copyDefaults 纠正）
+
+- **现象**：第 22 条的修复上线后，`BowDamage: "40-60"` 依然每次固定，属性面板也依然不显示 `40-60`。
+- **诊断依据**：这两个症状必须同时出现才成立——面板显示范围的前提是 `rerollOnUse()` 为 `true`。既然面板不显示范围，说明该值仍是 `false`。同时 `RpgStats.add` 用 `value(rolled, "bowdamage", item.bowDamage())` 取值、`RpgProjectileListener` 在开弓瞬间（`onShoot`）快照 `stats` 并在落点时使用，路径本身正确：只要重掷开启，每一箭都会独立取值。所以这不是第二个取值缺陷，而是开关没被打开。
+- **真正原因（我上一轮的设计失误）**：第 22 条把功能挂在了 `rpgitem.random-attributes.reroll-on-use` 上，而**每一台已存在的服务器配置文件里这个键都是 `false`**（旧版 `config.yml` 发的就是 `false`）。Bukkit 的 `copyDefaults` 只补缺失键，**不会覆盖已有值**，所以新默认值 `true` 对老服务器完全无效。我上一轮只在文档里写了“请手动改成 true”，这不是修复——等于把缺陷留给了使用者。
+- **修复（配置自动迁移）**：新增 `config-version`（当前为 2）与 `migrateConfig()`。启动时（以及 `/rpgitem reload` 时）若读到的 `config-version` 低于 2，就把 `reroll-on-use` 设为 `true`、写入 `config-version: 2` 并保存，同时打印迁移日志。
+- **为什么可以安全覆盖用户旧值**：这个键在本版本之前**没有任何代码读取**，旧值从未产生过任何效果，因此不存在“用户本来就想用 false”的情况。迁移之后用户再手动改为 `false` 才会被尊重（那时 `config-version` 已是 2，迁移不再触发）。
+- **可观测性**：启动时控制台打印 `Random attributes: reroll-on-use = true (ranges are re-rolled per settlement)`；`/rpgitem my` 面板顶部显示当前模式（“每次结算重掷”或“生成时固定”）。这样“面板显示单个数字”不再是无从解释的现象。
+- **影响**：`BowDamage: "40-60"` 每一箭独立取 40~60 的整数；面板与物品描述显示 `40-60`。迁移只在升级后首次启动时执行一次。
+- **说明**：`saveConfig()` 会重写一次 `config.yml`（Paper 1.18+ 支持 YAML 注释保留，注释不会丢失）。若你确实需要“生成时固定一次”的玩法，迁移后手动把该项改回 `false` 即可。
+
+25. 面板技能“无法造成武器面板伤害”的根因：技能物品被当成了武器
+
+- **现象**：十字斩和横扫（`skills/*.yml` 面板技能）的伤害是固定值，不随武器变化；而 RPGItem 内嵌技能的武器伤害正常。
+- **诊断（算术证明，非猜测）**：`heldWeaponDamage` 对不在材质攻击力表中的物品返回裸手值 `1.0`，而技能物品默认材质是 `ENCHANTED_BOOK`（附魔书），恰好不在表中。代入技能文件：
+  - 横扫：`damage 8` + `100% × 1.0` = **9**（用户实测 9 ✓）
+  - 十字斩：`damage 6` + `80% × 1.0` = 6.8 → 取整 **7**（用户实测 7 ✓）
+  两个数字完全吻合，说明倍率基数恒为 1.0——技能施放时主手拿的是**技能物品**，不是武器。内嵌技能正常是因为那把手持的是真武器（测试剑）。这也解释了为什么上一轮「三来源取最大值」修复无效：`getValue()` 从未是根因，取错物品才是。
+- **修复**：新增 `weaponStack(player)`——主手是技能物品（`registeredSkillId` 判定）时，改用副手的物品作为武器基数；`heldWeaponDamage` 与 `weaponBaseDamage` 全部改走该入口。面板武器判定（`matchesWeapon`）本就接受主手或副手，因此“主手技能物品 + 副手真武器”现在能正确吃到武器面板伤害。
+- **正确用法**：面板技能来自技能背包，**不需要手持技能物品**；请手持武器再按键。若一手技能物品一手武器，技能自动采用另一只手的真武器。
+- **附带修复**：`findItem`/`findById` 现在能解析独立技能物品（此前只在普通注册表中查找，独立技能物品手持时属性全部被忽略、也不受掉落保护），并新增 `independentSkillById` 索引。
+- **可观测性**：`/rpgitem skilldamage` 新增「主手物品」「副手物品」「实际取用武器」三行，直接显示倍率取自哪只手的哪个物品。
+
+26. Q/SQ（丢弃键位）技能伤害异常：丢弃时武器已离开主手
+
+- **现象**：测试发现「只有丢弃键位 Q / SQ 的技能伤害异常，其余键位（F/R/L）都正常」。
+- **诊断**：`PlayerDropItemEvent` 触发时，你要丢弃的物品已经从主手移除（已生成掉落物实体），此刻 `getItemInMainHand()` 返回空。武器倍率 `heldWeaponDamage` 读主手 → 拿到空手 → 基数 1.0 → Q 技能永远是固定值。F/R/L 触发时物品还握在手里，所以不受影响。这也印证了之前横扫恒 9、十字斩恒 7 里有一部分正是 Q 触发导致的。
+- **修复**：
+  1. 新增 `castStacks`：`triggerSkill` 在释放瞬间记录发起这次施放的物品栈，结束即清除。
+  2. `weaponStack(player)` 取值顺序改为：主手（非技能物品）→ 副手（非技能物品）→ 本次施放记录的物品栈 → 主手。这样 Q 丢弃的真武器仍可作为倍率基数。
+  3. 面板 Q 路径不再传已清空的主手，而是传 `event.getItemDrop().getItemStack()`（被丢弃的那件，即玩家本来的武器）。
+
+27. 护甲描述缺少原版属性与药水 buff
+
+- **现象**：护甲物品的 `vanilla-attributes`（原版属性修饰符，例如 `movement_speed: 0.025`）和 `buffs`（药水 buff）没有显示在物品描述里，只能看到插件自己的 RPG 属性。
+- **原因**：`renderAttributeLore` 只遍历插件自有属性（attack / armor / critchance 等），从来没有渲染 `item.vanillaAttributes()` 和 `item.buffs()`；这两者此前只被 `applyVanillaAttributes` 与 `PlayerAttributeTask` **施加到实体**，却没有写进描述。
+- **修复**：
+  1. 新增 `addVanillaAttributeLore`：把每个原版属性修饰符渲染成一行，显示中文名 + 英文键名 + 带符号数值，百分比操作（`ADD_SCALAR` / `MULTIPLY_SCALAR_1`）自动乘 100 并加 `%`。
+  2. 新增 `addBuffLore`：把每个药水 buff 渲染成一行，显示中文名 + 英文名 + 等级（`amplifier + 1` 级，与游戏内 I 级对应）。
+  3. 新增配置 `lore-templates.show-vanilla-attributes`、`lore-templates.show-buffs`（默认均 `true`）与 `lore-templates.vanilla-attribute-names`（原版属性中文名表，未列出的键回退显示英文原名）。
+  4. 新增 `LORE_FORMAT_VERSION`（=2）并纳入 `attributeSignature`，同时把 `buffs` 也纳入签名。此前签名不含 buffs、且描述改版不会让签名变化，**世界里已有的旧物品会一直保留旧描述**；现在签名变化会让旧物品自动重建一次，补上新描述。
+- **注意**：`vanilla-attributes` 对饰品（ACCESSORY）仍然无效（饰品手持触发机制的原因），因此饰品不显示这些行。
+
+28. Q/SQ 只吃到原版伤害、吃不到插件伤害；以及 `/rpgitem MY` 崩溃
+
+**（1）Q/SQ 缺少插件（RPG）伤害**
+
+- **现象**：上一版修复后，Q 键位能记录原版武器伤害了，但插件伤害（Attack 等 RPG 属性）仍然不计入。
+- **原因**：`collectActiveStats(player, ...)` 只从**背包**（护甲 + 主手 + 副手）读取装备。丢弃触发时武器已经离开背包，所以它身上的 RPG 属性根本没进入 `stats`。而倍率基数 = `武器原版伤害 + stats.effectiveAttack()`：上一版修好了前半段（`castStacks`），后半段仍是 0。
+- **修复**：新增重载 `collectActiveStats(player, notifyLevel, castWeapon)`，在双手都没有真武器时，把本次施放所记录的武器栈也计入属性。这正是「技能确实以这把武器为基数」的情形，因此不会重复计算仍然握在手里的武器。`runReleasedSkills` 与冷却的攻速读取都已改为传入该武器栈。
+
+**（2）`/rpgitem MY` 抛 NullPointerException**
+
+- **报错**：`RpgItemManager.collectConfiguredRandomRanges(RpgItemManager.java:248)` → `java.util.List.of` → `Objects.requireNonNull`。
+- **原因**：`List.of(player.getInventory().getArmorContents())`。**`List.of` 不接受 null 元素**，而空的护甲槽就是 `null`，所以只要有一格没穿护甲就会崩溃。
+- **修复**：改为逐个判空收集，跳过 `null` 与空气物品。
+
+29. 冷却提示与技能就绪提示的独立开关
+
+- **需求**：冷却提示和技能就绪提示需要能**分别**开关，且开关位置与技能开关在同一列（`config.yml` 的 `fskill` 段）。
+- **实现**：新增两个开关，默认均为 `true`，与 `*-skill-messages-enabled` 同列：
+  - `fskill.cooldown-message-enabled`：冷却提示。控制「技能冷却: X秒」、「同类型全局冷却: X秒」与「技能释放中，请等待 X 秒」。
+  - `fskill.ready-message-enabled`：技能就绪提示。控制「技能已就绪」。
+- 两者相互独立，也仍受按触发键的 `*-skill-messages-enabled` 总闸约束；关闭只隐藏文字，不影响冷却计算与技能执行。
+- 旧配置文件由 `copyDefaults` + `saveConfig` 在启动时自动补上这两个键，无需手工编辑。
+
+30. 复查修正（第 28 条的补漏）
+
+- **重复计算**：第 28 条新增的 `collectActiveStats(player, notifyLevel, castWeapon)` 原先以「双手都没有真武器」为条件。但玩家**主手拿技能物品、副手为空**时，基础采集已经把这本技能物品算进去了，而它同时又是本次施放的触发物品，于是被算了两次（Attack 翻倍）。现改为以「该物品是否仍在手上」为唯一判据：仍握在手上的物品一律不重复计入。
+- **取值顺序统一**：`weaponStack` 的顺序调整为「主手真武器 → 本次施放记录的武器 → 副手真武器 → 主手」，使 Q/SQ 丢弃时以被丢弃的那把为准；冷却计算新增 `triggerWeapon`，在施放记录尚未写入时作出同一判断，保证「冷却所用的攻速」与「伤害所用的武器」来自同一把武器。
+- 顺带移除已无引用的 `hasRealWeaponInHands`。
+
+31. 补齐 SF / SL 的独立消息开关与文案
+
+- **问题**：`SkillPanelManager.TRIGGERS` 有八个键位（Q/SQ/F/SF/R/SR/L/SL），但 `config.yml` 的 `fskill` 段只有六个 `*-skill-messages-enabled`，缺 `sfskill-messages-enabled` 与 `slskill-messages-enabled`；对应的 `sfskill-*` / `slskill-*` 三种文案也缺失。结果是 SF 与 SL 既无法单独关闭提示，文案还会回退到通用的 `activation-message`（显示成「释放了F技能」）。
+- **修复**：补齐 `sfskill-messages-enabled`、`slskill-messages-enabled` 两个开关，以及 `sfskill-` / `slskill-` 各自的 `activation-message` / `ready-message` / `cooldown-message` 文案。代码侧无需改动：`messagesEnabled` 与 `skillMessage` 本就按 `fskill.<键>skill-*` 取值，之前只是配置里没有这些键。
+- 旧配置文件由 `copyDefaults` 在启动时自动补齐。
+
+32. 冷却提示 / 就绪提示改为**每个键位单独一个开关**（面板内切换，每玩家独立）
+
+- **问题**：第 29 条把开关做成了 `config.yml` 的服务器级开关，但需求是**技能面板里的开关**；随后又明确为**八个键位各自独立**的冷却提示 / 就绪提示开关。
+- **面板重排**（全局按钮移到第 0 列，腾出两整排给提示开关）：
+
+  | 行 | 槽位 | 内容 |
+  |---|---|---|
+  | 第 1 行 | 10–17 | 键位技能绑定（Q SQ F SF R SR L SL） |
+  | 第 2 行 | 19–26 | 键位启用开关 |
+  | 第 3 行 | 28–35 | **冷却提示开关**（每键位一个） |
+  | 第 4 行 | 37–44 | **就绪提示开关**（每键位一个） |
+  | 第 0 列 | 27 / 36 | 技能面板总开关 / 技能背包 |
+  | — | 49 | 关闭 |
+
+  四行**列对齐**：同一列从上到下依次是某个键位的「绑定 / 启用 / 冷却提示 / 就绪提示」。
+- **持久化**：`SkillPanelManager` 为每个键位各存一个 PDC 键（`skill_panel_<键位>_cooldown_messages` / `..._ready_messages`），与键位开关同一套机制，重登保留。共 16 个开关。
+- **生效规则**：`config.yml` 的 `fskill.cooldown-message-enabled` / `fskill.ready-message-enabled` 作为**服务器总闸**（关闭则所有人都不显示）；总闸开启时，由**该玩家该键位**的面板开关决定。
+- **默认值**：新玩家由 `skill-panel.default-cooldown-message-enabled` / `default-ready-message-enabled` 控制（默认均 `true`）。
+- **只影响提示**，不影响冷却计算和技能执行。
+
+33. 技能伤害诊断新增暴击信息
+
+- **现象**：技能伤害不触发暴击。
+- **排查结论**：暴击判定的三个条件在代码上都成立——`skill.canCrit()`（`skills/横扫.yml` 的 `sweep.can-crit: true` 确实被正确读入 `DamageSkill.canCrit`）、`isSkillCritEligible`（ATTACK 源会归一化为 PHYSICAL，属于可暴击类型）、`isSkillCritEnabled`（`features.physical-crit: true`）。因此剩下的唯一变量是**玩家当前的暴击率 `stats.critChance()`**：它为 0 时 `rollCritical` 恒返回「未暴击」。
+- **一个已知会吞掉暴击率的情形**：副手物品的属性只在 `deputy: true` 时才计入（`canUseItem` 的 `if (offhand && !rpgItem.deputy()) return false;`）。所以「主手拿技能物品、副手拿武器」时，副手武器提供的 CritChance / Attack 都不会进入 `stats`——而技能的原版伤害却会取用那把副手武器，两者不一致。
+- **本次改动**：`/rpgitem skilldamage` 现在会输出暴击诊断：`physical-crit` / `magic-crit` / `crit-chance` / `crit-damage` 四个功能开关，以及玩家当前的 `CritChance`、`CritDamage`。暴击率为 0 时会直接提示「技能永远不会暴击」。
+- **尚未改动**：副手武器属性不计入这一点**没有**擅自修改，因为 `deputy` 是有意设计。请先看诊断输出再决定。
+
+34. 法阵没有伤害：伤害与粒子的执行顺序
+
+- **现象**：`magic_circle_test_weapon` 的法阵能出现，但不造成任何伤害。
+- **原因**：法阵的重复任务里**先画粒子、后结算伤害**。粒子只要抛一次异常，整个 `BukkitRunnable` 就会被取消（Bukkit 的行为），于是这一轮之后永远不再结算伤害——表现就是「法阵在，但没伤害」。
+- **修复**：把**伤害与 Buff 结算移到粒子之前**，并把粒子绘制整体包进 `try/catch`。粒子失败现在只会在控制台打印一次警告（`Magic circle particle failed (damage is unaffected)`），**不再影响伤害**。
+- **顺带修掉一个真实的不一致**：`target: ENEMY`（默认值）按实体类型判断敌我，而**训练假人的实体类型是可切换的**。假人切成村民/动物/铁傀儡后，法阵会静默跳过它，但横扫、十字斩照样命中——同一个假人，两种结果。现在假人在 `ENEMY` 模式下**始终算作敌人**。
+- **新增诊断**：`/rpgitem skilldamage` 现在会追加法阵段，直接打印插件**实际解析到的值**：
+  - 主手 RPGItem 与当前 `MagicDamage`
+  - 八个键位中哪些配了 `magic-circle`
+  - `enabled()` 是否为真（为假则法阵根本不出现）
+  - `distance / radius / height`、`duration / interval / burst-count`
+  - `target / include-self`（并提示 `ENEMY` 会排除玩家、动物、村民、铁傀儡）
+  - `damage / weapon-percent`、`damage-type / sources`、`can-crit`
+  - **每次喷发的原始伤害**（以自身作为参照目标计算），为 0 时直接标红
+
+  用法：手持法杖执行 `/rpgitem skilldamage`，把 `法阵 magic-circle` 段贴出来即可定位。
+- **说明**：以上为代码层面的修复与诊断，**未在真实服务端实测**。若法阵仍然无伤害，请同时检查服务端控制台是否有该任务的异常堆栈。
+
+35. 新增对外属性 API（其他插件增减属性）
+
+- **背景**：此前其他插件只能调用 `RpgItemManager.applyTemporaryAttributeBoost`，它有两个硬伤。
+- **修复的缺陷**：
+  1. **互相覆盖**：内部是 `Map<UUID, RpgStats>` + `Map<UUID, Long>`，**每个实体只有一个槽位**。两个插件同时加属性时后一个覆盖前一个，且**任一方到期会把对方的加成一起清掉**。现改为 `Map<UUID, Map<来源, 加成>>`，按来源分槽，互不干扰。
+  2. **无法移除**：新增 `removeModifier` / `clearModifiers`。
+  3. **无法持久化**：新增永久加成，写入玩家 PDC，重启后保留。
+  4. **无法加原版属性**：新增 `setVanillaModifier`，支持 `movement_speed`、`jump_strength`、`knockback_resistance` 等没有 RPG 对应项的属性。
+- **新增内容**：
+  - `EarthRPGItem.api.EarthRPGItemAPI` 接口 + `EarthRPGItemApiImpl` 实现，在 `onEnable` 通过 **`ServicesManager`** 注册（`ServicePriority.Normal`），其他插件无需转换主类或依赖内部管理器。
+  - `RpgStats.toMap()`：按 `fromLore` 的键名导出非零项，用于 PDC 序列化。
+  - 玩家退出时清理内存态（永久加成在 PDC 中，下次登录自动读回）。
+  - `/rpgitem MY` 新增 `外部属性加成 / External modifiers` 段，按来源列出每个插件加了多少。
+- **来源命名规则**：必须匹配 `[A-Za-z0-9_.:-]{1,64}`，大小写不敏感；`earthrpgitem` 为**保留名**（插件自身技能使用），外部传入会被拒绝。
+- **时长语义**：`durationSeconds <= 0` 表示**永久**（玩家写入 PDC 持久化）；正数到期自动消失且不持久化。
+- **替代 vs 叠加**：`setModifier` 整体替换该来源的加成（**可每 tick 安全调用**，适合光环类）；`addModifier` 才叠加。
+- **生效时机**：战斗类属性在结算伤害时读取，立即生效；`Health` / `Vitality` 由插件每秒的属性任务推送到最大生命；原版属性请用 `setVanillaModifier`。
+- **`getStats` 返回的是"全量生效属性"**，已包含装备、饰品、外部加成，并已应用 `features.*` 功能开关。注意：若 `features.attack` 等开关关闭，对应的外部加成同样会被清零——这是与插件语义保持一致。
+
+36. 修复法阵无伤害 + 服务器内存持续增长（同一根因）
+
+- **现象**：法阵看起来还在（能看到中心的物品），但完全不造成伤害；同时服务器内存持续上涨。
+- **根因**：`runMagicCircle` 里的循环任务 `run()` 方法，**只有粒子部分包在 `try` 里，伤害部分是裸的**。Bukkit 对 `run()` 抛异常的可重复任务会**直接取消**，而清理代码写在方法开头，**永远不会被执行**。
+  1. 任务一死 → 法阵**再也不结算伤害**。
+  2. 清理代码没跑 → 该次施法生成的**盔甲架和物品展示实体永远留在世界里**，每施法一次多一对。
+  3. 盔甲架当时**没有 `setPersistent(false)`**，会被写进区块存档，重启也不会消失 → 实体与内存持续累积。
+- **两个症状本来就是同一个 bug**：伤害停 = 任务死 = 清理没跑 = 内存涨。
+- **修复**：
+  1. `run()` **整体包在 `try/catch (Throwable)`** 内，并新增 `finish()` 统一收尾：无论正常结束还是异常，**一定**释放盔甲架与物品展示。
+  2. 首次失败时用 `SEVERE` **打印完整堆栈**（含真实原因），不再静默失败。若还有未发现的问题，控制台会直接指出。
+  3. 生成装饰实体的代码也加了保护：物品展示生成失败时，**立即回收已生成的盔甲架**（此前那种情况任务根本没创建，必然泄漏）。
+  4. 盔甲架补上 `setPersistent(false)`，崩溃 / 关服不再把隐形标记盔甲架写进存档。
+  5. `PluginDisableEvent` 清理时补上 `magicCircleStands.clear()`（此前只清了 displays，引用残留）。
+- **另修复一处本次引入的泄漏**：`scheduleModifierExpiry` 每次写入都排一个新的延时任务，没有任何去重。光环类效果每 tick 调用一次就会堆积成百上千个待执行任务。现改为**每个「实体 + 来源」只保留一个任务**，重设时取消旧任务；玩家退出时一并取消。
+- **附带修复**：`collectAttributeModifiers` 现在会在读取时清除已过期条目，避免无退出事件的生物（怪物）永久残留记录。
+- **说明**：以上为代码层面的修复，**未在真实服务端实测**。已泄漏的旧盔甲架因为元数据不持久化、无法自动识别，需要手动清理一次（见使用手册第二十五节）。
+- **更正（重要）**：上面"伤害停 = 任务死 = 清理没跑 = 内存涨"的推断**已被实测否定**——实测反馈是"依旧没有伤害，而且控制台也没有打印日志"。既然没有任何日志，就说明 `run()` **根本没有抛异常**，任务并没有死。所以这一条的加固应当理解为**有价值的防御**（确实堵死了"实体泄漏"这条可能路径），但**不是**法阵无伤害的真正原因。真正原因改用诊断手段定位（见第 37 条）；内存增长另有独立根因（见第 38 条）。
+
+37. 新增法阵运行时诊断 `/rpgitem magicdebug`
+
+- **背景**：法阵"看得见、没伤害、控制台也没有任何日志"这个组合，说明**任务根本没有抛异常**，所以此前加的错误日志不会触发。问题只可能是：法阵没被调用、配置没解析到、范围内没有实体、或筛选把目标全过滤了——这四种情况从外部**完全无法区分**。
+- **新增**：`/rpgitem magicdebug` 开关（按玩家，再次输入关闭）。开启后施放法阵，控制台会打印：
+  1. **是否运行**：若未运行，直接说明是"`magic-circle` 段没有解析到"还是"存在但 `enabled()=false`"，并给出原因。
+  2. **中心坐标**与射线是否命中方块。
+  3. **解析出的伤害配置**：`damage` / `weapon-percent` / `damage-type` / `sources`；若为 `null` 会明确指出"本技能不会有任何伤害"。
+  4. **范围内实体总数**，以及每个实体的：类型、名字、到中心的距离、**是否通过筛选**。
+  5. 每个通过筛选的目标：**结算结果**（造成伤害 / 未造成伤害），以及**按类型算出的原始伤害**。
+- **用途**：这五条能把上面四种情况一次性区分开，不用再靠猜。
+- **说明**：诊断日志打印到**服务端控制台**，不是游戏内聊天栏。
+
+38. 内存持续增长：两个真实泄漏点 + 新增内存诊断 `/rpgitem memdebug`
+
+- **关键线索**：玩家处于**生存 / 创造**模式时内存持续上涨，切到**旁观者**模式就不涨。旁观者无法攻击、无法破坏方块、无法拾取物品，所以泄漏必然在"只有非旁观者才会走的路径"上。这条线索直接排除了所有"对全体玩家每 tick / 每秒都执行"的代码。
+- **逐项排除**：
+  - `PlayerAttributeTask`（每 20 tick 遍历全部在线玩家）与 `CollectionManager.tick`（每 tick）对旁观者同样执行 → **不是它们**，否则旁观者也该涨。
+  - 战斗路径的 `pendingDamage` / `pluginDamageTargets` 全部写在 `finally` 中清理 → 干净。
+  - `ParticleEffectPlayer` 无任何成员状态 → 干净。
+  - `DamageDisplay` 生成的 `TextDisplay` 由延时任务回收（`duration-seconds` 默认 3 秒）→ 有界。
+- **真实泄漏点 1：饰品缓存永不清理**（`AccessoryManager.cache`）
+  - `cache` 是 `Map<UUID, ItemStack[]>`，按玩家 UUID 缓存 54 格饰品内容。此前**全文件没有任何一处 `remove`**，玩家退出也不清。
+  - 后果：服务器每来过一个**新玩家**，就永久多留一份 54 格物品数据，直到重启。
+  - 修复：新增 `PlayerQuitEvent` 处理器，退出时清掉该玩家的缓存。内容早已由 `saveContents()` 落盘到 `accessories.yml`，下次进服会重新读取，**不会丢饰品**。
+- **真实泄漏点 2：每次挥击调度最多 40 个任务**（`SlashParticleEffectPlayer.play`）
+  - 原实现是 `for (step...)` 循环，每一步 `runTaskLater(..., step)`，即**一次挥击最多创建 40 个独立任务对象**。而按住左键时客户端每秒会产生多次挥击，创造模式更快。
+  - 后果：调度队列中长期堆积大量短命任务及其捕获的闭包（`Location`、`Player`、粒子数据），是战斗路径上**最大的一处瞬态分配**。这与"旁观者不涨"完全吻合。
+  - 修复：改为**一次挥击只创建一个重复任务**，内部自行递增步数、跑完自动 `cancel()`，玩家下线也立即 `cancel()`。任务对象数量最多降到原来的约 1/40。
+- **新增诊断命令 `/rpgitem memdebug`**（需要 `earthrpgitem.admin` 权限）
+  - 一次打印：JVM 堆内存、**待执行调度任务数**、全服实体总数、`TEXT_DISPLAY` / `ARMOR_STAND` / `ITEM_DISPLAY` / `BLOCK_DISPLAY` 数量、实体数最多的前 8 种类型，以及插件自身各计数（法阵残留实体、饰品缓存玩家数、训练假人记录数、外部属性修饰符条目与待过期任务）。
+  - **用法**：在执行可能泄漏的操作**前**执行一次，操作几分钟后**再**执行一次，**哪一行数字持续上涨，泄漏就在那里**。
+- **说明**：以上为代码层面的分析与修复，**未在真实服务端实测**。请用 `/rpgitem memdebug` 前后对比确认这两个修复是否覆盖了你观察到的增长。
+
+39. 新增**每个键位独立的「释放提示」开关**
+
+- **需求**：技能背包里装备到键位上的技能，需要一个**单独的「释放提示」关闭按钮**（此前只能整台服务器统一开关）。
+- **与第 32 条的关系**：第 32 条做的是「冷却提示 / 就绪提示」两个每键位开关；本条补上第三个——**释放提示**，即「XX释放了Q技能」这类成功施放的提示。三个开关互相独立。
+- **面板新增第 0 行**（槽位 1–8，与第 1 行的键位绑定**列对齐**）：
+
+  | 行 | 槽位 | 内容 |
+  |---|---|---|
+  | 第 0 行 | **1–8** | **释放提示开关（每键位一个，本次新增）** |
+  | 第 1 行 | 10–17 | 键位技能绑定（Q SQ F SF R SR L SL） |
+  | 第 2 行 | 19–26 | 键位启用开关 |
+  | 第 3 行 | 28–35 | 冷却提示开关（每键位一个） |
+  | 第 4 行 | 37–44 | 就绪提示开关（每键位一个） |
+  | 第 0 列 | 27 / 36 | 技能面板总开关 / 技能背包 |
+  | — | 49 | 关闭 |
+
+  同一列从上到下依次是某个键位的「释放提示 / 绑定 / 启用 / 冷却提示 / 就绪提示」。绿色染料＝开启，灰色染料＝关闭。
+- **持久化**：`SkillPanelManager` 新增 PDC 键 `skill_panel_<键位>_activation_messages`，与键位开关同一套机制，重登保留。至此每键位共 3 个提示开关、合计 24 个。
+- **生效规则**：`config.yml` 的 `fskill.activation-message-enabled` 作为**服务器总闸**（关闭则所有人都不显示）；总闸开启时，由**该玩家该键位**的面板开关决定。这与冷却 / 就绪提示的规则完全一致。
+- **默认值**：新玩家由 `skill-panel.default-activation-message-enabled` 控制（默认 `true`）。旧配置文件由 `copyDefaults` 在启动时自动补齐。
+- **只影响提示**，不影响技能效果、伤害与冷却计算。
+- **说明**：本次改动为代码层面实现并已通过 Gradle 离线构建（`BUILD SUCCESSFUL`），**未在真实 Paper 服务端实测**。
+
+40. 修复**左键技能（L / SL）两个问题**：原版横扫动画残留、以及技能「有时不触发」
+
+- **需求**：「如果左键技能键位 / 下蹲左键技能键位启用的话，就把武器原版的横扫动画给关闭掉」；另外反馈「左键触发攻击冷却技能时有时候不触发，会触发原版横扫动画，但是没有原版的攻击」。
+- **两个症状是同一个根因**。原版攻击的执行顺序是：先算横扫（粒子 + 音效 + 对周围实体造成 `ENTITY_SWEEP_ATTACK` 伤害），**之后**才轮到主目标的伤害事件。插件此前只在 `EntityDamageByEntityEvent` 里取消，所以：
+  1. 主目标的伤害被取消了，但**横扫的粒子和音效早就发出去了** —— 于是「有横扫动画，没有原版攻击」。
+  2. 横扫的 `ENTITY_SWEEP_ATTACK` 分支（`RpgCombatListener` 第 101 行）能取消伤害，但**取消不了已经发出的动画**。
+- **修复一：改用 `PrePlayerAttackEntityEvent` 从源头取消**。Paper 1.21.1 提供 `io.papermc.paper.event.player.PrePlayerAttackEntityEvent`，其 Javadoc 明确写着「发生在任何伤害逻辑之前，取消它会阻止攻击时的任何音效」。在 `FSkills` 新增 `onPreAttack`，条件与原来 `onMeleeHit` 完全一致（面板绑定了技能，或手持武器自带启用的 L / SL 技能），命中时直接取消整个原版攻击，再施放技能。
+  - 因为整个原版攻击没有开始，**横扫的粒子与音效都不会产生**，这才真正实现了「关闭原版横扫动画」。
+  - 注意：Paper 1.21.1 **没有任何**可以单独关闭横扫的 API（`paper-api` 中不存在 `Sweep` 相关类，`Player` 也没有横扫开关），原版横扫的粒子是客户端表现，取消伤害事件无法回收它。取消攻击前置事件是唯一可行的手段。
+- **修复二：手臂挥动不再抢跑攻速冷却**。一次左键会同时产生「手臂挥动」和「攻击 / 交互」两个包。`RpgCombatListener.onPlayerAnimation` 原来在每次挥动时都会给**共享的** `AttackCooldownManager` 充能，而左键技能正是读这个共享冷却。挥动先被处理时，技能还没执行就已经「在冷却中」，于是技能静默失败、只剩原版横扫动画 —— 这就是「有时不触发」。
+  - 现在该分支先调用 `FSkills.hasBoundLeftClickSkill(player)`，只要本次左键会被当作技能输入，就不在挥动阶段充能冷却，冷却完全由技能自己结算。
+- **行为说明**：只要该键位绑定了技能（面板绑定或武器自带），左键就**不再产生任何原版攻击与横扫**，无论技能是否处于冷却中；技能冷却时只会有冷却提示。若键位为空且武器也没有自带 L / SL 技能，左键仍然是正常的原版攻击（含横扫），不受影响。
+- **说明**：以上为代码层面实现并已通过 Gradle 离线构建（`BUILD SUCCESSFUL`），**未在真实 Paper 服务端实测**。请用一把带攻击冷却左键技能的武器验证：左键时不应再出现横扫粒子，且连续左键应稳定触发技能（受冷却限制）。
+
+41. 技能伤害类型与暴击改为「默认全类型 + 列出即取消」
+
+- **需求**：「让所有 skillitems 的技能可以拥有全部类型的伤害，不需要单独注册；单独注册的改为取消该类型伤害」。
+- **改动一：`weapon-percent-sources` 由白名单改为排除表**
+  - 旧行为：只有列出的来源参与倍率，不写时隐含 `[ATTACK]`，因此技能只能打出物理伤害；要出魔法 / 真实 / 冰火光亮伤害，必须在每个技能节点里逐个写来源。
+  - 新行为：**默认全部来源**（`ATTACK`、`MAGIC_DAMAGE`、`BOW_DAMAGE`、`TRUE_DAMAGE`、`ICE_DAMAGE`、`FIRE_DAMAGE`、`LIGHT_DAMAGE`、`DARK_DAMAGE`），技能天然可以打出全部伤害类型，不需要登记。写进去的来源会被**取消**：`weapon-percent-sources: [MAGIC_DAMAGE]` ＝ 不使用魔法来源。写 `[ALL]` 或不写 ＝ 不排除任何来源。
+  - 改动位置：`RpgItemManager.weaponPercentSources(...)`（三个加载点：`damages.<key>`、`loadShapeDamage`、`loadDimensionalSlash`）与 `FSkills.normalizedDamageSources(...)`。
+  - **兼容性提醒**：旧配置里为了「只取攻击」而写的 `weapon-percent-sources: [ATTACK]`，在新语义下会变成「排除攻击」，请删掉该行或改成 `[ALL]`。
+- **改动二：技能暴击的可参与类型由硬编码白名单改为排除表**
+  - 旧行为：`isSkillCritEligible` 硬编码只有 `PHYSICAL` / `MAGIC` / `POTION` / `BOW` 可暴击，**真实、冰、火、光、暗伤害永远不会暴击**（这也是此前「技能伤害怎么不会触发暴击」的一个可能原因）。
+  - 新行为：**暴击按族结算，与普通攻击完全一致**。物理族（物理、弓）共用一次判定，魔法族（魔法、药水）共用另一次；**元素（冰、火、光、暗）与真实伤害不单独暴击**，它们只从已经翻倍的基数上按百分比放大。
+  - 新增 `config.yml` 的 `fskill.crit-excluded-damage-types`（默认空表）。因为一个族共用一次判定，必须写**族的主类型**：写 `PHYSICAL` 取消物理族（同时覆盖弓），写 `MAGIC` 取消魔法族（同时覆盖药水）。写元素名没有任何作用。
+  - 暴击显示沿用既有格式：魔法 / 药水走魔法暴击格式，弓 / 弹射物走弓暴击格式，其余走物理暴击格式。
+- **改动三：修正「默认全来源」引发的倍率基数污染**
+  - 问题：来源列表改为默认全部后，`weaponBase` 曾把 `ATTACK + MAGIC_DAMAGE + BOW_DAMAGE + TRUE_DAMAGE` 全部累加。于是魔法 / 弓箭 / 真实伤害既作为独立条目结算，又抬高元素百分比所乘的基数 —— 同一份属性被放大两次，并且与普通近战 `penetratedIncoming + effectiveAttack()`（只含物理）不一致。
+  - 修正：`weaponBase` 只累加物理来源；元素百分比改乘 `elementBase = 物理 + 魔法 + 真实 + 暴击加成`，与 `RpgCombatListener.calculateDamage` 的 `elementBase` 对齐。
+  - 附带：元素现在能从暴击加成中按比例受益（不再完全不参与），但依然不会被标记或显示为暴击。
+  - 附带：`hitOncePerCast` 改为「命中成功后才登记目标」，避免零伤害或伤害被拒时白占一次命中名额；刺客百分比改为只按物理部分计算。
+- **配置**：`fskill.crit-excluded-damage-types: []` 为新增键，由 `copyDefaults` 自动补齐，不需要改 `config-version`。
+- **说明**：以上为代码层面实现并已通过 Gradle 离线构建（`BUILD SUCCESSFUL`），**未在真实 Paper 服务端实测**。建议用 `/rpgitem skilldamage` 核对「实际取用武器」与暴击诊断，并用带魔法 / 元素属性的武器验证技能是否开始出现对应类型的伤害数字。
+
+42. 横扫 / 十字斩粒子重做
+
+- **需求**：「把模板里的技能改的跟我下面发的模板差不多 / 因为我发现横扫和十字斩的粒子效果表现不太好」。
+- **根因**：弧线绘制调用 `playPoint`，它在**每一个采样点**生成 `count` 个粒子，并且**完全忽略 `radius`**。以 `count: 160` 配 110° 弧（约 37 个采样点）计算，一次施法约 6000 个粒子全部堆叠成团，弧线糊成一片；同时配置里的 `radius: 0.08` 是死参数，玩家无法控制轨迹粗细。
+- **修正**：新增 `ParticleEffectPlayer.playJittered(location, config, particleCount)`，在配置半径内散布指定数量的粒子。弧线改为先用 `drawArcPoints` 把 `count` **平均分配到整条弧**，再逐点抖动。
+  - `count` 现在的语义是「整条弧的粒子总数」，`radius` 是「轨迹粗细」。
+  - 当 `count` 小于采样点数时，用 `Math.round` 边界映射把粒子均匀稀疏到整条弧上，不会出现「前段有粒子、后段全空」的断点。
+- **模板**：`skills/横扫.yml`、`skills/十字斩.yml` 以及插件生成的同名模板已按新参数重做（CRIT 粒子、count 160/180、radius 0.08、effect break）。
+  - **注意**：插件不会覆盖服务器上已存在的 `skills/横扫.yml` 与 `skills/十字斩.yml`，需要手动替换才能生效。
+  - 模板中**不再写** `weapon-percent-sources`：默认即为全部来源，写了反而会「取消」列出的类型。
+
+43. 技能与近战数值一致性修补
+
+- **改动一：技能投射物的伤害基数补上手持武器**
+  - 问题：`RpgProjectileListener` 里技能投射物的基数由 `effectiveAttack()` 单独合成，而技能投射物是用 `arrow.setDamage(0)` 生成的，事件伤害恒为 0，所以手持弓的原版攻击力完全没有参与。近战技能此前修过同样的问题，投射物这条路径漏掉了 —— 后果与之前一致：弓不带 RPG `Attack` 属性时，技能伤害塌成只剩固定 `damage`，换武器也不影响技能。
+  - 修正：`FSkills.weaponBaseDamage` 改为 `public`，投射物路径复用同一个「手持武器 + RPG Attack」基数（`applySkillProjectileHit` 与 `applySkillProjectileDamage` 两处）。
+- **改动二：技能元素基数补上比例伤害与背击 / 刺客加成**
+  - 问题：近战的元素基数是 `physicalElementBase = 原版伤害 + Attack + 比例伤害 + 背击/刺客平伤 + 暴击`，再叠加魔法与真实部分；技能的 `elementBase` 只算了「物理 + 魔法 + 真实 + 暴击」，漏掉了 `pctDamage` / `pstDamage` 与背击 / 刺客平伤，也没有像近战那样乘刺客百分比。结果堆比例伤害或刺客属性时，技能的元素部分偏小，与近战不一致。
+  - 修正：`skillDamageByType` 增加 `bonusFlat` 与 `assassin` 参数，元素基数按近战的同一组项拼装；刺客百分比同样作用于元素基数。
+- **改动三：`crit-excluded-damage-types` 无效项启动告警**
+  - 问题：暴击按族结算，代码只用 `PHYSICAL` / `MAGIC` 两个字面量查询。服主写 `BOW`、`POTION`、`PROJECTILE` 或元素名时不报错、不生效，日志里没有任何线索，只能看到「暴击还在触发」。
+  - 修正：新增 `FSkills.validateCritExclusionConfig()`，在 `onEnable` 启动时逐项校验，对无效项打印警告并指出应改写成 `PHYSICAL` 或 `MAGIC`。
+- **改动四：清理与统一**
+  - 删除无调用者的 `FSkills.isElementSource`、`ParticleEffectPlayer.playPoint`、三参 `FSkills.formatSkillDamage` 重载。
+  - `ParticleEffectPlayer` 的 `radius` 上限改为具名常量并写明语义：`SHAPE_RADIUS_CAP = 3`（`playAlways` 形状）、`BURST_RADIUS_CAP = 6`（`playBurst` 环）、`TRAIL_RADIUS_CAP = 1`（`playJittered` / `playTrail` 轨迹粗细）。**三者上限不同是刻意的**：轨迹的 `radius` 是线的粗细，形状的 `radius` 是形状大小，统一成一个数值会让 `radius: 3` 的球形体素（如次元斩）或让轨迹糊成团。
+- **说明**：以上为代码层面实现并已通过 Gradle 离线构建（`BUILD SUCCESSFUL`），**未在真实 Paper 服务端实测**。
+
+44. 法阵装饰实体改用 `ITEM_DISPLAY`，彻底移除盔甲架
+
+- **问题**：法阵中心原本用「隐形盔甲架 + 盔甲架头部装备」来显示中心物品。`ArmorStand` 是 `LivingEntity`，因此会被 `getNearbyLivingEntities` 扫到、可被伤害、可被玩家右键交互、会被怪物索敌，还会进入原版 AI / 碰撞 / 物理计算；即使本插件做了过滤，仍需要一堆补丁（隐身、无重力、无碰撞、不可交互、`setPersistent(false)`）去掩盖这些副作用。此外盔甲架的渲染姿势依赖头部旋转，导致中心物品是「掉落物」那种倾斜姿态，观感差。
+- **修正**：法阵不再生成任何盔甲架，改为**只生成一个 `ItemDisplay`**（`ItemDisplay → Display → Entity`，不是 `LivingEntity`，天然不被上述路径影响）：
+  - `setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.GROUND)` 固定为正立展示姿态，观感正常。
+  - `setShadowRadius(0)` / `setShadowStrength(0)` 去掉悬浮阴影，`setBrightness(new Display.Brightness(15, 15))` 保证暗处也全亮。
+  - `setBillboard(FIXED)` 固定朝向，`setInvulnerable(true)`、`setPersistent(false)` 保证不可被破坏且不写入区块存档。
+- **连带清理**：删除 `magicCircleStands` 集合、`onMagicCircleArmorStandManipulate` 事件监听、`ArmorStand` 与 `PlayerArmorStandManipulateEvent` 导入；`releaseMagicCircleEntities` 收敛为单参数；`magicCircleEntityCount()` 直接返回 `magicCircleDisplays.size()`。
+- **兼容说明**：`magic-circle.use-armor-stand` 配置键与 `MAGIC_CIRCLE_ARMOR_STAND` 元数据名**保留不变**（避免旧配置报错），但当前版本只作用于 `ItemDisplay`。旧版本已写进存档的残留盔甲架不会自动消失，需按使用手册第二十五节手动清理一次。
+- **说明**：以上为代码层面实现并已通过 Gradle 离线构建（`BUILD SUCCESSFUL`），**未在真实 Paper 服务端实测**。
+
+45. 新增「王之宝库」技能形态 `gate-of-babylon`
+
+- **新增**：任意键位的 `fskill` / `lskill` 等节点现在支持 `gate-of-babylon` 段落。施放后在施法者背后展开一批武器，短暂停留后射向准星所指的位置，每把武器带金色粒子轨迹，落地产生一次不破坏方块的爆炸并对落点周围结算一次技能伤害，落地停留 `linger-seconds`（默认 2 秒）后消失。现成模板见 `skills/王之宝库.yml`（首次启动自动生成，已存在则不覆盖）。
+- **伤害复用现有管线**：`damage`、`weapon-percent`、`weapon-percent-sources`（排除表）、`damage-type`、`can-crit` 与 `sweep` / `shockwave` 完全一致，落点伤害通过 `damageTarget` 结算，因此抗性、破甲、暴击族、伤害飘字都与其它技能相同，没有任何特殊分支。
+- **实现方式**：每把武器是一个 `ItemDisplay`（`ItemDisplayTransform.FIXED` + `Billboard.FIXED`，满亮度、`setInvulnerable(true)`、`setPersistent(false)`、无阴影），飞行是逐 tick 的直线插值，`setTeleportDuration(1)` 让移动不跳格；轨迹粒子按「上一步到这一步走过的线段」均匀撒，而不是每个 tick 只在当前位置撒一把 —— 后者在 1 格/tick 的速度下会拉成虚线。
+- **伤害上限**：新增 `max-hits-per-target`（默认 3）。16 把武器各自在落点结算一次，没有任何上限时同一目标会被结算 16 次、伤害直接放大 16 倍。每把武器使用独立的命中集合，上限由 `max-hits-per-target` 单独记录，两者不能合并成同一个集合 —— 合并会让第一把落地的武器吃掉所有目标，其余武器全部空放。
+- **实体上限**：单次施放上限 32 把（`GateOfBabylonSkill.MAX_WEAPONS`）；全服同时残留上限 128，达到上限时新的施放会被拒绝并在控制台警告。武器实体非持久化，服务器崩溃也不会变成存档里的残留实体。
+- **清理**：武器实体进入 `gateDisplays` 跟踪集合，任务正常结束、插件卸载、任务抛异常、施法者掉线四条路径都会回收；任务 `run()` 抛异常时先打印一次 `SEVERE` 再强制清理，避免重演「法阵任务死掉后实体永久残留」的问题。
+- **诊断**：`/rpgitem magicdebug` 现在同时打印法阵与王之宝库两个段落（`enabled()`、武器数量与两级上限、准星/生成点/飞行参数、每把武器落地的原始伤害）；`/rpgitem memdebug` 新增「王之宝库残留武器」计数。
+- **配置回退**：`weapon-materials` 中无法识别的材质名会被跳过并在控制台警告，全部无效时回退到内置原版武器池（剑 / 斧 / 三叉戟 / 重锤 / 弓 / 弩），避免一个拼写错误把技能变成空放。
+
+45.1 首次实测后的六项修正
+
+第一版实现是「武器从施法者正上方垂直落下」，实测后按反馈重做了几何关系，这六条都改完了：
+
+1. **不再被天花板挡住**：落点改为由**准星射线**决定 —— 从眼睛沿视线做射线（`distance`），命中方块就用命中点、没命中就用最大距离处，再从这个位置往下扫描地面。原实现是从施法者头顶往下扫，所以头顶有方块时整批武器都落在屋顶上。
+2. **飞行穿过方块**：生成点到落点之间不做任何碰撞检测，天花板、墙都挡不住。这是与法阵的关键区别 —— 法阵的落点扫描起点在施法者身上，所以会被天花板限制。
+3. **生成点改到背后**：不再从天上生成，而是在施法者背后 `spawn-distance` 格、上方 `spawn-height` 格处随机取点，`spawn-fan-degrees` 控制背后扇形的张角。（后续在 45.2 中把「天上」也做成了可选方式，不再是唯一实现。）
+4. **生成后等待再发射**：每把武器生成后随机等待 0~`launch-delay-ticks` tick 才出发，看起来是宝库逐个打开，而不是凭空出现一堵已经在动的武器墙。
+5. **武器姿态对准落点**：原来用实体 `yaw`/`pitch` 定向，但 `FIXED` 姿态下物品长轴是模型空间的 +Y，实体旋转只能让它从「竖直向上」扫到「水平」，**永远指不到下方**，所以剑一直是横着或朝上飞。现在改用 Display 的 `transformation` 四元数（`Quaternionf.rotationTo(+Y → 飞行方向)`）把剑身直接旋到落点方向，落地时剑尖朝下插进地面。
+6. **落地爆炸 + 音效**：落地调用与次元斩相同的 `playExplosionExpansion`（六圈扩散的 `Particle.EXPLOSION`，纯粒子、不生成爆炸实体，因此不破坏方块与掉落物）。这套效果本身不带音效，所以由 `impact-sound` 补上（模板默认 `ENTITY_GENERIC_EXPLODE`）。
+7. **冷却改为攻速**：模板改为 `attack-speed-cooldown: true`，不再使用固定 `cooldown-seconds`。
+
+配置随之变化：新增 `distance`、`spawn-distance`、`spawn-fan-degrees`、`launch-delay-ticks`、`explosion-particle`；`spawn-height` 的含义由「生成点比落点高多少格」改为「生成点在脚上方多少格」；删除已无意义的 `tilt-distance` 与 `spawn-interval-ticks`（错开改由 `launch-delay-ticks` 随机实现）。**旧的第一版配置需要按新模板更新**。
+
+45.2 投射方式改为可配置：背后 / 天上 / 混合
+
+- **新增** `spawn-mode`：`behind` = 只在施法者背后扇形内生成；`sky` = 只在落点上方的空中生成；`mixed` = 每把武器随机二选一。模板默认 `mixed`，不写该键时回退到 `behind`（保持 45.1 的行为）。
+- **两套参数互不相干**：背后用 `spawn-distance` / `spawn-height` / `spawn-fan-degrees`，天上用新增的 `sky-height`（默认 14，落点上方多少格）与 `sky-offset`（默认 2.5，相对落点的水平偏移半径）。切换方式不需要重调另一套数值，`mixed` 下两套同时生效。
+- **别名容错**：`back` / `rear` = `behind`，`air` / `above` / `top` = `sky`，`both` / `random` / `mix` = `mixed`。写错时控制台警告并回退到 `behind`，而不是静默变成另一种观感。
+- **天上生成同样穿透方块**：落点仍由准星射线决定，飞行仍不做碰撞检测，所以「从天而降」在室内照样会穿过天花板落到脚下的落点，不会像第一版那样停在屋顶上。
+- **姿态与等待对两种方式都生效**：天上生成的武器同样会先在空中停留 0~`launch-delay-ticks` tick 再俯冲，剑身同样由四元数对准落点。
+- **诊断**：`/rpgitem magicdebug` 现在会打印 `spawn-mode` 以及背后、天上两组参数，方便确认当前生效的是哪一套。
+
+45.3 第二次实测后的六项调整
+
+1. **爆炸粒子调小**：落地爆炸不再走 `playExplosionExpansion`。那个方法写死了 6 圈、每圈至少 6 颗 `Particle.EXPLOSION`，也就是每次落地固定 36 颗、`count` 写小也无效；16 把武器同时落地就是 576 颗白色爆炸贴图糊在屏幕上，这正是挡住视野的原因。现在改走普通 `playBurst`，`count` 与 `radius` 如实生效，模板默认从「36+24 颗 @ 2.0」降到 **6 颗 @ 0.7**，落地上升粒子也从 12@0.7 降到 8@0.5。爆炸依然只是粒子，不生成爆炸实体、不破坏方块与掉落物。
+2. **武器池剔除远程武器**：`BOW` / `CROSSBOW` 从默认池移除 —— 弓弩的贴图横过来之后不像武器，只是一块浮空的板子。
+3. **金制武器加权**：武器池改为**加权池**（同一材质写多次 = 出现概率更高），并去掉了原来会静默去重的 `materials.contains` 判断 —— 那个判断会把唯一的加权手段吃掉。默认池现在是金剑 ×5、金斧 ×4，共 9/20。
+4. **武器朝向确实指向落点**：用 1.21.1 原版资源核对过模型轴向 —— `item/diamond_sword` 只是 `item/handheld` + 贴图，而 `item/handheld` **没有**声明 `fixed` 显示变换，所以 FIXED 姿态是单位变换，贴图自身的 +Y（剑尖，也就是物品栏/展示框里朝上的那一头）就是模型的长轴。四元数把 +Y 旋到「生成点 → 落点」方向，剑尖因此指向落点。为了让这件事**看得出来**，同时调整了三个参数：`spread-radius` 4.0 → 2.5（整批武器汇聚到准星落点，而不是各砸各的）、`fall-speed` 1.2 → 0.8（原速 24 格/秒一闪而过，根本看不清朝向）、生成点抬高（见第 5 条，入射角更陡、剑尖更明显朝下）。
+5. **背后生成范围更大更高**：`spawn-distance` 2.5 → 4.5、`spawn-height` 2.5 → 4.5、`spawn-fan-degrees` 140 → 180。
+6. **生成点加金色特效**：新增 `spawn-particle`（默认金色 DUST 8@0.4），在每把武器出现的位置放一次，让「宝库打开」看得见；粒子失败不会影响武器本身。
+
+- **说明**：以上为代码层面实现并已通过 Gradle 离线构建（`BUILD SUCCESSFUL`），**未在真实 Paper 服务端实测**。
+
+45.4 第三次实测：修正武器朝向偏 45° 的真 bug，爆炸再调小
+
+1. **武器朝向偏 45°（这是真 bug，不是观感问题）**：上一版认定「模型长轴 = +Y」，错了。原版手持武器贴图**是斜着画的** —— 45° 对角线，柄在左下、尖在右上，这也是物品栏和展示框里的剑看起来是斜的原因。所以剑尖在模型空间的方向是 `normalize(1,1,0)`，不是 `+Y`。只把 `+Y` 旋到飞行方向，结果是**每把武器都正好偏 45°**，看起来就是斜着扔出去、而不是头朝落点。现在分两步：先用 +45° 的 Z 轴旋转把贴图摆正（把对角线转到 `+Y`），再用四元数把 `+Y` 旋到「生成点 → 落点」方向。
+   - 验证方式：用 JOML 1.10.5 写了离线校验（临时文件 `.gate-yaml-check/GateAimCheck.java`），对五种飞行方向打印剑尖与目标方向的夹角 —— 旧写法全部是 **45.00°**，新写法是 **0.00°~0.02°**。
+   - 同时把武器实体的 `item-display-transform` 从 `fixed` 换成 `none`。`none` 在原版里恒为单位变换、任何模型都改不动，贴图坐标轴因此严格等于显示坐标轴，上面的 45° 修正才成立；`fixed` 是逐模型的展示框姿态，被镜像一下就会让武器反过来偏 90°。
+2. **爆炸再调小**：`explosion-particle` 6@0.7 → **3@0.35**，`impact-particle` 8@0.5 → **6@0.4**。落点就在准星上，爆炸粒子是直接糊在视线正前方的，所以默认给得更克制；`count` 可以直接写 1（只有一颗），或把 `particle` 换成 `DUST` / `SMALL_FLAME` 这类小贴图。
+
+- **说明**：以上为代码层面实现并已通过 Gradle 离线构建（`BUILD SUCCESSFUL`），**未在真实 Paper 服务端实测**。
+
+59. 修复剑气「有时候打不到怪」的判定 bug；新增「百人一太刀」技能与「只发射剑气的幻影剑舞版本」
+
+**59.1 剑气命中判定：改用目标包围盒（竖直重叠 + 水平距离）**
+
+用户反馈：「幻影剑舞的最后一道剑气攻击判定有点问题，剑气有时候打不到怪」。
+
+- **原因**：剑气在**眼睛高度**飞行，而旧判定拿「剑气与目标**脚的位置**的直线距离」与判定半径比较。
+  地面怪（约 2 格高）的脚在剑气下方约 1.6 格，`1.6² > 1.5²`（默认 `radius: 1.5`），
+  于是无论剑气怎么擦着怪飞过，这个距离永远大于判定半径 → 「有时候打不到」（准心稍高就全空）。
+- **修复**：`FSkills.scheduleAuraFlight()` 对目标用**包围盒**判定——先看剑气带的那条判定带
+  （上下各 `radius` 格）与目标包围盒是否**竖直重叠**，再看剑气到包围盒**水平投影的最短距离**
+  ≤ `radius`。水平投影算的是「到盒子边缘」的最短距离，所以从怪身侧擦过也能命中。
+  同时剑气每 tick 的实体收集范围把 Y 方向放宽（`radius + 1`，保底 2 格），让脚在下方的地面怪
+  也被收集进来。
+- 附带改动：剑气飞行任务抽成共用的 `scheduleAuraFlight()`，幻影剑舞收尾剑气与百人一太刀共用，
+  两处永远用同一套（已修复的）判定。
+
+**59.2 新增技能「百人一太刀」（`sword-aura` 段）**
+
+需求：「利用幻影剑舞的剑气 制作新技能 百人一太刀 效果为直接发射一道剑气 对敌人造成伤害」。
+
+- 新技能类型 `sword-aura`：直接发射一道剑气飞向前方，对沿途碰到的目标各造成一次伤害，
+  撞到方块或飞满距离后消失。视觉与幻影剑舞剑气完全同一套（挥击那一道弧整体飞出去）。
+- 默认 `weapon-percent: 200`（一击高伤）；`speed` 1.2、`max-distance` 16、`radius` 1.5、
+  `arc-radius` 2.0、`angle-degrees` 180、`tilt-min-degrees` 0 / `tilt-max-degrees` 180
+  （飞出时随机朝向）。粒子和音效直接写在本段下，不继承任何其他段。
+- 自带示例 `skills/百人一太刀.yml`（不覆盖管理员改过的文件）。
+- 实现位置：`SwordAuraSkill` 记录、`FSkillConfig.swordAura()`、`RpgItemManager.loadSwordAuraSkill()`、
+  `FSkills.runSwordAura()`、`SkillDisplayInfo`。
+
+**59.3 幻影剑舞·剑气版：每一道挥砍都换成剑气，收尾剑气删除**
+
+需求：「幻影剑舞剑气版我的意思是 将前面的每一道挥击都换成剑气 因为都是剑气 所以最后一道剑气删除」。
+
+- 新增 `phantom-blade.slash-aura`（默认 `false`）。设为 `true` 时：
+  - 前面的**每一道挥砍都换成剑气**——每一下不再是近战弧 + 扇形判定，而是射出一道会飞的剑气
+    （伤害与粒子/音效取 `slash` 段，即每道 30%；飞行与造型取 `aura` 段的
+    `speed` / `max-distance` / `radius` / `arc-radius` / `angle-degrees` / `tilt-*`）；
+  - 各道剑气按 `slash-interval-ticks` 间隔依次射出，所以看起来是「一道道剑气接连飞出去」；
+  - **不再单独发射收尾剑气**（原来最后那道 120% 的剑气删除）——因为每一道都已经是剑气了。
+- 自带示例 `skills/幻影剑舞·剑气版.yml`（`slash-aura: true`，5 道剑气 × 30%），
+  不会覆盖管理员改过的文件。
+- 说明：`slash-count: 0` 在非剑气版下仍然是「不做挥砍、只发射收尾剑气」的一种配法，
+  但用户要的「剑气版」是上面这种（每道挥砍变剑气 + 删收尾），示例文件已按此语义提供。
+
+- **说明**：以上为代码层面实现并已通过 Gradle 离线构建（`BUILD SUCCESSFUL`）与离线校验
+  （`.tmp-phantomcheck/PhantomCheck.java`：117 项 0 错误，新增覆盖「剑气包围盒判定镜像
+  （地面怪在眼睛高度剑气下必须命中、水平/竖直超出不命中）」「百人一太刀示例解析 200% 与全套参数」
+  「sword-aura 注册与分发」「slash-count 0 纯剑气版」「共用 scheduleAuraFlight」），
+  **未在真实 Paper 服务端实测**。
+
+- ⚠️ 服务器上已存在的 `skills/百人一太刀.yml` 不存在（新文件），首次生成即可。
+  `skills/幻影剑舞.yml` 这次只改了注释（slash-count 说明），不改键值的话可以不重建。
+
+60. 新增技能强化系统（技能强化台）
+
+需求：「我想制作技能强化系统了 你有什么好的建议吗」，经确认的设计：技能等级按「玩家 + 技能 ID」
+存储（不属于物品）、消耗用宝石且等级越高越贵、升级必定成功（无失败 / 掉级 / 破坏）、入口是独立的
+技能强化台、默认上限 Lv.20，并且支持更改特定数值——幻影剑舞升一级加 1 次挥砍。
+
+- **等级属于「玩家 + 技能 ID」**：存 `skill-levels.yml` 的 `players.<玩家UUID>` 下
+  （`技能ID|等级` 列表，和技能背包同一个数据风格）。技能物品取出 / 放回 / 给别人，等级跟着玩家走；
+  复制技能物品刷不出等级。
+- **成长规则写在技能自己的 yml 里**（`leveling` 段）：`per-level` 每级叠加、`levels.<N>` 绝对值段、
+  `max-level` / `cost.tiers` 覆盖全局。字段路径就是技能 yml 里的路径，**任何数值字段都能升级**，
+  以后新增技能自动支持，不需要为每个技能改加载代码。例：幻影剑舞
+  `per-level: phantom-blade.slash-count: 1` = 每级 +1 挥砍次数。
+- **Lv.1 = 技能文件原本的数值**，未升级的玩家和现在完全一样。成长不会把技能改成无效值：
+  原本 ≥ 1 的字段（挥砍次数）最低 1，原本 ≥ 0 的字段最低 0。
+- **消耗**：宝石（`gemstones.yml` 的 `ruby` / `sapphire` / `emerald`），从背包直接扣。
+  先整体校验够不够再扣；保存失败退还全部材料（装不下的部分掉在脚下）。全局 4 段阶梯
+  （宝石总数量 1 → 3 → 4 → 9，「越贵」在数量上成立）：Lv.2~5 红×1；Lv.6~10 红×2+蓝×1；
+  Lv.11~15 蓝×2+绿×2；Lv.16~20 红×4+蓝×3+绿×2。
+- **界面**：技能强化台 = 主菜单第 42 格 + `/rpgitem skillforge`（权限 `earthrpgitem.skillforge`，
+  默认所有人）。列表页只列玩家已拥有的技能：左键强化（必定成功）、右键看完整成长表；
+  详情页有「每一级改什么」的完整成长表 + 强化按钮。技能物品**不会放进界面**——等级存在玩家
+  数据里，界面只是渲染出来，和强化台 / 宝石台同一套「物品不离开玩家」的安全决定。
+- 技能面板槽位与技能背包条目上显示当前等级 / 上限。
+- 实现位置：`SkillLevelManager`（等级存取 / 成长规则 / 消耗 / 退还）、
+  `RpgItemManager.applyLevelOverrides`（等级补丁在解析技能配置时打进 8 个触发段，等级进缓存键，
+  每个等级只解析一次，施放零开销）、`SkillPanelManager.registeredItem(id, level)` 与 `resolve`
+  按玩家等级解析、`RpgMenu` / `RpgMenuListener`（强化台两页界面）、`EarthRPGItemCommand`、
+  `EarthRPGItem`（启动与 reload 重载）。
+- 已验证：Gradle 离线构建 `BUILD SUCCESSFUL`；`.tmp-levelcheck/LevelCheck.java`
+  （74 项 0 错误，覆盖全局配置、幻影剑舞每级 +1 挥砍、绝对值段、钳制、消耗阶梯单调递增、
+  保存失败退还、GUI / 权限 / 指令接线），**未在真实 Paper 服务端实测**。
+
+- ⚠️ 服务器操作：替换 jar 后 `reload`；`skill-leveling.yml` 会自动生成（改过不会被覆盖）。
+  `skills/*.yml` 只在文件不存在时生成——请把新模板里的 `leveling` 段复制进你现有的技能文件
+  （幻影剑舞 / 幻影剑舞·剑气版 / 百人一太刀 的模板都已带成长示例）。
+
+61. 新增采集经验 + 挖掘等级系统（gathering.yml + EarthRPGItem.api）
+
+需求：「被采集的方块增加农业/挖矿/砍树经验，经验通过 API 发给别的插件，自己不要处理经验等级；
+新增砍树/农业/挖矿挖掘等级——玩家等级达到才能挖矿物；设计挖掘等级的新矿物和工具作为模板测试」。
+
+- **本插件不处理经验等级**：不存经验、不算升级、不画曲线。只做两件事——
+  发经验（抛事件给别的插件）和查等级（读别的插件注册的 provider）。
+- **经验事件** `EarthRPGItem.api.GatheringExperienceEvent`（玩家 / 分类 / 数量 / 方块材质 / 是否来自采集点），
+  普通方块破坏和采集点完成两条路径都会触发，采集点那次由 `CollectionManager` 完成时单独发，
+  与普通破坏互不重叠，不会双重加经验。事件在主线程抛，amount 原样发出，不做任何缩放。
+- **等级提供者** `EarthRPGItem.api.GatheringLevelProvider`（getLevel + 可选 supports 分类），
+  通过 `EarthRPGItemAPI.registerGatheringLevelProvider(...)` 注册；API 还提供
+  `getGatheringLevel`（只读）与 `awardGatheringExperience`（手动发经验）。多 provider 取每分类最大值。
+- **门槛**（`gathering.yml` 的 `required-level`）：有效等级 = provider 等级 + 主手工具加成
+  （物品 attributes 的 `FarmingLevel` / `MiningLevel` / `ForestLevel`，`WoodcuttingLevel` 是砍树别名）≥ 门槛
+  才可采集，否则破坏被取消并提示（带节流）。普通方块破坏与采集点走同一张材质表，规则完全一致。
+- **没有 provider 时按 `no-provider` 处理，默认 `allow`**（用户选择）：门槛不生效，一切照旧；
+  装了经验插件后门槛自动生效，不会把服务器锁死。
+- **模板**：`gathering.yml` 自带完整表（47 条经验 + 27 条门槛）——挖矿 19 条（含**全部 8 个深板岩变种**，
+  与原版矿石同经验同门槛）、砍树 11 条、农业 17 条；门槛从 3 级到 15 级（铜 3 → 铁 5 → 钻石 10 →
+  绿宝石 12 → 远古残骸 15）。煤矿刻意不设门槛（新手起步不卡），石头/深板岩/下界岩默认不给经验
+  （避免挖矿道刷满级，配置末尾留了注释可开启）。`Tool/` 自动生成 `挖掘等级测试镐`（MiningLevel: 2）
+  与 `砍树等级测试斧`（ForestLevel: 2）。
+- **漏配检查**：门槛表里的方块若没配经验，reload 时控制台警告——这种错误会让玩家等级永远涨不上去、
+  后面的矿物永久卡死，表面看却像「门槛不生效」。
+- 新指令 `/rpgitem gathering [玩家]`（只读诊断）：三分类等级 / 工具加成 / 有效等级 / 两张表规模 / provider 是否注册。
+- 新增专门给插件开发者的 API 手册 `tips/采集经验API使用手册-版本3.2bate.txt`（随 jar 打包）：
+  从获取 API 到完整示例插件源码（三条经验轨道分开存 / 分开升级 / 注册 provider），
+  含 `supports()` 契约（只做部分分类必须重写，否则三种经验会被看成一种）、
+  多 provider 取最大值、线程要求与常见问题排查。
+- 实现位置：`GatheringSkillManager`（表 + provider 注册 + 门槛 + 破坏监听）、`EarthRPGItem.api`（事件 / 接口 / API 实现）、
+  `CollectionManager`（采集点门槛与完成发经验）、`RpgItem` 新增三个等级加成字段（进签名、进 lore）、
+  `config.yml` 新增 `gathering-xp` / `gathering-levels` / `farming-level` / `mining-level` / `forest-level` 开关。
+- 已验证：Gradle 离线构建 `BUILD SUCCESSFUL`；`.tmp-gathercheck/GatherCheck.java`
+  （81 项 0 错误，覆盖完整清单（47 经验 / 27 门槛 / 8 深板岩变种与原矿同值）、
+  门槛镜像（1 级挖不动铁、5 级刚好、工具 +2 顶过钻石门槛、无 provider 放行）、
+  漏配警告源码锚点、工具字段/签名/lore、API 方法齐全、监听顺序与采集点发经验接线、指令与开关），
+  LevelCheck 74 项与 PhantomCheck 131 项回归均 0 错误，**未在真实 Paper 服务端实测**。
+
+- ⚠️ 服务器操作：替换 jar 后 `reload`；`gathering.yml` 会自动生成（改过不会被覆盖）。
+  `Tool/挖掘等级测试镐.txt` 等只在 Tool 文件夹为空时生成——想用模板工具请手动复制文件内容，
+  或清空 Tool 文件夹后让插件重建（注意旧模板会一起重建）。
+
+62. 采集经验改为「由资源点编辑」：原版矿物经验禁用，资源点与工具各整合成一个 yml
+
+需求：「采集工具没有更新、资源点也没有更新；采集经验应该由资源点编辑，而不是采用原版
+矿物，现在把原版矿物的经验禁用掉；新建采集点整合在一个 yml 文件里；创建对应等级的
+采集工具，整合在一个工具 yml 里面」。
+
+- **经验与等级门槛都挂到资源点上**：每个资源点 yml 新增两个字段——
+  `experience`（采集成功一次发多少经验，原样发事件，不缩放）与 `required-level`
+  （采集它需要的等级，0 = 无门槛）。采集开始前按资源点自己的分类查门槛
+  （玩家等级 + 手持工具加成 ≥ 门槛才放行），采集完成时按资源点配置发
+  `GatheringExperienceEvent`（`isCollectionPoint` 恒为 true）。
+- **原版矿物的经验禁用**：`gathering.yml` 删除了整张按材质配的经验表；普通挖矿 /
+  砍树 / 收作物不再触发经验事件，也不在门槛范围内（`gathering.yml` 只剩全局设置：
+  `enabled` / `no-provider` / 提示文案；另保留一段可选、默认注释掉的原版方块门槛）。
+- **资源点整合成一个 yml**：`Collection/collection_level_points.yml`（随 jar 打包，
+  文件夹里不存在才写入，不覆盖用户文件）——9 个带经验 / 门槛的资源点模板：
+  铜 3（经验 8）/ 铁 5（12）/ 金 8（18）/ 钻石 10（30）/ 远古残骸 15（50）挖矿，
+  深色橡木 4（6）/ 绯红菌柄 6（8）砍树，西瓜 3（3）/ 地狱疣 4（5）农业。
+- **采集工具整合成一个工具 yml**：`Tool/collection_level_tools.yml`（同上写入规则）——
+  10 把工具：铜矿镐 +1 / 铁矿镐 +3 / 钻石镐 +5，深色橡木斧 +3 / 绯红菌柄斧 +5，
+  西瓜锄 +3 / 地狱疣锄 +5，外加三把 +2 测试工具（挖掘/砍树/农业各一）。
+  旧的 `mining_level_test_pickaxe.txt` / `forest_level_test_axe.txt` 单文件模板已移除，
+  测试工具并入整合文件。
+- `/rpgitem gathering` 诊断改为统计资源点：三分类等级 / 工具加成 / 有效等级、
+  资源点总数（带经验 / 带门槛各几个）、原版门槛数（默认空）、provider 是否注册。
+- 实现位置：`CollectionDefinition`（新字段 + `givesExperience` / `hasLevelGate`）、
+  `CollectionManager`（解析、开始采集门槛、完成发经验、写入默认整合文件）、
+  `GatheringSkillManager`（删除原版经验表，保留可选原版门槛，新增
+  `awardCollectionPointExperience`）、`RpgItemManager.writeDefaultLevelTools()`、
+  `gathering.yml` / `config.yml` 文案、`src/main/resources/Collection/` 与
+  `src/main/resources/Tool/` 两个随 jar 打包的整合模板。
+- 已验证：Gradle 离线构建 `BUILD SUCCESSFUL`；`.tmp-gathercheck/GatherCheck.java`
+  （重写后覆盖：gathering.yml 无经验表、资源点 yml 解析出 experience / required-level、
+  资源点门槛镜像（1 级采不动铁点、2 级+铁矿镐3=5 刚好、无 provider 放行）、
+  整合文件结构、工具 yml 的 items 结构与等级加成、API 不变、文档锚点），
+  LevelCheck 74 项与 PhantomCheck 131 项回归均 0 错误，**未在真实 Paper 服务端实测**。
+
+- ⚠️ 服务器操作：替换 jar 后 `reload`。`Collection/collection_level_points.yml` 与
+  `Tool/collection_level_tools.yml` 只在该文件不存在时写入——旧服务器的 Collection / Tool
+  文件夹里已有文件也不会被覆盖；如想要模板，删掉这两个文件后 reload 即可重建。
+  注意：旧服务器上若已有旧版 `gathering.yml`（带经验表），它不会被覆盖，但插件已不再
+  读经验表——那些配置现在无效，新模板请直接写在资源点 yml 里。
+
+63. 门槛改为「只看工具的采掘等级」+ 修复采集事件异步标记与硬度失效
+
+用户反馈：理解错了——资源点的门槛应看**工具的采掘等级**（工具 attributes 的
+`MiningLevel / ForestLevel / FarmingLevel` 就是档位），而不是隔壁插件的玩家等级；
+另外出现两个 bug（事件异步标记错误导致每 tick 报错、提高硬度反而秒挖）。
+
+- **门槛只看手持工具**：`CollectionManager.startHarvest` 里的 `canHarvest` 改为
+  直接比主手工具采掘等级；删掉了「provider 等级 + 工具加成」的有效等级概念。
+  `GatheringSkillManager` 新增 `toolLevel(player, kind)`（读主手工具对应分类的
+  Mining/Forest/FarmingLevel），`canHarvest(player, kind, required)` = 工具采掘等级 ≥ required。
+  **隔壁插件（GatheringLevelProvider）不再参与门槛判定**，接口保留为 API 兼容/预留查询。
+- **工具改为「档位对应」**：`Tool/collection_level_tools.yml` 的每把工具采掘等级 = 它解锁的
+  资源点门槛——铜矿镐 3 / 铁矿镐 5 / 金矿镐 8 / 钻石镐 10 / 残骸镐 15（挖矿）、
+  深色橡木斧 4 / 绯红菌柄斧 6（砍树）、西瓜锄 3 / 地狱疣锄 4（农业）；移除了旧的 +2 测试工具。
+- **修复事件异步标记**：`GatheringExperienceEvent` 构造改回 `super(false)`——此前写成异步
+  （`super(true)`）但在主线程 tick 里触发，Paper 抛
+  `IllegalStateException: GatheringExperienceEvent may only be triggered asynchronously`，
+  且异常让采集会话没被移除，导致每 tick 重复报错。现在事件在主线程同步触发（手册原文如此）。
+- **修复硬度失效（秒挖）**：所需采集时间由 `hardness/speed*20` 改为
+  `hardness * 20 / (1 + speed/100)`——原来速度一叠加（多个装备的速度属性相加）就四舍五入
+  成 0，`max(1,...)` 恒等于 1 tick，硬度毫无作用。现在硬度 1 ≈ 1 秒基准，速度是百分比加成
+  （20 = +20%），硬度翻倍时间立即翻倍。
+- `gathering.yml` 去掉 `no-provider`（不再有意义）；`/rpgitem gathering` 诊断改为显示
+  三分类「手持工具采掘等级」+ 资源点统计；`GatheringLevelProvider` javadoc、config /
+  属性百科 / 手册 §三十 / API 手册同步改为工具采掘等级语义。
+- 已验证：Gradle 离线构建 `BUILD SUCCESSFUL`；`.tmp-gathercheck/GatherCheck.java`
+  （重写后覆盖：gathering.yml 无经验表/无 no-provider、工具档位与资源点门槛一一对应、
+  门槛只比工具采掘等级（空手 0 采不动铁点、铁矿镐 5 刚好）、事件 `super(false)` 锚点、
+  时间公式锚点、API 兼容保留），LevelCheck 74 项与 PhantomCheck 131 项回归均 0 错误，
+  **未在真实 Paper 服务端实测**。
+
+- ⚠️ 服务器操作：替换 jar 后 `reload`。若你已改过 `Tool/collection_level_tools.yml`，
+  请按新的「档位对应」规则调整每把工具的采掘等级（旧的 +1/+3/+5 是加成语义，已废弃）。
+
+77. 文档补全：使用手册新增目录与第四十节「技能武器类型限定」
+
+玩家问：「我的技能武器类型限定呢，有没有写进文档里」。
+
+**结论：之前写了，但位置分散、且漏掉了最关键的判定规则。** 本次补成完整一节。
+
+一、之前的状况
+
+`supported-weapons` 原本只在第十四节「武器限制」（10 行）和几处零散段落里提到，
+写了「检查主手或副手 Material」，但**没写清匹配规则**。实际排查时最需要的几条都缺：
+
+- 类别名（`SWORD`/`AXE`/`BOW`/`CROSSBOW`/`STAFF`）分别按什么规则匹配；
+- `STAFF` 用的是**包含**匹配，于是 `FISHING_ROD` / `BLAZE_ROD` / `BREEZE_ROD` 都算 STAFF；
+- 不属于任何类别的物品（`TRIDENT` / `MACE` / `SHIELD` / 锄 / 锹 / 镐）只能靠 Material 名限制；
+- 写错类别名或 Material 名**不会报错**，只是静默不匹配；
+- 装备时武器不符**仍然成功**，只有施放时才拦。
+
+二、本次新增
+
+- **手册新增第四十节「技能武器类型限定（supported-weapons）」**，共九个小节：
+  写在哪里（技能文件 vs config，config 优先）、三种写法、可以写什么（类别名 + Material 名
+  两张对照表）、判定规则（主手**或**副手）、两个真实的坑、写错了会怎样、
+  与其他限制的判定顺序、装备与施放的差别、排查表。
+- **第十四节保留为概览**，末尾加指向第四十节的指引（避免同一份规则写两遍后各自漂移）。
+- **使用方式汇总表**新增 9 行武器限定速查行。
+- **手册目录**补入第四十节。
+
+三、核对过程中发现并修正的一处文档错误
+
+我最初按「胡萝卜钓竿」这个中文名推断 `CARROT_ON_A_STICK` 会被归为 `STAFF`，
+**这是错的**：判定是 `name.contains("ROD")`，而 `CARROT` 里是 `ROT` 不是 `ROD`，
+且它以 `_STICK` 结尾——它实际归入兜底的 `ANY`。
+
+发现方式是把 `inferWeapon` 的逻辑**照着源码逐行复刻**成脚本，再拿 Paper 1.21.1 的
+**真实 Material 常量表**（1943 个）跑一遍，而不是靠中文名或直觉判断。
+同一次核对也确认了 `TRIDENT` / `MACE` / `SHIELD` / `DIAMOND_PICKAXE` 全部解析为 `ANY`。
+
+四、验证
+
+`config.yml` 的 25 个键、`plugin.yml` 的 8 个权限节点与默认值**全部交叉核对通过**；
+`skillcheck` 文案（`当前手持武器不符合限制`）、装备提示（`该技能限制武器类型：`）、
+技能物品 lore 行（`&7武器类型: &f`）均按源码原文核对；
+config 覆盖优先级的实现（config 先建、自动扫描跳过已存在 ID）也已确认。
+
+全套 875 项 / 0 错误；离线 Gradle 构建通过。**未在真实 Paper 服务端实测**。
+纯文档改动，不影响任何现有配置与玩家数据。
+
+89. 饰品栏改版：人体布局 + 白色玻璃板占位 + 管理指令 + 旧存档按类型迁移
+
+**需求原话**：「将这些饰品栏的位置重新排列一下，尽量贴近人体站立时佩戴饰品的位置；
+原有的提示全部替换掉，直接改为白色玻璃板；玩家通过放置在白色玻璃板里的饰品获得属性；
+饰品放置后，玻璃板变为该饰品；再添加一个指令，方便查看管理玩家的饰品列表。」
+
+一、槽位改成人体布局（10 格容量不变）
+
+```
+列      0    1    2    3    4    5    6    7    8
+行1     ·   耳饰  ·    ·    ·    ·    ·   耳饰  ·     耳饰 10 / 16
+行2     ·    ·    ·    ·   项链  ·    ·    ·    ·     项链 22
+行3    手饰  ·    ·    ·   胸饰  ·    ·    ·   手饰     手饰 27 / 35，胸饰 31
+行4     ·   戒指  ·    ·   披风  ·    ·   戒指  ·     戒指 37 / 43，披风 40
+行5     ·    ·    ·    ·   腰饰  ·    ·    ·    ·     腰饰 49
+```
+
+耳在头两侧、项链在颈、手饰在手臂位置、胸饰居中、戒指在手上、披风在背后、腰饰在腰；
+成对槽严格镜像（列 0↔8、1↔7）。**各类型容量与旧版完全一致**（戒指/耳饰/手饰各 2，其余各 1），
+所以这次改版不会改变任何人的属性上限。
+
+二、白色玻璃板占位（取代原来的告示牌提示）
+
+- 7 个 `OAK_SIGN` 提示全部删除，改为**空槽即白色玻璃板**，板面写该格能放的类型。
+- 放入饰品后该格直接显示饰品本体，取走恢复白色玻璃板。
+- 白色玻璃板带 PDC 标记（`accessory_slot_placeholder`），因此**不会被当成饰品存进存档**，
+  也不能被玩家拿走 —— 关界面时的持久化校验会跳过它。
+- 槽位交互改为**全部手动接管**：事件先 `setCancelled(true)`，再按左键/右键/数字键/副手/Shift 自行搬运。
+  不这么做的话，原版交换逻辑会把占位玻璃板漏进玩家背包。
+
+三、管理指令
+
+```
+/rpgitem accessory <玩家>          打开该玩家的饰品栏（目标必须在线）
+/rpgitem accessory <玩家> list     文本清单，按类型分组并带槽号，离线也能看
+/rpgitem accessory <玩家> clear    清空，返回移除件数
+```
+
+- 新增权限 `earthrpgitem.accessory.admin`（默认 OP），查看/编辑他人需要它；看自己不需要。
+- 管理员编辑他人时，**灵魂绑定与类型校验按「目标玩家」判定**（`AccessoryMenuHolder` 携带的是
+  owner 而不是「谁打开的」），否则会因为「绑定不是你的」把所有饰品判成非法。
+- 目标玩家**必须在线**才会打开界面：饰品栏数据是「槽号:物品」写在 accessories.yml 里的，
+  对着离线数据开一个可编辑界面，一旦与该玩家上线后的读取交错就会互相覆盖。离线玩家用 `list` 查。
+
+四、旧存档迁移（这是最容易丢物品的地方）
+
+槽位重排后槽号含义变了：**旧 31 是腰饰、新 31 是胸饰；旧 22 是手饰、新 22 是项链**。
+所以迁移**绝不按旧槽号搬运**，而是读每件饰品自己声明的 `accessory-type`：
+
+1. 先尝试原位保留（槽号与新类型本来就对得上 → 原地不动，保证幂等）；
+2. 再按类型放进该类型的第一个空槽；
+3. 类型无法识别或该类型已满 → **退还玩家**（背包满则掉在脚下），并落盘到 `..orphans.<uuid>`
+   等下次打开饰品栏时补发，绝不静默丢失。
+
+迁移逻辑抽成纯函数 `planMigration(int[] oldSlots, String[] declaredTypes)`，不碰 Bukkit 便于测试。
+
+五、顺手修掉的两个真实 bug
+
+1. **类初始化顺序崩溃**：`TYPE_SLOTS = buildTypeSlots()` 原本声明在 `TYPE_ORDER` 之前，
+   静态初始化时读到 null → `ExceptionInInitializerError`，整个插件起不来。
+   （由新测试直接跑出来的，不是推测。）
+2. **config.yml 的 `accessory.types` 是乱码**：`ring: "鎴掓寚 Ring"` 等 7 行是 GBK/UTF-8 混写的历史遗留。
+   已改回真实中文；同时修掉了**乱码在界面上的实际显示**（详见下面第 3 条）。
+
+3. **饰品栏槽位名显示乱码（用户实测反馈）**：`saveDefaultConfig()` 不会覆盖已存在的
+   `plugins/EarthRPGItem/config.yml`，所以老服主的配置里仍是那 7 行乱码字面量，界面照旧显示 `鎴掓寚`。
+   上一版试图用「字符范围检查」（替换符 / 私用区 / 控制字符）识别乱码，但**这些乱码字符每一个都是
+   合法汉字**（U+4E00 区），检查全部放行，等于没做。
+   现改为**真正的还原**：`repairMojibake()` 把字符串按 GBK 取回原始字节、再按 UTF-8 解码
+   （`戒指` → `鎴掓寚` 的逆向操作）。判据是「GBK 字节恰好构成合法 UTF-8 序列」，
+   正常中文的 GBK 首字节落在 0x81–0xBF（UTF-8 续字节区间）必然解码失败，因此**不会误改正确的中文**。
+   取值顺序：config 值 → 还原后的 config 值 → 内置中文名。
+   第二种根因（整个 config.yml 以 GBK 保存、被按 UTF-8 读成替换符）无法还原，
+   由 `isUsable()` 判为不可用后回退内置中文名，两种情况都能显示正常中文。
+
+**验证**：新增 `.tmp-accessorycheck/AccessoryCheck.java`（**84 项 / 0 错误**）：
+布局几何（每对槽镜像、居中槽在第 4 列、垂直顺序 耳<项<胸<披<腰）、容量与旧版一致、
+旧表仍在且确认 3 个槽号含义已变、迁移按类型不按槽号（旧 31 腰饰不再留在 31、旧 22 手饰不再留在 22）、
+迁移幂等、容量足够时零丢失、超容量变成 orphan 而不是消失、无类型不瞎猜、
+指令/权限/plugin.yml/config.yml 接线。
+
+新增 `.tmp-mojibakecheck/MojibakeCheck.java`（**78 项 / 0 错误**）：
+乱码样本不手抄码点，而是用逆变换现算（`new String(correct.getBytes(UTF_8), GBK)`），
+与线上数据同源；验证 7 个类型全部能还原、正常中文不被误改、纯 ASCII/emoji/空值/null 安全、
+还原幂等、还原结果与内置中文名一致、替换符等不可显示值确实触发回退。
+
+连同 FieldNameCheck(46)、HeldCheck(71) 一起全绿。离线 Gradle 构建通过。**未在真实 Paper 服务端实测**。
+
+**升级注意**：
+- 槽位变了，但饰品**不会丢**（按类型自动迁移）。仍建议先备份 `plugins/EarthRPGItem/accessories.yml`。
+- 老服的 `config.yml` 若还是乱码的类型名，删掉 `accessory.types` 段或改成正确中文即可；不改也不会显示方块字。
+- 旧的 `accessorygui` 指令保留不变，等价于 `/rpgitem accessory <自己>`。
+
+88. 技能成长预览显示英文：字段中文名改为「精确优先 + 按段翻译」
+
+**用户反馈**：「为什么有部分的技能成长没有在技能上显示中文」。
+
+**根因**：技能强化台的「升级预览 / 完整成长表」用 `SkillLevelManager.fieldName(path)` 把字段路径翻成中文，
+而它只查一张**全路径**字典；查不到就把整条路径原样显示成英文。全路径是
+「技能段 × 子段 × 字段」的笛卡尔积，每加一个技能就要手工补一批 —— 于是这些正好被漏掉：
+
+| 技能 | 真实字段路径 | 旧字典 | 强化台显示 |
+|---|---|---|---|
+| 穿透箭 / 三连射 / 爆炸箭 / 分裂箭 | `shortbow-cd.*` | 只有 `shortbow.*`（**改名前**的死条目） | 英文路径 |
+| 踢击 | `damages.kick.*` | 一条都没有 | 英文路径 |
+| 王之宝库 | `gate-of-babylon.weapon-count` / `spread-radius` / … | 只收录了 `weapon-percent` | 英文路径 |
+
+**修法**：
+
+1. `fieldName` 改成**两段式**：先查人工校对过的精确条目 `FIELD_NAMES`（原样保留，零回归）；
+   未收录的按**段**翻译后拼接 `SEGMENT_NAMES`：
+   - `shortbow-cd.projectile-item.hit-radius` → `短弓·本体·命中半径(格)`
+   - `damages.kick.knockback` → `伤害段·踢击·击退(格)`
+   - `gate-of-babylon.spread-radius` → `宝库·落点散布(格)`
+2. `SEGMENT_NAMES` 覆盖全部技能段 / 子段 / 数值字段（约 90 条），**以后新增技能自动就有中文**，
+   不必再为每条全路径补条目 —— 这才是不再复发的原因。
+3. 修正旧字典里 `shortbow.arrow-count` / `shortbow.weapon-percent` 两个**死条目**（段名早已是
+   `shortbow-cd`）→ `shortbow-cd.*`。
+4. 顺手堵一个 NPE：`fieldName(null)` 以前会在不可变 Map 上抛
+   `NullPointerException: Cannot invoke "Object.hashCode()" because "pk" is null`（测试跑出来的），现在先判空。
+
+**兜底**：完全没收录的路径回退成原始英文（不编造名字）；部分收录的保留原始段
+（`shortbow-cd.mystery-key` → `短弓·mystery-key`），一眼能看出哪一段没收录。
+
+**验证**：新增 `.tmp-fieldcheck/FieldNameCheck.java`（**46 项 / 0 错误**）：逐条断言短弓 / 踢击 / 宝库的
+拼接结果、人工校对条目仍优先（`leap-strike.knock-up` 仍是「蹦山击击飞力度」而不是「蹦山击·击飞力度」）、
+全未知回退原文、空指针安全、旧 `shortbow.` 前缀不许复活。同批复跑 `HeldCheck`（71 项 / 0 错误）。
+离线 Gradle 构建通过。**未在真实 Paper 服务端实测**。
+
+**升级注意**：纯显示层改动，**任何 yml 都不用改**；`leveling` 段的路径写法完全不变。
+
+87. 拖尾粒子「范围是 1 格」：轨迹继承了形状类的默认 radius（1.5 → 截成 1.0）
+
+**用户反馈**：「拖尾粒子范围怎么是 1 格，他应该跟原版箭射出去差不多是 0.几格，应该是你写的 bug」。
+（上一条 86 只改了**粒子多大**，没改**轨迹铺开多大**，所以用户回「效果还是一样的，只不过粒子变小了而已」——
+这条才是「范围」的真正来源。）
+
+**根因**：`radius` 的语义随用途而变，但 `loadParticleConfig` 只有**一个**通用默认值 `1.5`：
+
+```java
+config.getDouble(root + "radius", plugin.getConfig().getDouble(root + "radius", 1.5))
+```
+
+- 形状类粒子（球形 / 环形）：半径 1.5 格很正常，这个默认值是为它们定的；
+- **轨迹**的 `radius` 是「线的粗细」，而 `playTrail` / `playJittered` 会在该点周围
+  **±radius 的立方体**内撒粒子。
+
+于是「`trail` 段没写 `radius`」时：`1.5` → 被 `TRAIL_RADIUS_CAP = 1` 截成 **`1.0`**
+→ 弹射物周围 **±1 格**一团雾。**用户量到的「1 格」就是这个 1.0。**
+
+短弓的轨迹路径是 `qskill.<技能>.trail.radius` 这种键，`config.yml` 里**没有**对应的全局兜底键，
+所以它一定落到那个 `1.5`；而全局的 `projectile-trail-particles` 之所以看着正常，
+只是因为出厂 `config.yml` 恰好写了 `radius: 0.05`——**默认值本身一直是错的，只是被 config.yml 掩盖了。**
+
+**修法**：
+
+1. 新增 `loadTrailParticleConfig(config, path, defaultBlock)`，轨迹专用：
+   - 默认半径 **`TRAIL_DEFAULT_RADIUS = 0.05`**（不是 1.5）；
+   - 上限 **`TRAIL_MAX_RADIUS = 0.5`**，超过就收窄并**打印后台告警**（不再静默变成一团雾）。
+2. `loadParticleConfig` 增加带默认半径的重载，形状类仍走 `1.5`（语义不变）。
+3. **三个轨迹加载点全部切到轨迹入口**：
+   - `projectile-trail-particles`（普通射箭轨迹）
+   - `path + ".trail"`（王之宝库 / 代达罗斯弓等 gate 轨迹）
+   - `path + ".trail"`（短弓 item 弹射物轨迹）
+
+**效果**：`trail` 段没写 `radius` 的弹射物，范围从 **±1 格**变成 **±0.05 格**（0.几格，符合预期）；
+写了 `radius` 的配置完全不受影响；写超过 0.5 的会被收到 0.5 并告警。
+
+**验证**：新增 `.tmp-trailcheck/TrailRadiusCheck.java`（**19 项 / 0 错误**），其中包含**回归证明**：
+同一份「`trail` 段没有 `radius`」的配置，旧逻辑解析出 `1.0`（玩家量到的「1 格」），
+新逻辑解析出 `0.05`；并断言三个轨迹加载点都走轨迹入口、形状类默认值仍是 1.5、
+出厂 `config.yml` 的全局轨迹半径仍是细的。全部 15 套回归通过。离线 Gradle 构建通过。
+**未在真实 Paper 服务端实测**。
+
+**升级注意**：老 yml **不需要改**。若你之前为了压制这团雾把某个 `trail.radius` 手动调过 0，
+现在可以删掉那一行，让它用新的 `0.05` 默认值。
+
+86. 弹射物轨迹粒子「范围太大」：两份 dust() 尺寸不一致 + 新增可配的颗粒大小
+
+**用户反馈**：「你的弹射物附带的粒子特效怎么写的，怎么范围这么大，之前的范围就很好，
+完美模拟原版粒子效果」，追问后补充：**「设置为 0 貌似没有用」**。
+
+**根因有两层，第二层才是关键。**
+
+一、`radius` 和「粒子大小」是两件不同的事（所以调 0 没用）
+
+轨迹粒子的绘制链路是：
+
+```
+drawItemTrail / drawGateTrail        每 tick 沿飞行线段切 samples 段
+  └ playJittered(段上一点, config, count)
+      └ 在该点周围 ±radius 的立方体内随机撒 count 颗
+```
+
+- `radius` 控制的是**散布抖动**（粒子撒在多宽的范围里）；
+- 而**每一颗粒子自身有多大**，是 DUST 的 `DustOptions.size`。
+
+「范围大」时几乎总是 `size` 大，所以把 `radius` 调成 0 只是让抖动变成 0，
+粒子本身一点没变小 —— 这正是用户看到「设置为 0 貌似没有用」的原因。
+
+二、代码里有两份 `dust()`，尺寸不一样（真 bug）
+
+| 位置 | 谁在用 | 尺寸 |
+|---|---|---|
+| `SlashParticleEffectPlayer.dust()` | 挥砍 / 剑气 | **0.55F** ← 用户说「之前的、完美模拟原版」 |
+| `ParticleEffectPlayer.dust()` | 投射物 / 箭雨轨迹、生成/命中/爆炸粒子 | **1.0F** ← 粗了近一倍 |
+
+同一个 DUST、同一份配置写法，弹射物拖出来的轨迹比剑气粗了近一倍。
+两份实现是各写各的，所以会分叉 —— 这就是「弹射物范围大」的直接来源。
+
+**修法**：
+
+1. **合并成唯一实现** `ParticleEffectPlayer.dustOptions(String)`（`public static`），
+   `SlashParticleEffectPlayer.dust()` 直接委托它。两份实现不可能再分叉。
+2. **默认尺寸统一为 `0.55F`**（`DEFAULT_DUST_SIZE`），即用户认可的那一档。
+   老配置 `block: "255,105,180"` 不用改，自动变回细的。
+3. **新增颗粒大小可配**：`block` 支持第 4 段 —— `block: "r,g,b,size"`。
+   - `size` 默认 `0.55`，可用范围 `0.05 ~ 4`（超范围会被夹住）；
+   - 这是以前**完全没有的旋钮**，也是用户调 `radius` 无效的根本原因。
+4. **兜底更稳**：旧实现要求「正好 3 段」，写第 4 段会连颜色一起掉进灰色兜底。
+   现在**只有 size 非法时保留颜色、size 回退默认值**；颜色非法才整体回退灰色。
+
+**验证**：新增 `.tmp-dustcheck/DustCheck.java`（**18 项 / 0 错误**），纯功能断言
+（`dustOptions` 是 public static，不需要起服务端）：默认尺寸、颜色解析、第 4 段改尺寸、
+上下限夹取、size 非法保留颜色、颜色非法回退灰色、null 不炸；外加源码级断言
+「两个 effect player 都不许再自己 `new Particle.DustOptions`、不许写死尺寸」，
+防止这份实现再次分叉。全部 14 套回归通过（ProjectileCheck 38/0）。离线 Gradle 构建通过。
+**未在真实 Paper 服务端实测**。
+
+**升级注意**：
+- 老 yml **不需要改**，轨迹会自动变成细的（默认 0.55）。
+- 想更细/更粗就写第 4 段，例如 `block: "255,105,180,0.35"` 或 `...,0.8`。
+- 若之前为了「变细」把 `trail.radius` 调过 0，现在可以调回 `0.05 ~ 0.25` 恢复一点体积感。
+
+85. 三连射恢复「水平方向」：不再和分裂箭共用锥形代码
+
+**用户反馈**：「原来的三连射是水平方向的，你怎么把它的代码跟分裂箭搞在一起了」。
+
+**根因（我第 83 条改坏了）**：短弓的 `spread-mode` **缺省值**原本是 `line`（水平方向），
+第 83 条我把它改成了 `cone`，还给三连射模板也写了 `spread-mode: cone`。
+三连射要的是「三支箭沿准星水平直飞、不分叉」；`cone` 是分裂箭专用的霰弹锥。
+虽然三连射是 `arrow-count: 1`（单支箭在两种模式下的几何完全相同、实际飞出去没区别），
+但模板和缺省值都写着 `cone`，从配置上看就是「三连射被拖进了分裂箭的锥形逻辑」。
+
+**修法**：
+- 三连射模板：`spread-mode: cone / spread-degrees: 4` → **`line / 6`**（水平方向，不分叉）。
+- 穿透箭、爆炸箭模板同样改回 `line`（它们都是单支直线命中，本来就该是水平方向）。
+- 短弓 `spread-mode` **缺省值改回 `line`**（恢复第 82 条及更早的原始行为）。
+  只有分裂箭模板显式写 `cone`，其余技能不写也回到水平方向。
+
+现在四个弹射技能的散布各归各位：
+| 技能 | spread-mode | 行为 |
+|---|---|---|
+| 穿透箭 / 爆炸箭 | line（缺省） | 单支沿准星直线 |
+| 三连射 | line（缺省） | 三支分批沿准星直线连发 |
+| 分裂箭 | cone | 霰弹锥形，抬头整个锥跟着抬 |
+
+**验证**：ProjectileCheck 扩展为校验「每个模板的 spread-mode 归属」：
+三连射/穿透箭/爆炸箭必须 `line`，分裂箭必须 `cone`（**38 项 / 0 错误**）。
+全部 14 套回归通过。离线 Gradle 构建通过。**未在真实 Paper 服务端实测**。
+
+**升级注意**：服务器上老的 `三连射.yml` 若还写着 `spread-mode: cone`，
+请改成 `line`（`spread-degrees` 随意）；`spread-mode: radial` 的旧文件改成 `cone`（分裂箭）或 `line`（其余）。
+
+84. 爆炸箭实测三修 + 分裂箭枪口粒子 + 加载期音效名校验（含一个真 bug）
+
+本条全部来自实际进游戏试出来的问题，其中第 3 条是我在第 83 条里引入的真 bug。
+
+一、爆炸箭发射没有凋灵骷髅音效（真 bug，我写错了音效名）
+
+**现象**：「发射的时候怎么没有凋零骷髅发射的音效」。
+
+**根因**：第 83 条的模板里我把发射音写成了 `ENTITY_WITHER_SKELETON_SHOOT`。
+这个名字**在 1.21.1 里不存在** —— 用 `Sound.values()` 全表核对过，含 `WITHER` 的只有
+`ENTITY_WITHER_AMBIENT` / `BREAK_BLOCK` / `DEATH` / `HURT` / `SHOOT` / `SPAWN`，
+另有 `ENTITY_WITHER_SKELETON_AMBIENT` / `DEATH` / `HURT` / `STEP`，**没有 SHOOT**。
+凋灵骷髅射击用的就是 `ENTITY_WITHER_SHOOT`（代码库 `projectile-trail-sound` 早就在用它）。
+
+而 `parseSound()` 遇到无效名字会**静默退回** `ENTITY_ARROW_SHOOT`，所以表现是
+「听到一个不相干的拉弓音」或者干脆没声音，控制台在有人施放技能之前还是干净的。
+
+**修法**：模板与文档改为 `ENTITY_WITHER_SHOOT`。
+
+二、爆炸没有爆炸音效
+
+**根因**：爆炸音的 `defaultEnabled` 是 `false`（`loadSoundConfig` 的通用默认）。
+旧文件如果只写了 `impact-explosion.radius/damage/particle` 而没写 `sound` 段，
+就**静默不播**。而通用默认之所以是 false，是为了「用户没配的音效不要自己响」——
+但爆炸音不一样：一个爆炸没有爆炸声是明显的体验错误，不是「用户没要求」。
+
+**修法**：爆炸音的 `defaultEnabled` 改为 `true`（音量 1.6、音高 0.75）。
+现在旧文件即使没有 `sound` 段也会响默认爆炸音；要静音请显式写 `enabled: false`。
+
+三、爆炸特效不直观
+
+**现象**：「这个爆炸特效也不是很直观」。
+
+**根因**：第 83 条我让 `playBigExplosion` 把配置的粒子乘 4 铺满球体。配置成
+`EXPLOSION`（**整格大的白色贴图**）时，画出来就是 240 颗白贴图糊成一团，
+完全看不出是爆炸。这个坑代码库早就踩过一次 —— 王之宝库的记录里写着
+「36 颗白色爆炸贴图就是一坨白糊在准星正前方」，我等于又犯了一遍。
+
+**修法**：爆炸之所以一眼能认出来，靠的是**层次**而不是总颗数。重做
+`playBigExplosion` 为五层：
+
+1. **原版爆炸云**：固定 1 颗 `EXPLOSION_EMITTER` —— 唯一「一眼认出是爆炸」的粒子，
+   配置成什么都照放；
+2. **火球体**：配置的粒子，按 `count` **如实**铺在球体内（不再乘 4）；
+   配置成 `EXPLOSION` 这类整格大贴图时只点 1..3 颗，否则又糊成白墙；
+3. **黑烟**：`LARGE_SMOKE` 向上翻，这是「爆炸感」的主要来源；
+4. **地面冲击环**：贴地 4 圈 `SMOKE` 由内向外扩散，给出「炸开」的方向感；
+5. **火苗上升柱**：`FLAME` 向上飘，补一层「还在烧」的观感。
+
+模板的 `impact-explosion.particle` 相应改为 `FLAME`（小贴图，`count: 60` 就是一团火球）。
+`particle` 现在只管**火球体**那一层，其余四层自动补齐 —— 这是刻意的：
+爆炸的形态不该由用户一颗粒子名决定。
+
+四、分裂箭发射粒子太大
+
+**现象**：「分裂箭的发射粒子怎么这么大」。
+
+**根因**：发射时每支箭都会在枪口画一颗 `trail` 粒子，分裂箭一次出 10 支 =
+**同时 10 颗**。而模板里用的是 `SPELL_WITCH`，比其他技能的 `CRIT` / `END_ROD`
+明显大一圈 —— 10 颗大贴图叠在枪口就是一团。
+
+**修法**：
+- `trail` 改用小贴图 `CRIT`（`count: 1, radius: 0.04`），枪口立刻清爽；
+- 新增 `projectile-item.scale`（本体缩放），分裂箭模板设为 `0.6` ——
+  10 支大箭图标同时出现也会显得挤，调小后读起来像一蓬碎屑。
+  **只影响图标视觉大小，不影响 `hit-radius` 的判定范围**。
+
+五、加载期音效名校验（让这一类错误不再能悄悄溜过去）
+
+新增 `warnIfInvalidSound()`：加载技能时就用 `Sound.valueOf()` 校验音效名，
+无效就明确报出「哪一段、写的是什么」。此前 `parseSound` 静默退回、运行时也只打一行
+warning 且要等技能真被施放 —— 第 83 条那个错名正是这样溜过去的。
+现在一次 `/rpgitem reload` 就能看到全部拼错的音效名。
+
+六、蹦山击的起跳音也是无效音效（新校验一上线就抓到的第二个）
+
+**上面那个校验写好之后，第一件事就是拿它扫了一遍全部模板，当场又抓到一处**：
+蹦山击的起跳音写着 `ENTITY_PLAYER_JUMP`，而这个名字**在 1.21.1 的音效表里同样不存在** ——
+原版玩家跳跃本来就没有音效事件，所以枚举里根本没有它（含 `JUMP` 的只有
+`ENTITY_BREEZE_JUMP`、`ENTITY_HORSE_JUMP`、`ENTITY_RABBIT_JUMP` 这类生物的）。
+
+也就是说「蹦山击起跳音」从加上去的那天起就是**静默失效**的，只是没人专门去听起跳的那一下。
+已改为 `ENTITY_HORSE_JUMP`（音效表里最接近「跳跃」的真实音效）。
+
+这条正好说明为什么第 83 条那个错名能活到试玩才被发现：**当时没有任何一道自动检查会读模板里的音效名**。
+
+七、验证
+
+- `.tmp-projectile/ProjectileCheck.java` 扩展（**31 项 / 0 错误**）：
+  新增「模板里出现的每个音效名都必须是 1.21.1 的真实 `Sound` 枚举」这一条 ——
+  **这条正是第 83 条那类 bug 的守门员，也是揪出第 6 条那处错名的检查**；
+  而且它读的是**真实模板源码**而不是测试里抄的字符串（原来的写法只验证了测试自己写的东西）；
+  另加 `scale` 与爆炸层次断言。
+- 原有权威回归全部通过：`ApiCheck` 36/0、`Skill4Check` 167/0、`DisplayCheck` 51/0、
+  `GatherCheck` 89/0、`PhantomCheck` 135/0、`LevelCheck` 117/0、`HeldCheck` 71/0、
+  `PresetCheck` 162/0、`SwingCheck` 26/0、`WeaponYmlCheck` 90/0、`LevelFix78Check` 19/0、
+  `ConnectCheck` 30/0、`PanelForgeCheck` 8/0 —— **14 套全绿**。
+- 离线 Gradle 全量构建通过。**未在真实 Paper 服务端实测**。
+
+八、升级注意
+
+- 老爆炸箭文件建议补上 `impact-explosion.sound`（现在缺省也会响，但显式写更清楚）。
+- 发射音若写着 `ENTITY_WITHER_SKELETON_SHOOT`，**请改成 `ENTITY_WITHER_SHOOT`**；
+  蹦山击起跳音若写着 `ENTITY_PLAYER_JUMP`，**请改成 `ENTITY_HORSE_JUMP`**。
+  两个名字都不存在，不生效（reload 时控制台会提示）。
+- 分裂箭的枪口粒子大小由 `trail` 决定，本体大小由 `projectile-item.scale` 决定。
+
+83. 游侠五技能按实测反馈重做：弹射物改为插件物品弹射物 + 分裂箭改霰弹锥 + 技能面板加强化台入口
+
+本条全部来自实际进游戏试出来的问题，不是推测。
+
+一、分裂箭：从「圆环」改成「霰弹锥」（这是真 bug）
+
+**现象**：「他怎么是朝四面射的」「不是类似霰弹那种」。
+
+**根因**：`spread-mode: radial` 的实现是把瞄准方向当**轴**，在垂直于它的平面里转一整圈。
+抬头（视线接近竖直）时，这个平面是水平的，所以所有弹道都水平飞出去 —— 看起来就是朝四面八方射。
+不是参数没调好，是算法本身错了。
+
+**修法**：删掉 `radial`，分裂箭改为 `spread-mode: cone`。锥是**顺着视线**张开的：
+
+- `theta` 在 0..2π 均匀取样，半径 `r = sqrt(random) * tan(spread-degrees/2)`。
+  用 `sqrt` 是让落点在锥的**截面圆面积**上均匀，而不是往中心堆。
+- 偏移量加在两个与视线垂直的正交基上，所以**抬头时整个锥跟着抬起**。
+- 上限 89°（半角 45°），再大就会往侧后方射，不再是「朝前散」。
+
+**几何计算抽成了 `EarthRPGItem.util.SpreadMath`**：这段数学很容易写错，而写错只有进游戏才看得出来。
+单独抽出来后可以用纯数学断言守住「锥形 ≠ 圆环」，不用起服务端。
+
+二、穿透箭：弹射物改为**插件自己的物品弹射物**
+
+**现象**：「我需要的是 item 箭 而不是原版箭，不是原版的投掷物，是插件的，就像王之财宝的 item 一样」。
+
+**根因**：原实现用原版箭实体 + `setPierceLevel()`。这有三个问题：原版穿透还要求满蓄力/暴击才生效；
+命中监听器第一次命中就把弹射物移除了；而且穿透数受原版机制限制。
+
+**修法**：整条短弓链路改到「王之宝库」那套 ItemDisplay 机制上：
+
+- 新增 `ItemProjectile` 记录：物品名、`glow`、`pierce`、`collide-blocks`、`hit-radius`、
+  `max-distance`、`tilt-degrees`、轨迹/命中粒子与音效、可选的 `ProjectileExplosion`。
+- 新增 `ProjectileExplosion` 记录（爆炸箭的爆炸段），从 `ItemProjectile` 里独立出来，
+  这样爆炸的粒子/音效可以单独配。
+- `FSkills` 新增 `ItemShot` 内部类 + `launchItemProjectile` / `advanceItemShot` /
+  `findItemCollision` / `hitItemTarget` / `finishItemShot` 等；每 tick 推进，
+  **按线段判定命中**（`distanceToSegment`）而不是按点 —— 速度大于 1 格/tick 时按点判会穿过去漏判，
+  这是王之宝库早就踩过的坑。
+- `pierced` 集合记录已命中的生物，所以 `pierce: 3` 是「命中一个后还能穿过 3 个」，
+  同一个目标不会被重复结算。
+- `collide-blocks: true` 时撞墙即停；`false` 则穿墙。
+- 施法者中途下线会收掉弹射物，避免在世界里留下删不掉的显示实体。
+
+**朝向**：与王之宝库用同一套两步旋转（`itemAimRotation`）。原版箭贴图里的箭头**是斜的**，
+不先摆正本体就会斜着飞；所以加了 `tilt-degrees`（默认 `-45`），实测斜了只改这一个值，不用重新编译。
+`ItemDisplayTransform.NONE` + `Billboard.FIXED` 是必须的：其他 transform 会把旋转/缩放烘进去，
+`FIXED` 之外的 billboard 会让贴图永远面向玩家、忽略瞄准方向。
+
+三、三连射：每一批都有声音 + 间隔可调
+
+**现象**：「怎么只有第一下才有声音」「怎么不能调整发射间隔」。
+
+**根因**：发射音在连发循环**外面**播了一次。
+
+**修法**：`runShortbow` 改为按 `volleys` 循环，每批用 `runTaskLater` 在
+`volley * volley-interval-ticks` 调度，每批调用 `launchShortbowVolley`，
+**在里面播一次 `launch-sound`**。同时每一批都重新读一次 `player.getEyeLocation().getDirection()`，
+所以连发途中转头，后面的箭跟着新准星走。间隔就是 `volley-interval-ticks`（`0` = 同一瞬间打完）。
+
+四、爆炸箭：粒子量 + 爆炸音 + 发射音
+
+**现象**：「这个粒子特效不够多 而且怎么没有爆炸音效 发射的时候应该有凋零骷髅发射的音效」。
+
+**修法**：
+
+1. **粒子量**：原来走 `playImpactBurst`，它严格按配置的 `count` 撒点 —— `count: 40` 就真的只有 40 颗，
+   半径一调到 3 格以上就显得稀稀拉拉。新增 `ParticleEffectPlayer.playBigExplosion()`：
+   **密集实心球**（`count × 4`，半径用 `cbrt` 取样使球体内均匀）+ **4 圈地面扩散环** + **上升火柱**，
+   总量有 320 颗的硬上限，防止配置写大后刷爆客户端。
+2. **爆炸音**：`impact-explosion.sound` 独立配置（默认 `ENTITY_GENERIC_EXPLODE`）。
+   并且爆炸箭**不再单独播命中音**，两个音一起播会糊在一起。
+3. **发射音**：模板改为 `ENTITY_WITHER_SHOOT`（凋灵骷髅的射击音），
+   比普通拉弓更有「重箭」感。（本条最初误写成 `ENTITY_WITHER_SKELETON_SHOOT`，
+   该名字在 1.21.1 并不存在，见第 84 条。）
+
+五、技能面板底行新增「技能强化台」入口
+
+**需求**：「技能面板的下面增加技能强化台按钮」。
+
+技能面板底行（第 6 排）新增**槽位 51**：`技能强化台 / Skill Forge`，直接打开技能强化台，
+不用先退回主菜单。
+
+- **不动**已有的 45（技能背包）/ 47（技能预设）/ 49（关闭）三个槽位：玩家已经记住位置，
+  老文档也按这几个值写过，新增入口用新槽子是纯增量改动。
+- 与主菜单的强化台入口是**同一道权限门**（`earthrpgitem.skillforge`）。
+  权限常量从 `RpgMenuListener` 的私有字段提升为 `RpgMenu.SKILL_FORGE_PERMISSION` 公开常量，
+  两处入口共用一个来源 —— 各写一遍字面量迟早会漂移，表现就是「一个入口能进、另一个说没权限」。
+- 没权限时**只提示一句、留在技能面板里**，不把人踢出界面（主菜单那边是关界面，因为那是顶层入口）。
+- **「返回」回技能面板**：技能背包和技能预设都返回技能面板，所以从面板进来的强化台也返回面板。
+  为此在 `RpgMenuHolder` 加了 `forgeFromPanel` 标记，并**贯穿每一次界面重开**
+  （翻页、强化成功/失败后的刷新、详情页返回）—— 漏传任何一处，翻一页之后「返回」就会莫名其妙跳到主菜单。
+
+六、验证
+
+- 新增 `.tmp-projectile/ProjectileCheck.java`（**28 项 / 0 错误**）：用纯数学断言证明
+  ①锥形内所有方向与瞄准夹角不超过半角、②抬头时每个方向的 Y 分量为正（30°/60°/89°/垂直向上四种情形）、
+  ③方向铺满整圈而不是只在一个平面、④**反证**：旧圆环算法在垂直抬头时 `minY = 0`
+  （即所有弹道水平，正是玩家看到的现象）、⑤`line` 模式保持旧行为且垂直抬头不产生 NaN、
+  ⑥五个模板的字段（光灵箭物品、`pierce`、`volleys`+间隔、凋灵骷髅发射音、爆炸音、`cone`+张角）。
+- 新增 `.tmp-panelforge/PanelForgeCheck.java`（**8 项 / 0 错误**）：槽位 51 不与任何已有控件重叠、
+  45/47/49 原地不动、两个入口的权限节点字符串一致且仍是 `earthrpgitem.skillforge`。
+- 原有权威回归全部通过：`ApiCheck` 36/0、`Skill4Check` 167/0、`DisplayCheck` 51/0、
+  `GatherCheck` 89/0、`PhantomCheck` 135/0、`LevelCheck` 116/0、`HeldCheck` 71/0、
+  `PresetCheck` 162/0、`SwingCheck` 26/0、`WeaponYmlCheck` 90/0、`LevelFix78Check` 19/0。
+- 离线 Gradle 全量构建通过。**未在真实 Paper 服务端实测**。
+
+七、升级注意
+
+- 老配置里若还写着 `spread-mode: radial`，**请改成 `cone`**；`radial` 已移除。
+- 老配置里的 `pierce-level`（原版箭穿透）**已不再是短弓字段**，请改用
+  `projectile-item.pierce`。
+- 短弓的 `projectile` 现在读的是**物品名**而不是实体名。写 `SNOWBALL` / `FIREBALL` 这类
+  实体名的老配置会退回到默认物品（`ARROW`），不会报错，但外观会变。
+- 短弓字段大改属于**行为变更**，建议先在测试服验证再上正式服。
+
+82. 弹射物技能扩展 + 游侠技能模板 + 蹦山击双音效 + 材质包文档
+
+一、蹦山击：起跳音与落地音分开
+
+`leap-strike` 原来只有一个 `sound`，起跳（抛起）和落地结算播的是同一个音效。
+现在分成两段：
+
+```yaml
+leap-strike:
+  ...
+  sound:            # 起跳音
+    enabled: true
+    sound: ENTITY_HORSE_JUMP   # 注意不能用 ENTITY_PLAYER_JUMP：1.21.1 音效表里没有这个名字（见第 84 条）
+    volume: 0.9
+    pitch: 0.9
+  impact-sound:     # 落地音（不写就沿用 sound，旧配置不用改）
+    enabled: true
+    sound: ENTITY_GENERIC_EXPLODE
+    volume: 1.2
+    pitch: 0.7
+```
+
+想做出「起跳轻快、落地沉重」的手感，落地用更低的 pitch、更高的 volume。
+
+二、短弓（弹射物技能）扩展：5 个新字段，全部可选
+
+- `projectile: SPECTRAL_ARROW`：发射**光灵箭**实体（穿透箭的「自定义 item」用）。
+- `pierce-level`：穿透生物数。0 = 命中第一个就停（旧行为）；3 = 还能再穿 3 个。
+  **方块始终挡住**（原版箭行为），不会穿墙。
+- `spread-mode: radial`：**整圈圆形散布**——以瞄准方向为轴、保持同一仰角转一整圈
+  均匀铺开，`arrow-count` 支箭组成圆环（分裂箭）。缺省 `line` 维持旧的水平一排。
+- `volleys` × `volley-interval-ticks`：分批连射，每批间隔可配（三连射）。
+- `impact-explosion`：命中（生物或方块）时的**粒子模拟爆炸**：在落点画一圈
+  `EXPLOSION` 等粒子 + 放音效 + 按半径结算一次技能伤害。**不生成爆炸实体、不破坏
+  方块、不点燃**，所以没有原版爆炸烟团粒子——爆炸观感完全由粒子模拟（爆炸箭）。
+
+三、damages 段新增 `knockback`
+
+任何 `wave`/`area` 伤害都能配 `knockback`（格，默认 0）：命中后把目标从施法者身边
+水平推开并稍微抬一点。踢击就是用 `damages` + `knockback` 做的，**没有注册新技能类型**。
+
+四、新增 5 个游侠技能模板（skills/ 目录，首次启动自动生成）
+
+| 文件 | 说明 |
+|---|---|
+| 踢击.yml | damages 短波 + 命中击退 |
+| 穿透箭.yml | 光灵箭 + pierce-level 直线穿透 |
+| 三连射.yml | volleys=3、间隔 6 tick |
+| 爆炸箭.yml | impact-explosion 粒子模拟爆炸 |
+| 分裂箭.yml | spread-mode: radial 一圈 12 支 |
+
+全部是纯配置，复用现在的 damages / shortbow 解析，没有新增技能类型。模板字段都写了
+注释，按第九节 `shortbow` 的字段表微调即可。
+
+五、文档
+
+- 使用手册新增第四十一节（游侠技能模板）、第四十二节（材质包配合 custom-model-data：
+  物品 yml 顶层 `custom-model-data` + 资源包模型 override + pack_format 34，
+  另附「王之宝库 blade-tilt-degrees 换材质后剑刃又斜」的排查说明）。
+- 使用方式汇总表同步补了 `damages.knockback`、短弓新字段、蹦山击双音效三行。
+
+六、验证
+
+离线 Gradle 构建通过；ConnectCheck / ApiCheck 全套回归通过。
+**未在真实 Paper 服务端实测**。旧配置不受影响：所有新字段都有缺省值，
+`impact-sound` 缺省沿用 `sound`，`spread-mode` 缺省 `line`。
+
+81. 接入 EarthExp 的第二个原因：本插件与 EarthExp 互为 softdepend（成环），顺序不可依赖
+
+第 80 条修掉「类名留空直接放弃」后，玩家反馈**配了类名仍然显示未接入**。
+查下去发现还有一层，而且更隐蔽。
+
+一、根因：依赖环让 softdepend 的承诺失效
+
+两边的 `plugin.yml` 是这么写的：
+
+```yaml
+# EarthRPGItem
+softdepend: [EarthExp]
+# EarthExp
+softdepend: [EarthRPGItem, MythicMobs]
+```
+
+**这是一个环。** 我在第 80 条里说「softdepend 保证 EarthExp 先加载、并让它的类可见」，
+**这个说法在成环时不成立**：Bukkit 对环上的插件顺序是任意决定的（拓扑排序排不动就
+按剩余顺序硬加载）。于是：
+
+- 本插件可能**先于** EarthExp 启用，此时 `EarthExpAPI` 还没注册进服务管理器 → 读到 null；
+- 本插件自己的 `Class.forName("com.earthexp.api.EarthExpAPI")` 也可能因为
+  类加载器可见性而失败 → 抛 `ClassNotFoundException`。
+
+玩家把 `api-class` / `stat-class` 都填对了也没用——**因为问题不在配置**。
+
+二、修法：不依赖加载顺序，也不依赖类可见性
+
+1. **用 EarthExp 自己的类加载器解析类**（`resolveClass`）：从
+   `Bukkit.getPluginManager().getPlugin("EarthExp")` 拿到它的 `Plugin` 实例，
+   用它的 `ClassLoader.loadClass(...)` 解析。只要 EarthExp 装上了，它的类就一定找得到——
+   绕开了「本插件的加载器看不看得见」这个问题。解析不到再回退 `Class.forName`
+   （覆盖「EarthExp 在、但包名对不上」的情况）。
+2. **监听 `PluginEnableEvent` 自动补接入**：本插件先启用、EarthExp 后启用时，
+   等它启用后再 `reload()` 一次，**不需要管理员手动 `/rpgitem reload`**。
+   `EarthExpBridge` 因此改为 `implements Listener`，并在 `onEnable` 里
+   **先注册监听、再首次 reload**（顺序反了就会错过事件）。
+
+三、让状态一眼可见
+
+- `/rpgitem reload` 现在会回报一行「EarthExp 接入: ...」（**控制台也能看到**，
+  不必进游戏）；
+- `/rpgitem skillcheck` 第一行同样回报；
+- 技能强化台那个置灰按钮的说明也改了（原来写「配置 config.yml 的 earthexp 段并安装
+  EarthExp 后可用」——现在不用配 config，这句话会误导人）。
+
+四、验证：新增 `ConnectCheck`（30 项 / 0 错误）
+
+这个套件用**真实 `EarthExp-0.5.1.jar`** 直接验证故障与修复，而不是只做字符串断言：
+
+- 构造一个**看不见 `com.earthexp.*` 的类加载器**，证明此时
+  `Class.forName("com.earthexp.api.EarthExpAPI")` **真的抛 `ClassNotFoundException`**
+  ——即旧实现「配了类名也没用」是真实故障，不是猜测；
+- 证明从 **EarthExp 自己的类加载器** `loadClass` 能成功拿到 `EarthExpAPI`（接口）
+  与 `Stat`（枚举），且 `COMBAT` 常量读得到——即新实现不依赖顺序与可见性；
+- **断言依赖环真实存在**（两边互为 softdepend），把这个「不能依赖顺序」的前提固定下来；
+- 断言 `resolveClass` 的解析链、`PluginEnableEvent` 只响应 EarthExp、
+  以及**监听注册发生在首次 reload 之前**（顺序错了就会漏事件）。
+
+五、验证汇总
+
+全部套件 0 错误：Level 116、Phantom 135、Gather 89、Swing 26、Skill4 167、Preset 162、
+Held 71、Display 51、Api 36、Gui 60、LevelFix78 19、WeaponType78 24、**Connect 30**，
+共 **986 项 / 0 错误**；离线 Gradle `build` 通过。**未在真实 Paper 服务端实测**。
+
+六、服务器操作
+
+替换 jar 后重启（或 `/rpgitem reload`）。**装了 EarthExp 的服务器不需要改任何配置**。
+若日志仍显示未接入，按那一行的措辞对症处理：写「未检测到」= EarthExp 没加载成功；
+写「服务没注册」= EarthExp 启用了但自身报错。两种都会在 EarthExp 自己的日志里留线索。
+
+80. 装了 EarthExp 却显示「未接入」：改成装了即自动接入（根因是类名留空直接放弃）
+
+玩家反馈：「我已经安装了 exp，怎么还是显示未接入」。
+
+**根因有两个，缺一个都接不上。**
+
+一、主因：类名留空 = 直接放弃，永远不探测
+
+`EarthExpBridge.reload()` 原来是这么写的：
+
+```java
+apiClassName  = config.getString("earthexp.api-class", "").trim();
+statClassName = config.getString("earthexp.stat-class", "").trim();
+if (apiClassName.isEmpty() || statClassName.isEmpty()) return;   // ← 元凶
+```
+
+而 `config.yml` 里这两个键的**默认值就是空字符串**。于是默认配置下**必然**走
+`return`，「未接入」是唯一可能的结果——**装了 EarthExp 也一样**，因为代码从来没去
+`Class.forName` 探测过。原来那句「留空 = 未接入 EarthExp」的注释把
+「配置缺省」当成了「功能开关」，这是设计错误，不是玩家操作错误。
+
+修法：**留空 = 自动探测**。类名留空时回退到 EarthExp 的标准类名
+（`com.earthexp.api.EarthExpAPI` / `com.earthexp.api.Stat`），装了就直接接上，
+**不需要管理员手填任何东西**。显式填写仍然尊重填写的值（EarthExp 换包名时用）。
+另加 `earthexp.enabled` 总开关：想强制用宝石消耗就设 `false`。
+
+二、次因：`plugin.yml` 少了 `softdepend: [EarthExp]`
+
+这个坑更隐蔽，**光修上面那条还是接不上**：
+
+- **类可见性**：Bukkit 的 `PluginClassLoader` **只允许访问 `depend`/`softdepend`
+  里声明过的插件的类**。没声明时，`Class.forName("com.earthexp.api.EarthExpAPI")`
+  直接抛 `ClassNotFoundException`——即使 EarthExp 就在 plugins 目录里跑着。
+- **加载顺序**：没声明就没有顺序保证，本插件可能在 EarthExp 注册
+  `EarthExpAPI` 服务之前就读它，读到 `null`。
+
+已在 `plugin.yml` 加上 `softdepend: [EarthExp]`。`softdepend` 是「有就先加载，
+没有也照常启动」，所以**不装 EarthExp 时插件功能完全不受影响**。
+
+> 📌 **本条的这一段已被第 81 条修正**：当时我以为「加上 softdepend 就能保证 EarthExp 先加载
+> 且它的类可见」，但**两边互为 softdepend 会成环，环上的顺序 Bukkit 是任意决定的**——
+> 所以光加 softdepend 并不能保证接上。第 81 条改为用 EarthExp 自己的类加载器解析类，
+> 并监听其启用事件自动重试，彻底不依赖加载顺序。
+
+三、让状态可见，不用再猜
+
+原来接入失败只有一行容易看漏的日志，管理员没法判断到底接上没有。现在：
+
+- **启动日志明确分行**：
+  - `EarthExp 已接入：技能升级消耗【战斗】天赋点（轨道 COMBAT）` = 成功；
+  - `未检测到 EarthExp（可选附属）：技能升级使用宝石消耗` = 没装；
+  - `找到了 ... 但它没有把 EarthExpAPI 注册到服务管理器` = 装了但没启用成功，
+    并直接提示去看 EarthExp 自己的启动日志、检查 `softdepend`、或 `/rpgitem reload`；
+- **`/rpgitem skillcheck` 第一行**新增「EarthExp 接入: ...」状态
+  （绿=已接入，黄=未接入），游戏里就能查。
+
+四、验证
+
+- `ApiCheck` 从 21 项扩到 **36 项 / 0 错误**，新增覆盖：
+  - `plugin.yml` 必须含 `softdepend: [EarthExp]`；
+  - 自动探测的两个默认类名**拿真实 `EarthExp-0.5.1.jar` 验证确实存在**；
+  - 源码里不再有 `if (apiClassName.isEmpty() || statClassName.isEmpty()) return;`
+    （直接盯住这次的根因，防止回退）；
+  - `spendTalentPoints`/`refundTalentPoints` 确实按 `toTrack(stat)` 分轨道
+    （0.5.1 的 COMBAT 可用性）；
+  - `TrackLedgers.add/refund/spentTotal(Track, ...)` 的按轨道隔离；
+  - `resetTalentPoints` 仍是菜单专用（只重置菜单投入、不动外部账单）。
+- 全部回归套件 0 错误：Level 116、Phantom 135、Gather 89、Swing 26、Skill4 167、
+  Preset 162、Held 71、Display 51、Api 36、Gui 60，加 LevelFix78 19、WeaponType78 24，
+  共 **956 项 / 0 错误**；离线 Gradle `build` 通过。
+- 确认资源里**没有 `paper-plugin.yml`**（它存在会覆盖 `plugin.yml`，让 softdepend 失效）。
+- **未在真实 Paper 服务端实测**。
+
+五、服务器操作
+
+替换 jar 后重启或 `/rpgitem reload`。**装了 EarthExp 的服务器不用改任何配置**，
+启动日志出现「EarthExp 已接入」即成功。若仍显示未接入，按日志那一行对症处理
+（详见手册第三十二节与排查表）。
+
+79. 技能点升级链路排查：EarthExp 0.5.1 起 COMBAT 轨道可用，插件默认保持 COMBAT
+
+玩家反馈：「技能貌似不能使用天赋点升级了，是不是链路被修坏了」。
+
+**结论：链路没被修坏，卡点在「轨道」。** 排查过程与结论如下。
+
+一、为什么之前升不了级
+
+第 78 条修好 leveling 读取后，带成长规则的技能终于能走到「扣点」这一步了——
+于是暴露出下一个问题：插件默认走 `COMBAT` 轨道，而 **EarthExp 0.5.0 的外部扣点
+只允许 `ADVENTURE`**（`TalentService.TALENT_TRACK = ADVENTURE`，
+`spendTalentPoints` 对非冒险轨道直接返回 false）。
+
+所以旧版 EarthExp 上，升级会停在两种表现之一：
+
+- 界面显示「战斗天赋点不足」——因为 `getTalentPoints(COMBAT)` 读的是**战斗池**，
+  而玩家的天赋点在冒险轨道；
+- 或提示「EarthExp 拒绝了这次扣点」。
+
+也就是说：**是等级能升了之后才走到扣点这一步，把轨道不匹配暴露了出来**，
+不是第 78 条把链路改坏了。
+
+二、EarthExp 0.5.1 已按轨道分开记账
+
+0.5.1 新增 `talent/TrackLedgers.java`，战斗与冒险各持一份 `TalentLedger`：
+
+- `spendTalentPoints(player, Stat.COMBAT, n, src)` **现在返回真实结果**，扣的是战斗池；
+- `getTalentPoints(COMBAT)` = 战斗等级 − 战斗外部扣点；
+- 战斗扣点**不动**冒险池（`eexp_adv_tp` 分毫不动），退款也不能跨轨道；
+- 旧存档的平格式账单自动并入冒险轨道，不丢数据。
+
+**所以 `COMBAT` 现在是正常可用的**，插件默认值保持 `COMBAT` 不变
+（技能点 = 战斗天赋点，符合原设计意图）。
+
+三、排查中我一度改错，已撤回
+
+我最初按 0.5.0 的行为把插件默认值从 `COMBAT` 改成了 `ADVENTURE`。
+确认工作区 earthexp 已是 **0.5.1**（`build.gradle` 版本号 + `TrackLedgers` 存在 +
+`EarthExpApiImpl.spendTalentPoints` 已改为按轨道委托）后，**这个改动是错的**：
+它会让技能去吃冒险点数，而不是战斗点数。已全部撤回：
+
+- `config.yml` 的 `skill-point-stat` / `combat-stat` 恢复 `COMBAT`；
+- `EarthExpBridge` 的字段默认值与回退默认值恢复 `COMBAT`；
+- 手册第三十二节、config 表、排查表、汇总表的相关说明同步改回。
+
+四、顺手修掉一个真实的校验缺陷
+
+原来那条启动警告写的是「EarthExp 只给冒险轨道开放外部扣点」，在 0.5.1 下
+对默认配置 `COMBAT` **每次启动都会误报**。已改成**与版本无关、且真实成立**的校验：
+
+> 只有 `COMBAT` 与 `ADVENTURE` 两条轨道有天赋池；配成挖矿/砍树/农业等轨道时
+> 扣点必然失败，此时才警告。
+
+升级被拒时的玩家提示也改成版本相关的说明（0.5.1+ 两条轨道都支持；
+0.5.0 及更早只支持 ADVENTURE），不再断言「必须 ADVENTURE」。
+
+五、验证
+
+- 离线 Gradle `compileJava` / `build` 通过；
+- 既有回归套件全部 0 错误（Level 115、Phantom 135、Gather 89、Swing 26、
+  Skill4 167、Preset 161、Held 71、Display 51、Gui 60、Api 21）；
+- 第 78 条新增的 `LevelFix78Check` 19 项、`WeaponType78Check` 24 项仍 0 错误。
+- **未在真实 Paper 服务端实测**；请在测试服确认技能升级实际扣到的是战斗天赋点。
+
+六、服务器操作
+
+替换 jar 后 `/rpgitem reload`。**使用 EarthExp 0.5.1+ 时无需改任何配置**，
+默认 `COMBAT` 即可正常升级。仍在 0.5.0 上的服务器：升级 EarthExp 到 0.5.1+，
+或把 `earthexp.skill-point-stat` 改成 `ADVENTURE`。
+
+78. 技能删除加确认界面；武器类型改按注册表判定；leveling 段读不出来的真正原因
+
+玩家反馈三件事：
+
+1. 「我发现删除模式无法删除技能，给删除技能加一个确认删除选项，防止玩家手贱」；
+2. 「武器的类型应该是根据注册表填写的类型而定的（剑/法杖/弓/弩/匕首），而不是现在的根据武器材质生效」；
+3. 「我已经注册了 leveling 字段，但是技能在 forge 里升级不了，显示没有 leveling 字段」。
+
+一、删除模式点不动（真 bug，已修）
+
+技能背包的删除按钮只是「画」成了开启状态，**没有把状态写进菜单持有者**：
+打开背包时用参数渲染了红色「删除模式：开」，但新建的 `RpgMenuHolder` 里
+`deleteMode` 仍是默认 `false`，于是点击技能时走的是「技能无法取出」那一支。
+技能预设（Skill Preset）没这个问题——那里本来就正确赋值了。
+
+修好后再按玩家要求加了一层确认：
+
+- 删除模式下点击技能 → 打开**独立的「确认删除技能」界面**（不是简单弹窗）；
+- 中间显示要删的技能、当前等级、预计退还点数（只是预览，**不会提前退款**）；
+- 「确认删除」才真正删；「取消」返回背包；「关闭」直接关掉界面，三者都不误删；
+- 确认界面做了**消费一次**保护，连点或重复事件不会删两次、退两次款；
+- 确认前会**重新校验技能仍在背包里**，避免界面停留期间技能被别处移除后对着空气退款；
+- 删除失败（不在背包/保存失败）现在会明确提示，不再静默无反应；
+- 删除后停留在删除模式，方便连续删多个。
+
+二、武器类型改为「注册表优先」（新功能）
+
+- RPGItem 定义新增可选的顶层字段 **`weapon-type`**（`Weapon/*.txt`、`.yml` 等）；
+- 填了就**以它为准**，不再被材质推断或 Material 名绕过——做成 `BLAZE_ROD` 的法杖写
+  `weapon-type: "剑"` 就真的算剑；
+- **没填的旧物品保持原行为**（回退材质推断），升级不破坏现有配置；
+- 中文与英文等价：`剑`==`SWORD`、`斧`==`AXE`、`弓`==`BOW`、`弩`==`CROSSBOW`（也认「驽」）、
+  `法杖`==`STAFF`（也认「杖」）、**新增 `匕首`==`DAGGER`**（也认「短刀」）；
+- 支持**自定义标签**：物品写 `weapon-type: "长枪"`，技能写 `supported-weapons: [长枪]`；
+- 多类型仍是「**或**」：`supported-weapons: [剑, 斧]` 满足其中一个就能用。
+
+三、leveling 读不出来（真 bug，已修，根因与原先猜测不同）
+
+**根因用真实 Bukkit `YamlConfiguration` 复现确认**：技能文件里写的是字段路径
+（`sword-aura.weapon-percent`），Bukkit 载入时**会把它拆成嵌套段**
+（`per-level` → `sword-aura` → `weapon-percent`）。旧代码只遍历**直系子键**，
+拿到的 `sword-aura` 是一个「段」而不是数字，全部被当成非数字跳过 →
+`per-level` 解析为空 → `hasRules()` 返回 false → 强化台显示「没有配置成长规则」。
+
+修法是**递归到数字叶子并拼回点号路径**，`leveling.per-level` 与
+`leveling.levels.<N>` 两处都改。点号写法和嵌套写法现在都能读。
+
+> 说明：中途我先改成 `getValues(false)`，**测试证明那样修不好**（同样只拿到段名），
+> 已推翻重做。这正是必须拿真实配置类跑一遍、而不能靠推断的原因。
+
+四、验证
+
+- 新增离线回归 `.tmp-levelfix78/LevelFix78Check.java`（**真实 Bukkit YamlConfiguration**）：
+  19 项 / 0 错误。覆盖点号键复现旧 bug、递归修复、嵌套写法、绝对值段、以及
+  用户那份配置的成长数值（Lv.2 = 110%/17、Lv.10 = 190%/25）。
+- 新增离线回归 `.tmp-levelfix78/WeaponType78Check.java`：24 项 / 0 错误。
+  覆盖注册类型压过材质、未填时回退、中英混写、自定义标签、多类型「或」、主副手任一命中。
+- 离线 Gradle `compileJava` 通过。
+- **未在真实 Paper 服务端实测**；删除确认界面的实际手感请在测试服验收。
+
+五、服务器操作
+
+替换 jar 后 `/rpgitem reload`。已有物品不填 `weapon-type` 时行为完全不变；
+想启用注册表判定，给物品 yml 顶层补上 `weapon-type` 再 reload。
+新生成的武器模板会带 `weapon-type` 注释与字段（仅对**新建**物品文件生效，不覆盖你已有的文件）。
+
+76. 挖掘疲劳从根上解决方块被挖掉；RPGItem 工具挖矿时不再触发 L/SL 技能
+
+玩家反馈：「还是不行。干脆给玩家一个挖掘疲劳，让玩家无法原版破坏方块；
+同时 RPGItem 工具也不要触发技能，因为会影响挖矿」。
+
+两件事都做了。第一件是**换思路**——不再事后纠正，而是让客户端自己算不出「挖穿了」。
+
+一、挖掘疲劳：治本
+
+第 75 条的 `guardMiningClients()` 是**事后纠正**：客户端把方块删了，我们再重发一次按回去。
+问题是纠正包最快也要下一 tick 才到，中间那一帧方块就是空气——玩家看到的「消失一下再弹回来」
+就是它。玩家提的挖掘疲劳则是**治本**：
+
+原版客户端在本地预测挖掘时会套用挖掘疲劳。{@code amplifier >= 3} 时挖掘速度乘
+**0.00081**（石头 0.4 秒 → 约 19 分钟），客户端永远等不到那一刻，于是**压根不会在本地删掉方块**。
+没有要按回去的东西，也就没有那一帧闪烁。
+
+- 只给「正在挖采集点」的玩家上：每 tick 续期 1 秒，停手后最多残留 1 秒自己消失。
+- 效果参数 `ambient=false, particles=false, icon=false`——看不到粒子与 HUD 图标。
+- 已有同级或更强效果、且剩余时间够 → 跳过（省包）；别的插件给了**更强**的疲劳时我们让位，不顶掉它。
+- **不主动移除效果**，靠时长自然过期——主动 `removePotionEffect` 会误删别的插件给的同名效果。
+- 新增开关 `features.collection-mining-fatigue`（默认 true）。
+
+**兜底撤销（重要）**：这个循环靠 `BlockDamageAbortEvent` 判断「他停手了」。万一该事件漏发，
+疲劳会一直续期下去、玩家就**再也挖不动任何方块**——这是很严重的失败模式。所以又加了一层
+自我核对：每 tick 检查玩家是否还瞄着那个采集点，连续 20 tick 没瞄着就撤销追踪
+（给宽限是因为射线检测在贴身 / 极扁方块上会瞬时不中）。`miningTargets` 与
+`lastMiningTicks` 两张表由 `stopMiningTracking()` 一起清。
+
+二、RPGItem 工具挖矿时不再触发 L/SL 技能
+
+玩家说「会影响挖矿」，根因比想象的严重：`FSkills.onLeftClick` 原本对着**方块**左键也会触发
+L/SL 技能，而触发路径里有 `event.setCancelled(true)`。原版「左键方块」就是开始挖掘，
+**取消这个事件等于方块完全挖不动**（连挖掘进度都不开始）。
+
+修复：对着**方块**左键时直接放行、不触发技能、不取消事件。判定插在 `setCancelled` **之前**
+——放后面等于事件照样被取消，白改。战斗场景走的是「左键空气」与「左键实体」
+（`onPreAttack` / `onMeleeHit`），两者都不经过这道闸门，**打怪放技能完全不受影响**。
+
+- 新增开关 `skill-panel.suppress-left-click-on-block`（默认 true）。
+
+三、诚实说明：这个方案的边界
+
+- **硬度 0 的方块不受挖掘疲劳影响**，仍然秒破（花、火把、草、农作物、红石元件等）。
+  采集点都是正常方块，不受影响；但如果你想要「全局任何方块都挖不掉」，
+  光靠疲劳做不到，还得额外拦 `BlockBreakEvent`。
+- **牛奶桶能解除**挖掘疲劳。但我们是每 tick 续期，喝完下一 tick 就回来了，实际绕不过去。
+- 效果在**部分界面仍可能列出**「挖掘疲劳」字样（HUD 图标已隐藏）。
+- 停手后**最多残留 1 秒**疲劳，那一秒内挖普通方块会偏慢。
+- 只作用于采集点，**正常挖土建房子、挖普通矿物完全不受影响**。
+
+验证：GatherCheck **89/0**（新增 16 项疲劳断言，含「闸门在 setCancelled 之前」与
+「不主动移除效果」的调用级断言）、HeldCheck **71/0**（新增 10 项左键闸门断言）；
+全套 896 项 / 0 错误；离线 Gradle 构建通过。**未在真实 Paper 服务端实测**
+——挖掘疲劳对客户端预测的抑制必须在真实客户端上确认。
+
+- ⚠️ 服务器操作：替换 jar 后 `reload`。老 config **不会自动获得**这两个新键，
+  但代码默认值都是 `true`，行为照样生效；想关才需要手写进 config。
+- ⚠️ 两个采集开关的分工：`collection-mining-fatigue` 治本（不让客户端删方块），
+  `collection-client-guard` 兜底（真删了也按回去）。建议都保持开启。
+
+75. 采集点方块不再被客户端挖掉：每 tick 纠正客户端（方块不破、只显示我们的动画）
+
+玩家反馈：「这个采集的破坏动画还是有问题，有什么办法让玩家挖的时候不破坏方块、
+只显示我们的动画吗」。
+
+**根因：第 67 条的修复只解决了一半。** 那次给每个采集点分配了唯一负数 breaker id，
+解决的是「**我们发的**进度被客户端本地预测覆盖」；但没解决「**客户端自己**把方块删掉」。
+
+原版客户端会**自己预测**挖掘：按「方块硬度 ÷ 手里工具」算进度，够了就在**本地**把方块
+删掉并喷破坏粒子。服务端取消 `BlockBreakEvent` 只是「服务端这边什么都没发生」，
+它**不会**发任何纠正包告诉客户端「你猜错了」。所以方块在客户端一直是空气——
+直到我们主动重发一次方块状态。
+
+| 玩家看到的现象 | 真正的原因 |
+|---|---|
+| 方块真的被挖掉 / 消失一下再弹回来 | 客户端本地删了方块，服务端没有任何纠正 |
+| 裂纹速度跟原版硬度走，不是采集速度 | 客户端把预测进度画在**玩家自己实体 id** 槽位，与我们用的假 id 是**两个**条目，两个都会画 |
+
+**修复**：新增 `guardMiningClients()`，每 tick 把「玩家正在挖的那个采集点」按回真实状态。
+
+1. 先 `sendBlockChange(loc, block.getBlockData())` 重发方块真实状态——把被删的方块按回去；
+2. 再 `sendBlockDamage(loc, 0F)` 擦掉客户端本地预测的那个裂纹槽；
+3. 我们自己的进度由采集循环在这之后发，所以不会被第 2 步擦掉。**顺序是关键**，
+   断言里专门钉住了这一点。
+
+只发给**正在挖这个点的玩家本人**，不对附近玩家广播（其他人看到的本来就是服务端进度）。
+代价是挖掘者每 tick 多收 2 个包——这是「方块不被挖掉」必须付的成本，所以做成开关。
+
+**追踪的生命周期**（不会一直发包）：`BlockDamageEvent` / `BlockBreakEvent` 建立追踪；
+玩家停止挖掘（`BlockDamageAbortEvent`）、改挖别的方块、方块被删、玩家下线，都会撤销。
+循环里用迭代器安全清理，顺手覆盖了「点被删 / 玩家离线」两种情况。
+
+- 新增开关 `features.collection-client-guard`（默认 true）。关掉回到旧行为。
+- 附带好处：**没有采集速度属性 / 门槛不达标**的玩家现在也不会看到方块被挖掉了
+  ——以前那种情况只在事件里擦一次进度，客户端下一帧又会自己预测出来。
+- 实现位置：`CollectionManager`（`miningTargets` / `guardMiningClients` / `blockOf` /
+  `tick` 开头调用 / `onDamage`、`onBreak`、`onAbort` 三处追踪维护）。
+- 文档：手册第三十节「客户端纠正」小节 + 4 条排查项。
+- 已验证：GatherCheck **73/0**（新增 12 项客户端纠正断言，含「先重发方块后擦槽」的顺序断言
+  与「纠正时不清我们自己 breaker 槽」的隔离断言）；全套 842 项 / 0 错误；
+  离线 Gradle 构建通过。**未在真实 Paper 服务端实测**——客户端预测行为需要在真实客户端上确认。
+
+- ⚠️ 服务器操作：替换 jar 后 `reload`。老 config **不会自动获得** `collection-client-guard`
+  键，但代码默认值是 `true`，所以行为照样生效；想关才需要手写进 config。
+- ⚠️ 若之前手动把 `collection-break-animation` 设成 false，裂纹仍不显示——那是另一个开关。
+
+74. 技能书补上「固定伤害 + 百分比」显示，并修掉王之宝库伤害显示为 0
+
+玩家反馈两件事：技能书上看不到固定伤害；**「王之宝库」的伤害显示为 0**。
+
+一、根因：技能类型与主伤害是两条各写一遍的 if 链（严重）
+
+`SkillDisplayInfo` 里原本有两个独立方法：
+
+- `skillType(config)` —— 一条 if 链，决定「技能类型」；
+- `primaryView(config)` —— **另一条** if 链，决定「攻击倍率」取自哪个技能段。
+
+新增技能时只加一条就会漏。**王之宝库正是这样漏掉的**：两条链都没有
+`gateOfBabylon` 分支，于是模板里明明写着 `weapon-percent: 60`，
+技能类型却显示成「通用」、攻击倍率显示成 **0%**——而技能本身完全正常工作。
+`magic-circle`（魔法阵）在 `primaryView` 里也是缺的。
+
+修复方式不是补两个分支，而是**把两条链合并成一张有序规则表** `RULES`：
+每条规则同时给出「类型名」「配置里有没有这一段」「这一段是否真的会运行」「主伤害取自哪里」。
+类型与伤害都从同一个命中的规则推导，**结构上不可能再对不上**。
+
+> 顺带修掉一个顺序不一致：`shortbow` 原来在两条链里的位置不同，
+> 一个键位同时配了短弓与冲击波时，会出现「类型写短弓、伤害取冲击波」。
+
+二、技能书现在显示「伤害构成」：固定伤害 + 百分比
+
+技能伤害本来就是 **固定伤害 + 攻击力 × 倍率** 两部分之和，但描述里只有「攻击倍率」一行，
+于是纯固定伤害的技能看起来完全没有伤害。
+
+新的 `伤害构成` 一行，只显示真的配了的那一项，不写没意义的 0：
+
+| 配置 | 显示 |
+|---|---|
+| `damage: 10` + `weapon-percent: 100` | `固定 10 + 攻击 100%` |
+| `damage: 0` + `weapon-percent: 60` | `攻击 60%`（王之宝库） |
+| `damage: 10` + `weapon-percent: 0` | `固定 10` |
+| 两项都是 0 | `无（纯特效 / 增益技能）` |
+
+数值格式也做了处理：整数不写小数点、小数不留尾随 0（`2.5` 而不是 `2.50`）。
+
+三、新增「配置了但没启用」提示
+
+「伤害显示为 0」还有第二个常见原因：技能段配置在，但某个必填项不满足导致
+`enabled()` 为 false（例如 `weapon-count: 0`、`weapon-materials` 全是无效材质、
+`duration-seconds: 0`）。这种技能**根本不会释放**，但描述上只会看到伤害是 0。
+
+现在这种情形会多显示一行：
+`注意: XXX 段落已配置但未启用，技能不会释放`，
+直接把玩家引到该段的必填项，而不是让人继续找伤害为什么是 0。
+
+验证：新增 `DisplayCheck` **51 项 / 0 错误**（含「王之宝库 → 攻击 60%」这条回归断言，
+以及「类型与伤害同源」「不再显示裸 0」的结构性断言）；
+`Skill4Check` 167、`PresetCheck` 161、`PhantomCheck` 135、`LevelCheck` 115、
+`HeldCheck` 61、`GatherCheck` 59、`SwingCheck` 26、`GuiCheck` 60 全部 0 错误；
+离线 Gradle 构建通过。**未在真实 Paper 服务端实测**。
+
+- ⚠️ 服务器操作：替换 jar 后 `reload`。**没有新增或修改任何模板 yml**，
+  所以**不需要删文件重建**——这纯粹是描述显示层的修复，技能行为与数值一个都没动。
+- ⚠️ 已发出的技能书物品需要重新生成或刷新描述才会看到新行（描述是生成时写进物品的）。
+
+73. 技能改为仅手持 RPG 物品才能使用（含全局开关修复）
+
+玩家实测反馈：**「玩家设置右键技能，右键吃食物也会触发技能」**。这是两个独立缺陷叠加的结果。
+
+一、技能不看手里拿什么（主要问题）
+
+技能面板的八个键位原本完全不检查手持物品，所以：
+
+1. 主手拿着食物右键 → 触发绑定的 R/SR 面板技能；
+2. 事件被 `setCancelled(true)` → **食物还吃不到**。
+
+更隐蔽的是第二路：物品 yml 里直接定义的技能可以走**副手回落**，于是「主手拿食物、
+副手拿 RPG 物品」右键吃饭同样会触发副手的技能并取消事件——同一个毛病，不同的代码路径。
+丢弃键 Q/SQ 也有同样的副手回落。
+
+修复：新增 `skill-panel.require-held-rpgitem`（默认 `true`），**主手必须拿着本插件的
+RPG 物品**才会触发技能。判定规则：
+
+| 手里的东西 | 能否放技能 |
+|---|---|
+| 主手 RPG 武器 / 工具 / 物品 | ✅ |
+| 主手技能书等独立技能物品 | ✅（技能物品的类型是 WEAPON，属于本插件物品） |
+| 主手食物 / 方块 / 原版物品 | ❌（可以正常吃饭、放方块） |
+| 主手饰品（ACCESSORY） | ❌（饰品是纯被动的） |
+| 主手空、副手 RPG 物品 | ❌（**只看主手**） |
+
+刻意**只看主手**：这样「主手食物 + 副手 RPG 物品」右键吃饭不会误触发。
+
+**丢弃键特殊处理**：丢弃事件触发时物品已经离开主手，所以判定用「被丢掉的那件」。
+丢 RPG 物品照常放技能；丢食物不会触发副手的 Q 技能。
+
+**被拦下时静默**：玩家拿食物右键本来只是想吃饭，每 1.5 秒弹一句「无法释放 R 技能」
+比误触发还烦。所以不放技能、不取消事件、不发消息；要查原因用 `/rpgitem skillcheck`，
+它会明确报「主手没有拿着 RPG 物品」。
+
+二、`features.fskill` 全局开关检查得太晚（严重）
+
+原来总开关只在 `triggerSkill()` 里检查，而六个事件处理器在这之前就已经
+`setCancelled(true)` 了。结果是**把 `features.fskill` 设成 false 之后，玩家连食物都吃不上**：
+技能没放出来，但吃饭、丢东西、普通攻击这些原版操作全被取消。
+
+修复：六个事件处理器（F 交换、Q 丢弃、R/SR 右键、L/SL 左键、左键攻击两个入口）
+以及 `boundLeftClickSkill()` 都在**最开头**检查总开关，关掉后直接放行、绝不取消事件。
+现在 `features.fskill: false` 的语义是干净的：技能系统完全关闭，玩家体验与没装插件一样。
+
+三、排查入口同步
+
+`/rpgitem skillcheck` 的 `diagnose()` 增加了两条原因：「插件总开关关闭（features.fskill）」
+与「主手没有拿着 RPG 物品」。前者排在最前面（它更根本），后者排在「绑定本身有问题」的
+原因之后（那些对玩家更有用）。
+
+验证：新增 `HeldCheck` **61 项 / 0 错误**（含镜像「右键吃食物」场景，断言事件不被取消）；
+`PresetCheck` 161、`Skill4Check` 167、`PhantomCheck` 135、`LevelCheck` 115、`GatherCheck` 59、
+`SwingCheck` 26、`GuiCheck` 60 全部 0 错误；离线 Gradle 构建通过。**未在真实 Paper 服务端实测**。
+
+- ⚠️ 服务器操作：替换 jar 后 `reload`。**没有新增或修改任何模板 yml**；
+  `config.yml` 新增了 `skill-panel.require-held-rpgitem: true`。
+  **老服务器的 config.yml 不会被自动补上这个键**（模板只在文件缺失时写入），
+  但代码里默认值就是 `true`，所以**不配置也会按新行为生效**。
+  想回到旧行为（不看手持）请手动加 `require-held-rpgitem: false` 再 reload。
+- ⚠️ 行为变更：主手拿着**原版物品**（食物、方块等）时，面板技能与物品自带技能都不再触发。
+  如果你们的玩法依赖「空手/持非 RPG 物品也能放技能」，请显式关掉这个开关。
+
+72. 对接 EarthExp 0.5.0 外部扣点 API（技能点终于真的扣了）
+
+EarthExp 0.5.0 补上了外部扣点接口。对接时**发现本插件的反射签名全是错的**，一并修正。
+
+一、修掉一个「永远不会生效且不报错」的缺陷（严重）
+
+本插件原来反射查找的是 `spendTalentPoint` / `refundTalentPoint`（**单数、3 参数**），
+而 EarthExp 的真实签名是**复数、4 参数带来源名**：
+
+```java
+boolean spendTalentPoints (Player, Stat, int amount, String source);
+int     refundTalentPoints(Player, Stat, int amount, String source);   // 返回【实际】退回量
+int     getSpentTalentPoints(Player, Stat, String source);
+```
+
+`Class.getMethod` 找不到就返回 null，本插件据此走「老版本 EarthExp，仅校验不扣点」的降级分支——
+**所以这个错误既不编译报错、也不运行报错，只是扣点永远不生效**。现已按真实签名修正，
+并新增 `.tmp-apicheck` 校验：直接拿 `EarthExp-0.5.0.jar` 跑一遍 `getMethod`，
+确认三个方法都能解析、返回类型与预期一致、且是 `abstract` 而非 `default`（保证降级判断准确）。
+
+二、退款上限改为以 EarthExp 的账本为准（严重）
+
+扣点带来源名 `earthrpgitem_skills`，EarthExp 按来源分账，**退款上限 = 该来源实际扣过的量**。
+于是「重置技能等级能退回多少点」的正确答案是 **EarthExp 的账本**，不是 `skill-levels.yml` 的等级求和。
+
+原实现用等级求和当作「已投入点数」，在**升级发生在扣点接口出现之前**的玩家身上会算出
+一个退不出来的数字——预设重分配会误判成「点数够」，然后重置等级却换不回点数，纯亏。
+现在 `load()` 与一键重置都改用 `getSpentTalentPoints(player, stat, source)`。
+
+三、所有会退点的地方，提示语一律改为「实际退回量」
+
+EarthExp 的退款可能小于请求值（甚至为 0）。删除技能、一键重置原来直接报计算出来的数字，
+在账本为空时会报出一个**根本没退的数字**。现在一律用 `refundTalentPoints` 的返回值，
+并在少于预期时说明「这些等级是在扣点接口出现之前升的，账上没有记录」。
+
+四、重分配改成可回滚的三步事务
+
+顺序刻意是「**先挪点数、最后写等级**」：
+1. 退：把账本上本插件实际扣过的点数要回来；
+2. 扣：扣不动就立刻把刚退的原样塞回去并返回 `SPEND_REJECTED`，什么都不改；
+3. 写：等级表一次原子落盘，失败就把点数改动整个回滚并返回 `SAVE_FAILED`。
+
+任何一步失败，玩家都是「什么都没发生」，不会出现「等级洗了、点数没到手」。
+一键重置也改成整份写一次、且覆盖**所有已存储等级**（原来只重置背包里的，会退多于清，等于凭空发点）。
+
+五、配置：新增 `skill-point-stat`，并说清轨道限制
+
+EarthExp 0.5.0 的外部扣点**只给冒险轨道开放**（`TalentService.TALENT_TRACK = ADVENTURE`），
+配成 `COMBAT` 时接口在、但每次扣点都被拒。
+（📌 **本条已被第 79 条取代**：EarthExp 0.5.1 起外部扣点按轨道分开记账，
+`COMBAT` 与 `ADVENTURE` 各自扣自己的池子，两条轨道都能用。下面的说明仅适用于 0.5.0。）config.yml 里：
+
+- 新增 `skill-point-stat`（旧键名 `combat-stat` 仍兼容，前者优先）；
+- **配错时启动日志会主动打警告**，不用等玩家升级才发现；
+- 顺手修正了原来把类名示例写成 `com.example.earthexp.*` 的误导注释，改为真实的
+  `com.earthexp.api.*`，并补上「类名写错不会报错，只会在日志里打一行」的提醒。
+
+验证：`PresetCheck` 122 → **161 项 / 0 错误**，`LevelCheck` 111 → **115 项 / 0 错误**，
+新增 `ApiCheck` **21 项 / 0 错误**（拿真实 EarthExp-0.5.0.jar 跑反射）；
+`Skill4Check` 167、`PhantomCheck` 135、`GatherCheck` 59、`SwingCheck` 26、`GuiCheck` 60 全部 0 错误，
+离线 Gradle 构建通过。**未在真实 Paper 服务端实测**。
+
+- ⚠️ 服务器操作：替换 jar 后 `reload`。**没有新增或修改任何模板 yml**（config.yml 除外，
+  但它是配置不是模板，且新键有默认值）。
+  **如果你在用 COMBAT 轨道，升级会被 EarthExp 拒绝直到你处理**——要么让 EarthExp 为 COMBAT
+  开放外部消费，要么把 `skill-point-stat` 改成 `ADVENTURE`。
+
+71. 自我检测 bug 修订：技能预设的 5 个真实缺陷
+
+对第 70 次提交的技能预设做了一轮自查，发现并修掉 5 个真实缺陷（都不是「看起来不对」，
+而是会造成实际损失的）：
+
+1. **【严重】接了 EarthExp 但没实装扣点时会白洗玩家等级。**
+   EarthExp 当前 API 里**没有** `spendTalentPoint`，所以本插件花技能点时并没有真的扣走点数，
+   `getTalentPoints` 返回的量里不含本插件已花掉的部分。原实现只判断「接入了 EarthExp」就做
+   天赋重分配——把所有技能打回 Lv.1，却一分点数都换不回来，**纯粹洗掉玩家进度**。
+   现在改为只在 `deductsTalentPoints()`（API 上确实有 `spendTalentPoint`）时才重分配；
+   没实装时改为**直接套用预设等级、不碰其他技能、不扣点**，并在聊天栏说明原因。
+
+2. **【严重】`refund` 可能凭空发点。** 若 EarthExp 将来只加了 `refundTalentPoint` 而没加
+   `spendTalentPoint`，调用退款就是没扣过却能退。现在 `refund` 先确认真的会扣点，否则当作无事发生。
+
+3. **【中】上限调低后按旧等级收费、只给到新上限。** 预设可能是在上限还很高（如 Lv.20）时存的，
+   之后管理员把上限调到 Lv.10：原实现按 Lv.20 算点数需求（209 点），套用时却被夹到 Lv.10。
+   现在读取预设时按**当前**上限收敛（`clampedLevel`），与 `SkillLevelManager.level()` 同一套规则。
+
+4. **【中】扣点与套用的等级可能不一致。** 同一技能若在预设里占两个键位且等级不同
+   （正常装备流程不会出现，但预设文件允许管理员手改），原实现按**最高**等级算点数、
+   却按遍历顺序让**最后一个**键位覆盖，导致「按 Lv.6 付费、只拿到 Lv.4」。
+   现在扣点与套用共用同一张去重表（`presetLevels` + `skillIdOf`），两者永远一致。
+
+5. **【中】重分配分多次写盘，中途失败会丢进度。** 原来每个技能调一次 `setLevel`，
+   每次都是一次独立文件写入；中途失败会留下「一部分已重置、一部分没恢复」的半成品。
+   现在整张目标等级表先在内存算好，再由新增的 `SkillLevelManager.setLevels()` **一次原子落盘**。
+
+另外两处加固（属隐患，未必然触发）：
+
+- **预设失效判定补上技能组冲突**：保存时不可能出现，但保存后技能 yml 的 `skill-group`
+  被改过就会——两个启用键位装同组技能会让**两个键位都失效**，而面板看着一切正常，最难排查。
+- **`/rpgitem reload` 会重读 `skill-presets.yml`**：手册里写了管理员可以直接手改这个文件，
+  但原实现只在启动时读一次，手改会在玩家下一次保存时被**整份覆盖**。
+
+顺带修掉一个**测试脚本自身的过期断言**（`.tmp-guicheck` 的「主菜单 11 项」）：主菜单早在
+技能强化台加入后就是 12 项，与本次改动无关；已改为断言「排序后的槽位集合完全一致」，
+以后再增删主菜单按钮会直接报出实际槽位，而不是只报一个数字。
+
+验证：`PresetCheck` 由 90 项扩到 **122 项 / 0 错误**（新增「扣点等级 = 套用等级」
+「未实装扣点时不重置」「等级按上限收敛」「refund 不凭空发点」「reload 重读」等回归项），
+`Skill4Check` 167 项、`LevelCheck` 111 项、`PhantomCheck` 135 项、`GatherCheck` 59 项、
+`SwingCheck` 26 项、`GuiCheck` 60 项**全部 0 错误**，离线 Gradle 构建通过。
+**未在真实 Paper 服务端实测**。
+
+- ⚠️ 服务器操作：替换 jar 后 `reload`。**没有新增或修改任何模板 yml**，不用删文件重建。
+  如果你已经手改过 `skill-presets.yml`，reload 后生效（旧版本要小心被玩家保存覆盖）。
+
+70. 技能预设：一键保存 / 还原整套技能配置（含天赋重分配）
+
+需求原文：「再技能面板里添加新按钮(放置在下面一排) 把技能面板放置上去 添加技能预设按钮
+一键把当前装备的技能栏位保存 (如果玩家升级了其他技能 或者其他技能等级不吻合 那么强行重置
+天赋 并分配给当前技能 多余的不要删除 让玩家自己选择) 如果玩家删除了预设里的某一个技能
+那么这个预设直接无法使用 新建技能预设gui 玩家可以在gui内点击预设保存 保存当前装备好的技能
+注意! 预设也会保存键位启用 冷却提示 释放提示 就绪提示 等这些按钮 预设拥有9个(一排)
+玩家保存才生效」。
+
+- **入口**：技能面板**底行第 47 格**新增「技能预设 / Skill Preset」按钮（在「技能背包」45
+  和「关闭」49 之间），点开新的技能预设界面。
+- **新界面**：`Skill Preset 技能预设`，**9 个预设占满第 0 行（一排）**，底行是
+  返回技能面板(45) / 删除模式(47) / 关闭(49)。空位灰色染料、已保存绿色羊毛、
+  失效红色羊毛、删除模式下橙色羊毛。
+- **一个预设保存什么**：八个键位各自的**技能绑定与等级** + 该键位的**键位启用 / 释放提示 /
+  冷却提示 / 就绪提示**四个开关 + **技能面板总开关**。加载之后面板与保存那一刻完全一致。
+  一个技能都没绑定时拒绝保存（存一个空面板下来没有意义）。
+- **点击语义**：空位左键 = 保存；已保存的左键 = 加载；右键 = 保存（在已保存的格子上就是
+  覆盖保存，避免手滑把存好的冲掉）；删除模式打开时点击 = 删除预设（只删这份配置，
+  不动技能等级与当前绑定）。
+- **加载时的天赋重分配**（本条的核心）：
+  1. 先把**所有**已存储等级打回 Lv.1，把已经投进去的点数全部释放出来；
+  2. 再按预设把点数分配给预设里的技能，让它们回到保存的等级；
+  3. **剩余点数不删除、也不强行花掉**，留在玩家手里自己决定怎么用
+     （聊天栏会说明这次扣了多少、还剩多少）。
+  可用点数 = `现在手里的点数 + 已经投在技能等级上的点数`（后者按「升到第 N 级花 N 点」累计，
+  Lv.1 免费）。
+- **先算后做**：重置是破坏性的（不在预设里的技能会被打回 Lv.1），所以加载前先算
+  「按预设恢复需要多少点」与「重置后一共有多少点可用」，**点数不够就直接拒绝、什么都不改**，
+  并提示还差多少点。不会出现「重置到一半卡住」或「技能被洗掉了但预设没装上」。
+- **只在技能点模式（已接入 EarthExp）做重分配**。宝石模式下等级是拿宝石买的，没有「天赋」
+  可以重置，此时加载预设只还原绑定与开关，**技能等级保持原样**（聊天栏会说明）。
+- **预设失效**：预设里只要有技能满足任意一条——①不在技能背包（被删除）②注册定义 /
+  技能模板失效（技能文件被删或改名）③不再提供它当初占用的那个键位——这个预设就
+  **直接无法使用**：红色羊毛 + 加载被拒绝 + 指出是哪个技能出的问题。修法是把技能重新放回
+  技能背包，再右键用当前配置覆盖保存。
+- **玩家保存才生效**：预设不会自动保存，只有玩家在界面里点了才会写入。
+- **存储**：`plugins/EarthRPGItem/skill-presets.yml`，按玩家 UUID 存，索引 1–9 与界面上的
+  「预设 1…9」对齐，管理员可以直接查看 / 编辑。删除预设不会动 `skill-levels.yml`。
+- **新增 / 改动**：
+  - 新增 `skills/SkillPresetManager.java`（预设的读写、失效判定、天赋重分配）；
+  - `skills/SkillLevelManager.java` 新增 `levels(UUID)`——返回**全部**已存储等级的快照。
+    重分配必须遍历全部、而不是只遍历技能背包里的技能：漏掉任何一个，算出来的可用点数就会
+    偏少，把「点数够」误判成「不够」；
+  - `gui/RpgMenuType.java` 新增 `SKILL_PRESET`；`gui/RpgMenu.java` 新增
+    `PANEL_PRESET_SLOT = 47`、`PRESET_BASE` / `PRESET_BACK_SLOT` / `PRESET_DELETE_MODE_SLOT` /
+    `PRESET_CLOSE_SLOT`，以及 `openSkillPreset()`、`presetButton()`；
+  - `gui/RpgMenuListener.java` 新增 `handleSkillPresetClick()` 与加载结果提示
+    （成功 / 空预设 / 已失效 / 点数不够，四种都说清楚）；
+  - `EarthRPGItem.java` 新增字段、构造与 `getSkillPresetManager()`。
+- 已验证：Gradle 离线构建 `BUILD SUCCESSFUL`（jar 834589 字节）；
+  新增 `.tmp-presetcheck/PresetCheck.java` **90 项 0 错误**——覆盖布局不重叠、
+  「9 个一排」、保存内容齐全、失效判定的三种来源、`load()` 里「先校验后改数据」的源码顺序、
+  重分配「先退还再扣点」，以及**独立镜像的点数算法数值验证**（点数够 → 剩余 16 点保留；
+  点数不够 → 拒绝且等级原样不动；同一技能占两个键位只算一次；全 Lv.1 的预设不扣任何点）。
+  回归全绿：Skill4Check 167 / GatherCheck 59 / LevelCheck 111 / PhantomCheck 135 / SwingCheck 26。
+  **未在真实 Paper 服务端实测。**
+- ⚠️ 服务器操作：替换 jar 后 `reload`。首次使用会在数据目录生成 `skill-presets.yml`
+  （无需手工创建）。技能预设是**纯新增功能**，不改变任何已有数据；但如果服务器已接入
+  EarthExp，加载预设会真实重置「不在预设里的技能」的等级——这是设计行为，请先告知玩家。
+
+69. 四个技能形态的体验修订（次元斩粒子/音效 + 上挑击飞 + 三个释放时间）
+
+基于实测反馈对 68 批的四个形态做一轮体验修订：
+
+**1) 次元斩：粒子线改为任意朝向 + 龙息音效 + 爆炸精简**
+
+- **粒子线不再固定竖着**：`playRandomLineBurst` 重写——每条线用**拒绝采样得到的球面均匀
+  随机单位向量**作为朝向（`randomUnitVector()`），起点也在爆炸范围附近随机偏移。现在这些线
+  向**任意方向**飞散，读作被切开的空间裂缝，而不是一圈竖直的线。校验脚本用 5000 次采样统计
+  竖直分量绝对值均值（球面均匀时 E[|y|] = 0.5，实测落在 0.5±0.03 内），确认没有退化成
+  「固定朝上」。
+- **爆炸粒子只要一个**：`runDimensionalSlash` 不再走 `playExplosionExpansion`（那会铺 6 圈
+  EXPLOSION 白墙），改为在爆点中心只放 **1 颗 EXPLOSION** 粒子；彩色叠加层（模板里
+  END_ROD 球）仍由 `playBurst` 画，`count` 从 100 降到 40。
+- **爆炸声音不要了，换成龙息音效**：次元斩的默认音效与模板都改为
+  **`ENTITY_ENDER_DRAGON_GROWL`**（龙息）。加载器 `loadDimensionalSlash` 的缺省音效同步改，
+  旧 yml 没写 `sound` 的服务器升级后也会自动变成龙息。
+
+**2) 上挑：略微水平击退 + 没那么高**
+
+- **击飞不再纯竖直**：`runUppercut` 改为
+  `target.setVelocity(facing.clone().multiply(launch * 0.4).setY(launch))`——竖直分量 = `launch`，
+  水平分量 = 朝前（玩家朝向）的 `0.4 × launch`。读作「上挑把人带飞出去」，而不是原地直上直下；
+  水平分量小于竖直分量，所以仍以上挑为主、只是「略微」带出去。
+- **调低**：`launch` 默认 **1.2 → 0.7**（峰值约 9 格 → 约 3 格），`height` 默认 **3.0 → 2.2**
+  （刀路没那么高）。加载器与模板同步改。
+
+**3) 释放时间调整**（都加在模板 + 文档里）
+
+- 上挑：`cast-time-seconds: 0.5`（0.5 秒）
+- 蹦山击：`cast-time-seconds: 2`（2 秒）
+- 后撤：`cast-time-seconds: 0.5`（0.5 秒）
+
+> 这三个都是**独立技能模板**，模板只在文件不存在时写出。已有这些技能的服务器请手动在
+> yml 里补上对应 `cast-time-seconds`（或直接 `reload` 让模板覆盖你删掉的重建）。
+
+- 已验证：Gradle 离线构建 `BUILD SUCCESSFUL`（jar 815385 字节）；
+  `.tmp-skill4check/Skill4Check.java` **167 项 0 错误**（新增断言：爆炸只 1 颗 EXPLOSION、
+  不再走六圈扩散、音效 = 龙息、粒子线用随机单位向量、上挑击飞带水平分量且默认峰值约 3 格、
+  三个释放时间 0.5 / 2 / 0.5）；**未在真实 Paper 服务端实测**。
+
+- ⚠️ 服务器操作：替换 jar 后 `reload`。旧服务器上已存在的 `次元斩.yml` 里那条
+  `sound: ENTITY_GENERIC_EXPLODE` 若想保留白墙爆炸请自己改回；否则删掉重建用模板。
+  爆炸粒子只会变少，不会破坏已存在的配置。
+
+68. 新增四个技能形态：后撤 / 次元斩（连锁改版）/ 上挑 / 蹦山击
+
+需求原文：「根据突进 翻滚的代码 制作新的技能形态 后撤 技能组4 cd5秒 只是将突进方向固定改为向后」、
+「根据技能连锁设计次元斩 …… 所以这里技能释放时间要填1秒 …… 次元斩再增加一种新型粒子效果
+为在爆炸范围附近 随机方向的粒子竖线 默认为蓝色 次元斩冷却3秒 技能组1」、
+「设计新技能 上挑 …… 创建一道固定上挑路线的粒子 击中的生物击飞 尽量朝天上飞 技能组2」、
+「设计新技能蹦山击 …… 将玩家飞跃至高度5格(默认范围) 随后以45°角度向地面冲击 冲击地面会造成
+冲击波(粒子效果之前已经有震地了 把粒子效果缩减 然后击中轻微的击飞生物)落地造成一个小爆炸 技能组3 cd6秒」。
+
+四个形态都是**独立技能模板**（`skills/*.yml`），不需要改 `config.yml`；也都支持
+`/rpgitem skillforge` 强化台调参（中文名已登记）。
+
+**1) 后撤 `backstep`（技能组4，cd 5 秒）**
+
+- 位移参数与突进**完全同一套**（`distance` / `duration-ticks` / `invulnerability-ticks` /
+  `particle` / `sound`），唯一区别是方向固定为**视线取反**（`facing.multiply(-1)`）。
+- 刻意**不复用** `runDashSkill`，也**不吃移动输入**（翻滚才吃）：否则一边后退一边按 W
+  会把人往前送，与「后撤」这个动作矛盾。
+- 同样带技能闪避（`armSkillDodge`）与无敌帧（`setNoDamageTicks`）。
+- 新文件：`BackstepSkill.java`、`loadBackstepSkill`、`runBackstepSkill`、模板 `skills/后撤.yml`。
+
+**2) 次元斩（技能组1，cd 3 秒，释放时间 1 秒）—— 技能连锁样板**
+
+- 一次施放拆成两段：**施放瞬间**后撤一步 + 给自己挂 **1 秒缓慢 IV**；**1 秒后**才放出次元斩本体。
+- `cast-time-seconds: 1`（释放时间）与 `chain.delay-seconds: 1` 必须一致：前者锁住这 1 秒
+  不能再放别的技能，后者才是真正出刀的时刻。
+- **连锁新增 `after: cast` 语义**：`scheduleChain(player, item, config, "cast")` 放在施放流程
+  末尾，即「本次施放的即时效果（位移 / 增益 / 粒子）都跑完之后」才安排延迟段。
+  原来的 `after` 只支持段名（如 `dimensional-slash`），现在 `cast` / `start` 表示即时段。
+- **防重复施放**：`dimensional-slash` 段本来会在即时流程里立刻执行一次，若它又被
+  `after: cast` 点名，就会「先打一次即时次元斩、1 秒后再打一次」。新增守卫
+  `delayedByCastChain(config, "dimensional-slash")`：被 cast 连锁点名时即时流程跳过它，
+  并把这件事写进 `magicdebug` 日志。
+- **连锁目标段扩展**：`runChainedSkill` 从「只支持 shortbow / attribute-boost」扩成
+  一个按段名分发的 switch，现支持 `shortbow`、`attribute-boost`、`dimensional-slash`、
+  `uppercut`、`leap-strike`、`backstep`；段名大小写不敏感、`_` 与 `-` 等价。
+- **新型粒子：随机方向粒子竖线**（`dimensional-slash.line-particle`）。在爆炸范围附近
+  随机取角度与水平偏移作为底线，竖直向上画一条带轻微随机倾斜的线，读作被切开的空间裂缝，
+  而不是又一层爆炸。`count` 是整场粒子总量（按每条线约 8 个点折算条数，夹在 4..32 条），
+  `radius` 决定竖线分布范围与高度。
+- **默认蓝色**：未写 `block` / `color` 时用常量 `DEFAULT_DIMENSIONAL_COLOR = "80,140,255"`。
+  这一点是**刻意不走通用灰色兜底**的——通用兜底是 `128,128,128`，会让「次元的裂缝」
+  变成一撮灰烟。加载器也把该默认色传给了 `loadParticleConfig` 的三参重载。
+- 爆炸本体仍是原来的 `playExplosionExpansion`，新粒子是**叠加**在它之上的一层。
+- 模板 `skills/次元斩.yml`（此前只有手册里的示例片段，本次补成可直接用的模板）。
+
+**3) 上挑 `uppercut`（技能组2）**
+
+- 沿一条**固定**的上挑路线画粒子：从身前低处（-0.4 格）起，按 `sin` 曲线向前微推、
+  同时竖直单调升到 `height` 格高，共 25 个采样点。**刻意不用随机数**——用户要的就是
+  「固定上挑路线」，所以每次施放的刀路完全一致。
+- 命中的生物被**击飞**：`target.setVelocity(new Vector(0, launch, 0))`——只给竖直速度、
+  清掉水平动量，目标才会「尽量朝天上飞」而不是斜着飘出去。`launch` 默认 1.2
+  （约抬到 9 格高），想飞更高就调大。
+- 判定用 `front`（身前 `distance` 格）的 `radius + 0.6` / `height` 范围，沿用既有的
+  `canSkillReach` 视线检查与 `damageTarget` 结算。
+- 新文件：`UppercutSkill.java`、`loadUppercutSkill`、`runUppercut`、模板 `skills/上挑.yml`。
+
+**4) 蹦山击 `leap-strike`（技能组3，cd 6 秒）**
+
+- **起跳**：`v = sqrt(2 * 0.08 * leap-height)`（MC 重力约 0.08 格/tick²），
+  `leap-height` 默认 **5**，所以初速度 ≈ 0.894、峰值高度正好 5 格；上限 2.2 兜底。
+- **俯冲**：到最高点（竖直速度转负）后，按 `dive-angle-degrees`（默认 **45°**）朝视线前方
+  每 tick 施加 `(cos θ, -sin θ)` 方向的速度；落地（`isOnGround`）即结算。俯冲角上限 89°，
+  避免水平分量为 0 的退化情形。
+- **落地结算**（`impactLeapStrike`）三件事：
+  - **缩减版冲击波**：新增 `ParticleEffectPlayer.playCompactShockwave(center, config, radius)`——
+    沿用震地那套「一圈圈扩散」的造型，但**环数 8 → 3**、每环粒子数**硬上限 20**、
+    半径取配置值（上限 6）。用户要的是「之前已经有震地了，把粒子效果缩减」，
+    所以这里不是新造型，而是同一个造型的小号版本。同配置下粒子总量
+    **60 颗 vs 原版 144 颗**。
+  - **轻微击飞**：`knock-up` 默认 **0.35**（保留 30% 原有水平动量，只把竖直分量抬起来），
+    刻意做成「轻微」，不做成第二个击飞技能。
+  - **落地小爆炸**：`playImpactBurst`（中心不偏移、按配置 `count`/`radius` 铺开）+
+    `explosion-particle` 段，半径 `explosion-radius` 默认 1.5。
+- 新文件：`LeapStrikeSkill.java`、`loadLeapStrikeSkill`、`runLeapStrike` / `impactLeapStrike`、
+  模板 `skills/蹦山击.yml`。
+
+**公共改动**
+
+- `FSkillConfig` 新增 4 个组件：`backstep`、`uppercut`、`leapStrike`、`dimensionalLineParticle`
+  （最后一个单独成字段而不是塞进 `DamageSkill`，因为它是叠在爆炸之上、有自己颜色与数量的
+  一层新效果）；`enabled()` 同步计入三个新形态。
+- `SkillDisplayInfo`：新增显示名 `后撤` / `上挑` / `蹦山击`（`蹦山击` / `上挑` 也参与
+  主伤害展示）；次元斩原有显示名不变。
+- `SkillLevelManager` 中文名映射新增 `backstep.*` / `uppercut.*` / `leap-strike.*` 共 14 条，
+  强化台不再显示英文键名。
+- `RpgItemManager.createDirectoriesAndExamples()` 新增写出 `后撤.yml` / `次元斩.yml` /
+  `上挑.yml` / `蹦山击.yml`（**仅在文件不存在时写出**，已有服务器不会被覆盖）。
+- 已验证：Gradle 离线构建 `BUILD SUCCESSFUL`（jar 805470 字节）；
+  新增 `.tmp-skill4check/Skill4Check.java` **145 项 0 错误**（四个模板 YAML 可解析 + 技能组 /
+  冷却 / 释放时间 / 连锁三键 / 新粒子颜色、源码锚点、以及几何镜像：跳跃初速度→峰值高度、
+  45° 俯冲分量互为相反数、上挑路线单调且无随机、竖线条数夹在 4..32、缩减冲击波总量 60 < 144）；
+  GatherCheck 59 / LevelCheck 111 / PhantomCheck 135 全部 0 错误；**未在真实 Paper 服务端实测**。
+- 顺带修正 `.tmp-swingcheck/SwingCheck.java` 的一条**过期断言**：它断言挥击模板
+  `tilt-max-degrees` 默认 90，而模板、加载器（`Math.min(180, Math.max(tiltMin,
+  node.getDouble("tilt-max-degrees", 180)))`）与手册三处都已是 180。改为断言 180 并
+  追加一条「tilt-max > tilt-min」。这不是本批引入的回归，是旧断言没跟上那次改动。
+
+- ⚠️ 服务器操作：替换 jar 后 `reload`。四个模板**只在文件不存在时写出**，所以：
+  - 想要新模板 → 删掉/重命名 `plugins/EarthRPGItem/skills/次元斩.yml` 等对应文件后 `reload`，
+    或直接照手册/更新日志手动添加段落；
+  - 已有 `skills/次元斩.yml` 的服务器 → 次元斩的新粒子（`line-particle`）**不写也会生效**，
+    走默认蓝色与默认数量；但要拿到「后撤 + 缓慢 + 1 秒后出刀」的连锁结构，
+    必须手动补 `backstep` / `buffs` / `chain` / `cast-time-seconds` 四段。
+  - 四个技能都要占一个键位，注意 `skill-group`：次元斩 = 技能组1、上挑 = 技能组2、
+    蹦山击 = 技能组3、后撤 = 技能组4。**同技能组同时装备会让两个键位都失效**，
+    所以别把次元斩和横扫（也是技能组1）装在同一套键位上。
+
+67. 修复采集点看不到破坏纹理（裂纹）动画
+
+问题：「采集怎么没法做到向玩家播放纹理破坏的效果」。
+
+- **根因**：`sendProgress` 用的是单参重载 `sendBlockDamage(location, progress)`，
+  它发送的破坏动画 breaker id 就是**查看者自己的实体 id**；而原版客户端把「玩家自己
+  按住左键挖矿」的本地预测进度画在同一个 id 槽位里，每 tick 覆盖一次。结果服务端按
+  「硬度 × 20 ÷ (1+速度/100)」算好的进度显示不出来，玩家看到的仍是原版硬度的速度
+  （或一闪即没）。**动画其实一直在发包，只是被客户端本地预测覆盖了。**
+- **修复**：新增 `breakAnimationId(pointKey)`——给每个采集点分配一个**唯一的负数** id
+  （从 -1 递减，实体 id 不会为负，永不撞车），进度改走
+  `sendBlockDamage(location, progress, breakerId)` 三参重载，我们的进度从此有自己的
+  槽位，不再被本地预测覆盖。必须每点唯一：客户端一个 breaker id 只记一个方块，
+  两个点共用一个 id 会互相顶掉裂纹。
+- **残留情况（诚实说明）**：客户端的本地预测是**另一个 id 条目**，服务端无法完全禁止。
+  若玩家手里工具的原版挖掘速度比资源点配置的硬度更快（例如高效率附魔挖软材料），
+  客户端自己画的那份会盖过我们的，观感仍偏快；附近其他玩家看到的一定是服务端进度。
+  把资源点 `hardness` 配得比该材料原版硬度更慢即可让挖掘者本人的观感对上。
+- **清进度双槽位**：`clearProgress` 现在同时擦「插件动画槽」和「玩家本地预测槽」
+  （无速度属性 / 门槛不达标 / 农业路径 / 中止 / 刷新），不再残留原版裂纹；并按
+  `withinProgressView` 只发给 32 格内看得见的玩家（原来 100 个点 = 100 个包）。
+- **新增开关** `features.collection-break-animation`（默认 true），方便 A/B 对比。
+- 实现位置：`CollectionManager`（breakAnimationId / sendProgress 三参 / withinProgressView /
+  clearProgress 双槽位 / tick 与各清进度调用点）。
+- 文档：手册第三十节新增「破坏纹理（裂纹）动画」说明与 3 条排查项。
+- 已验证：GatherCheck 58/0（新增 10 项动画断言）、LevelCheck 111/0、PhantomCheck 135/0；
+  Gradle 离线构建 `BUILD SUCCESSFUL`，**未在真实 Paper 服务端实测**。
+
+- ⚠️ 服务器操作：替换 jar 后 `reload`。若之前手动把 `collection-break-animation`
+  写进 config 并设为 false，动画仍不会显示；老 config 不会自动获得该键（默认 true）。
+
+66. 新增《使用方式汇总表-版本3.2bate.txt》
+
+把 3.0 汇总表升级为 3.2bate 版（旧表保留在 `使用方式汇总表-版本3.0.txt`），
+补齐 3.2bate 已实装的内容：EarthExp 接入（config.yml `earthexp` 段）、技能书右键
+学习、技能背包（不能取出 / 删除模式）、技能强化台（技能点 vs 宝石双模式、一键重置、
+上限 10）、采掘等级门槛（只看手持工具）、新 API 手册入口，及 3 条新常见问题
+（技能书右键没反应 / 战斗天赋点不足 / 一键重置置灰）。命令表与版本号同步 3.2bate。
+
+65. 新增《属性API使用手册-版本3.2bate.txt》
+
+需求：「如何接入我们的属性 API，编写指南」。
+
+- 面向第三方插件开发者的完整接入指南，覆盖 `EarthRPGItemAPI`（属性附加值 modifier）：
+  依赖声明（softdepend + compileOnly）、服务管理器获取与判空、source 规则与保留名、
+  时长语义（永久落盘 / 到期过期）、set 替换 vs add 叠加、全属性键表（62 分量）、
+  读取（getStats / getModifier / hasModifier / getModifierSources）、移除与清空、
+  原版属性（setVanillaModifier / removeVanillaModifiers）、潜行光环完整示例、
+  注意事项（主线程 / 源名管理 / 未知键忽略）。采集经验部分交叉引用旧手册。
+- 实现位置：仅文档 `src/main/java/EarthRPGItem/tips/属性API使用手册-版本3.2bate.txt`，
+  无代码改动；接口契约逐条对照 `EarthRPGItemAPI` / `EarthRpgItemApiImpl` /
+  `RpgItemManager.writeAttributeModifier` 核实（空块=移除、保留名写入与移除都拒绝、
+  退出时内存清空、永久 modifier 从持久数据恢复）。
+
+64. 战斗天赋 = 技能点（EarthExp 附属）+ 技能背包改造（右键学习 / 禁取出 / 删除模式 / 一键重置 / 上限 10）
+
+需求：「技能升级所需资源改为技能点（战斗天赋 = 技能点，EarthExpAPI 的 COMBAT 池）；
+技能书右键直接添加进技能背包；技能背包加删除按钮、技能不再能取出；插件更新技能注册时
+描述/形态/数值/面板同步更新；技能每升一级多消耗 1 技能点；技能等级上限改为 10 级；
+没装附属插件保持兼容；一键重置按钮 + 面板同步刷新」。
+
+- **EarthExp 接入（反射，不硬依赖）**：新增 `EarthExpBridge`，通过 Bukkit 服务管理器拿
+  `EarthExpAPI`。类名在 config.yml 的 `earthexp` 段配置（`api-class` / `stat-class` /
+  `combat-stat`，默认留空）。留空或没装 EarthExp = 未接入，技能升级自动退回宝石消耗；
+  填对类名 = 技能点模式（`usesSkillPoints()`）。调用全部反射、全在主线程。
+- **升级消耗 = 战斗天赋点**：升到第 N 级花 N 点（1→2 花 2 … 9→10 花 10），Lv.1 免费
+  （技能是书学会的），单技能升到 10 级累计 54 点。升级先校验 `getTalentPoints` ≥ 所需；
+  EarthExp 现在「天赋点 = 等级」还没有 spend/refund——插件每次调用时反射查找
+  `spendTalentPoint` / `refundTalentPoint`，上线后自动真实扣退，接口只增不改，本插件不用改。
+  删除技能 / 一键重置按累计公式退还点数（EarthExp 有 refund 前为静默成功）。
+- **技能书右键直接学习**：新增 `SkillBookListener`——手持已注册技能物品右键空气/方块，
+  技能书被消耗、技能直接加入技能背包；重复学习 / 背包满 / 保存失败不消耗技能书。
+  背包界面里的点击放入保留为次要途径。
+- **技能背包不能取出，加删除模式**：管理模式点击技能不再发放技能物品（`giveSkillItem`
+  仅剩技能物品库发放用）；底部新增「删除模式」开关，开启后点击技能 = 删除该技能——
+  清面板槽位、等级复位 Lv.1、退还已花费技能点。
+- **一键重置**：技能强化台列表页新增「一键重置技能点」按钮——把所有已升级技能回到 Lv.1、
+  退还累计技能点；技能保留在背包与面板，面板每次打开按当前等级重新解析，不会残留旧数值。
+  仅技能点模式可用（宝石模式下一键重置会把实扣的宝石抹掉且无法退还，按钮置灰并提示）。
+- **等级上限改为 10**：skill-leveling.yml 默认 `max-level: 10`（技能 yml `leveling.max-level`
+  可覆盖）；`SkillLevelManager.level()` 读等级时按上限钳制，旧存档超出的部分按新上限显示。
+- **注册同步更新**：`reload` 时 `SkillBackpackManager.pruneMissing` 清掉背包里已不存在的注册 id，
+  描述/形态/数值/面板全部按当前注册重新解析（背包只存 id，天然跟随注册走）。
+- 实现位置：`EarthExpBridge`、`SkillBookListener`、`SkillLevelManager`（钳制 /
+  `pointsCost` / `cumulativePoints` / 技能点校验与扣退）、`SkillBackpackManager.pruneMissing`、
+  `RpgMenu` / `RpgMenuHolder`（背包删除模式按钮、强化台重置按钮、消耗显示）、
+  `RpgMenuListener`（删除 / 重置 / 升级走技能点路径）、`EarthRPGItem`（接线与 reload）。
+- 文档：手册第二十节（技能书右键 / 取出与删除）、第十二节（技能点经济 / 上限 10 /
+  一键重置 / 排查表）、config.yml `earthexp` 段、skill-leveling.yml 文案。
+- 已验证：Gradle 离线构建 `BUILD SUCCESSFUL`；离线检查（技能点费用公式、钳制、
+  未接入回退宝石、背包删除/重置接线、右键学习监听、earthexp 配置锚点）与
+  LevelCheck / PhantomCheck 回归全部 0 错误，**未在真实 Paper 服务端实测**。
+
+- ⚠️ 服务器操作：替换 jar 后 `reload`。接入 EarthExp 时在 config.yml 的 `earthexp` 段填
+  EarthExpAPI / Stat 的完整类名；`skill-leveling.yml` 与 `config.yml` 改过不会被覆盖，
+  需要新默认值请手动改或删文件重建。技能书 = 已注册技能的物品（默认附魔书材质），
+  直接发给玩家右键即可学会。
+
+58. 幻影剑舞粒子改成挥击的 CRIT、剑气朝向改为随机；修复技能面板 / 技能背包的 5 个逻辑漏洞
+
+**58.1 粒子：不再用原版「剑横扫」的 `SWEEP_ATTACK`**
+
+用户反馈：「粒子效果怎么是用剑横扫」。
+
+- **原因**：示例模板里幻影剑舞的挥砍段写的是 `particle: SWEEP_ATTACK`，而挥击用的是 `CRIT`。
+  `SWEEP_ATTACK` 是**原版剑横扫攻击**的粒子，看起来就是一次普通横扫，不是技能刀光。
+- **修复**：幻影剑舞的挥砍段粒子改为 `CRIT`（与挥击一致），剑气继续沿用挥砍段的粒子。
+  手册里也补了一句警告：这两个形态都不要用 `SWEEP_ATTACK`。
+
+**58.2 剑气朝向：固定水平 → 随机（与挥砍段一致）**
+
+用户反馈：「这个剑气怎么没有随机，只有跟横扫一样水平，应该跟挥砍一样随机」。
+
+- **原因**：57 版给剑气加的是单个固定值 `aura.tilt-degrees`（默认 0），所以剑气永远平着飞。
+- **修复**：改为随机范围 `aura.tilt-min-degrees` / `aura.tilt-max-degrees`（默认 0..180，与挥砍段一致）。
+  剑气在**飞出时随机一个朝向**并在整段飞行中保持，所以有时平飞、有时斜飞、有时立着飞。
+  想固定角度就把 min 和 max 写成同一个值（旧的 `tilt-degrees: 0` 等价于 min=max=0）。
+- 实现位置：`PhantomBladeSkill.auraTiltMinDegrees/auraTiltMaxDegrees`、`FSkills.launchPhantomAura()`
+  里的 `randomTilt(...)`（在匿名任务对象构造时掷一次）。
+
+**58.3 技能面板 / 技能背包的 5 个逻辑漏洞**
+
+用户反馈：「技能面板有逻辑漏洞，我把技能从技能背包里取，怎么技能还在技能面板上。再扫描一下，应该还有其他漏洞」。扫描后共确认并修复 5 处：
+
+1. **取出技能不清空面板槽位**（用户报的那个）。`SkillBackpackManager.remove()` 只删背包数据，
+   面板槽位里的 id 原样留着；而 `resolve()` 会先检查技能是否还在背包，不在就返回 null，
+   于是现象是「技能还挂在面板上，按了完全没反应」。现在 `remove()` 会调用
+   `SkillPanelManager.clearSlotsFor()` 把所有绑定该技能的槽位一起卸下。离线玩家读不到 PDC，
+   由第 2 条的兜底清理处理。
+2. **面板从不清理失效绑定**。新增 `SkillPanelManager.pruneInvalidSlots()`，在**每次打开面板时**执行，
+   卸下「技能不在背包 / 注册定义或技能模板已失效 / 该技能不提供此键位」的槽位，并提示
+   `已自动卸下无效的技能绑定：...`。它用的是与 `resolve()` 相同的「可用」判定，
+   所以面板显示的一定是真正能触发的绑定。**武器类型故意不参与**：武器是随手持物品变化的，
+   换回对应武器就能用，不该被自动卸下。
+3. **`equip()` 不校验「该技能是否提供这个触发方式」**。原来可以把只写了 `fskill` 的技能装进 Q 槽位，
+   得到一个永远不可能触发的死槽位。现在 `EquipResult` 新增 `TRIGGER_UNSUPPORTED`，装备阶段就拒绝
+   并提示该技能不提供这个键位。
+4. **背包满时取出技能会丢东西**。旧代码 `player.getInventory().addItem(...)` 完全忽略返回值——
+   `addItem` 在装不下时是把物品**退回来**而不是销毁，于是技能从背包消失了、物品却没拿到，
+   技能直接丢失。现在取出前先检查 `firstEmpty()`，满了就拒绝并提示（技能留在背包里）；
+   技能库发放技能时若确实装不下，退回的部分会掉在玩家脚下。两处统一走新的 `giveSkillItem()`。
+5. **技能物品库绕过全部校验**。`handleSkillItemsClick()` 原来直接调用 `setSkillId()` 写槽位，
+   绕过了 `equip()` 里的「技能必须在技能背包中」「同一技能只能占一个槽位」「技能组冲突」
+   和新增的触发方式校验。现在改为走 `equip()` 并复用同一套提示文案。
+
+**58.4 槽位 lore 直接写出当前状态**
+
+面板槽位现在会显示 `当前无法释放：<原因>`（技能组冲突 / 武器类型不符 / 技能不在背包……），
+不用等按键、也不用去翻 `/rpgitem skillcheck` 才知道问题在哪。
+
+- **说明**：以上为代码层面实现并已通过 Gradle 离线构建（`BUILD SUCCESSFUL`）与离线校验
+  （`.tmp-phantomcheck/PhantomCheck.java`：86 项 0 错误，新增覆盖「粒子与挥击一致且不是 SWEEP_ATTACK」
+  「剑气 tilt 是随机范围」「取出技能清槽位」「prune 兜底」「装备校验触发方式」「不再忽略 addItem 返回值」
+  「技能物品库走 equip」），**未在真实 Paper 服务端实测**。
+
+- ⚠️ 幻影剑舞的示例模板又变了（粒子 + tilt 参数），服务器上已存在的 `skills/幻影剑舞.yml`
+  **必须删掉后 `/rpgitem reload`** 重新生成，否则仍然是旧粒子与固定水平朝向。
+
+57. 剑气改成「挥击那一道弧整体飞出去」；剑气粒子自动沿用挥砍段
+
+**57.1 飞出去的剑气看起来是「^」形 → 改成挥击那种平面弧飞出去**
+
+用户反馈：「幻影剑舞还是有问题，粒子特效应该跟挥击一样。飞出去的剑气看起来怎么是 ^，我说的弧形应该和挥击造成的弧形一样，飞出去」。
+
+- **原因**：56.2 那次虽然把「一团粒子」改成了弧，但弧画错了平面——弧被画在**垂直于飞行方向**的平面里、
+  而且弧心朝上。从玩家背后（顺着飞行方向）看过去，这条弧正好是一个**「^」形**，
+  和挥击那种贴着自己挥出去的**平面弧**完全不是一回事。
+- **修复**：剑气现在直接复用挥击 / 横扫的**同一个** `drawTiltedArc`，每一 tick 在飞行位置画一道
+  与挥击完全同形的弧，**弧面包含飞行方向**，所以看到的是自己刚挥出的那道弧形整体飞向远方。
+  上一版专门写的 `drawAuraCrescent`（垂直平面 + 弧心朝上）已删除。
+- 新增三个造型参数，默认值与挥砍段一致，所以剑气看起来就是挥砍那道弧本身：
+  - `aura.arc-radius` 弧的半径（默认 2.0，同挥砍段 `radius`）
+  - `aura.angle-degrees` 弧的张角（默认 180，同挥砍段）
+  - `aura.tilt-degrees` 弧面朝向（默认 0＝水平弧，同横扫；90＝竖直弧）
+
+**57.2 剑气粒子自动沿用挥砍段**
+
+- **原来**：剑气要自己写一遍 `aura.particle`，于是很容易和挥砍段不一致——56.2 之前那次就是剑气写着
+  `END_ROD`（末地烛光点），和挥砍段的 `SWEEP_ATTACK` 完全不同，看起来就是一条光束。
+- **现在**：`aura` 下**不写** `particle` 时，加载器直接把挥砍段的粒子配置复制给剑气
+  （`loadPhantomBladeSkill` 里的 `withParticle(aura, slash.particle())`）。
+  所以「粒子特效跟挥击一样」是结构性保证的：改挥砍段的粒子，剑气自动跟着变。
+  只有想让剑气用不同颜色时才在 `aura` 下写 `particle`。
+- 示例模板 `skills/幻影剑舞.yml` 相应改成不写 `aura.particle`。
+
+- ⚠️ **服务器上已存在的 `skills/幻影剑舞.yml` 不会被覆盖**：上一版生成的文件里写着
+  `crescent-radius` 和 `aura.particle.particle: END_ROD`，**必须删掉该文件后 `/rpgitem reload`**
+  让插件按新模板重新生成，否则剑气仍然是垂直的 ^ 形 + 光束粒子。
+
+- **说明**：以上为代码层面实现并已通过 Gradle 离线构建（`BUILD SUCCESSFUL`）与离线校验
+  （`.tmp-phantomcheck/PhantomCheck.java`：67 项 0 错误，其中专门验证 tilt=0 时剑气所有采样点
+  **高度差 ≈ 0**（即平躺在水平面内，不再是 ^ 形）、弧心在飞行方向最前端、两端向后收、
+  tilt=90 时立起来成竖直弧），**未在真实 Paper 服务端实测**。
+
+56. 挥击随机朝向改为 0..180；剑气改成有弧度的月牙刃光；技能组冲突与武器类型不符增加提示
+
+**56.1 挥击的生成方位只有 90° → 随机倾斜范围改为 0..180**
+
+用户反馈：「挥击的生成方位还是有问题，只有 90°，不像幻影剑舞」。
+
+- **原因**：挥击每次施放会随机一个「弧面倾斜角」，但默认范围是 `tilt-min-degrees: 0` .. `tilt-max-degrees: 90`，
+  而幻影剑舞的挥砍段用的是 0..180，两者不一致，所以挥击看起来变化范围比幻影剑舞小一半。
+- **修复**：挥击的 `tilt-max-degrees` 默认值与示例模板改为 `180`，与幻影剑舞的挥砍段保持一致。
+- ⚠️ **服务器上已存在的 `skills/挥击.yml` 不会被覆盖**：请把 `tilt-max-degrees` 改成 `180`，
+  或删除该文件后 `/rpgitem reload` 重新生成。
+
+**56.2 剑气改成「一道有弧度的月牙刃光」，不再是光束**
+
+用户反馈：「发射出去的应该是剑气！而不是光束！粒子效果是一道有弧度的剑气飞出去！你的理解完全错误」。
+
+- **原因**：上一版剑气是「每一 tick 在当前位置撒一团粒子」，沿飞行路径连起来看就是一条**光束**，
+  完全不像剑气。
+- **修复**：剑气现在每一 tick 都在**垂直于飞行方向的平面**里画一条**月牙弧**（`drawAuraCrescent`），
+  弧面正对飞行方向，所以从玩家视角看过去是一道**弯的刃光**飞出去，这才是一道剑气。
+  - `aura.crescent-radius` 控制这道月牙的大小（默认 1.2）。
+  - `aura.angle-degrees` 控制这道月牙的弧度（默认 150）。
+  - 剑气的**粒子与挥砍段保持一致**（示例里两处都用 `SWEEP_ATTACK`），这样看起来就是同一把刀的刃光；
+    上一版误用了 `END_ROD`（末地烛光点），正是「光束感」的来源之一。
+
+**56.3 技能组冲突 / 武器类型不符现在会提示玩家**
+
+用户反馈：「同类型技能组冲突要提示，不符合武器类型也要有提示」。
+
+- **原来**：`SkillPanelManager.diagnose()` 里早就有「技能组冲突: X」「当前手持武器不符合限制」这些原因，
+  但它**只在 `/rpgitem skillcheck` 命令里用**。玩家实际按键时 `resolve()` 直接返回 null，
+  现象就是「按了没反应」，完全不知道为什么。
+- **现在**：
+  - **施放时**：该键位已绑定技能但被拦下时，直接提示 `无法释放 <键位> 技能：<原因>`，
+    原因文案与 `/rpgitem skillcheck` 一致（技能组冲突 / 武器类型不符 / 技能不在技能背包 / 注册定义缺失 /
+    技能模板无效 / 该技能未提供此触发方式）。同一条提示 1.5 秒节流，连按不刷屏；
+    键位**没有绑定**技能时不提示（那是回退到手持物品自带技能的正常路径）。
+  - **装备时（技能组冲突）**：`EquipResult` 新增 `GROUP_CONFLICT`。把技能放进面板槽位时，
+    如果它的 `skill-group` 已被另一个**启用**键位上的**不同**技能占用，装备会被拒绝，
+    并提示冲突的槽位与技能名，以及「同一个技能组同时装备会让两个键位都失效，请先清空该槽位或改 `skill-group`」。
+    这样就不会再出现「装上去两个技能都不能用」的死状态。
+  - **装备时（武器类型）**：技能限制了 `supported-weapons` 而当前手持武器不符合时，装备仍然成功，
+    但会附一行黄色提示告诉你它限制哪些武器（可能是先装备、之后换武器再用，所以不拦截）。
+- 实现位置：`SkillPanelManager.groupConflictSlot()` / `weaponMismatchHint()` / `EquipResult.GROUP_CONFLICT`、
+  `RpgMenuListener.equipMessage()`、`FSkills.notifyPanelBlocked()`（4 个施放入口都接上了）。
+
+- **说明**：以上为代码层面实现并已通过 Gradle 离线构建（`BUILD SUCCESSFUL`），**未在真实 Paper 服务端实测**。
+
+55. 横扫张角改为 180°；修复「跳起来就打不到怪」；新增「幻影剑舞」技能
+
+**55.1 横扫只覆盖一个象限 → 默认张角改为 180°**
+
+用户反馈：「横扫的起始区域怎么只有左上角的 90°，他应该涵盖左上角和右上角，所以是 180°」。
+
+- **原因**：弧线本身是**左右对称**的（`-angle-degrees/2 .. +angle-degrees/2`），但默认张角只有 `110`，
+  也就是左右各 55°，看起来只占一个象限左右。要覆盖身前的整个半圆就得是 180°。
+- **修复**：`angle-degrees` 的默认值与示例模板改为 `180`（横扫、挥击、幻影剑舞）。
+  180° 时弧线是以玩家为圆心的前半圆，左前与右前都在范围内。
+- ⚠️ **服务器上已存在的 `skills/横扫.yml` 不会被覆盖**：请把该文件的 `angle-degrees` 改成 `180`，
+  或删除该文件后 `/rpgitem reload` 让插件重新生成示例。
+
+**55.2 修复：玩家跳起来就打不到怪**
+
+用户反馈：「另外玩家跳起来 似乎就打不到怪了，判定还是有点问题」。
+
+- **根因**：上一版扇形判定的竖直下界是「玩家脚下 - 0.5」。玩家跳起时脚会抬高约 1.25 格，
+  这个窗口**跟着脚一起上升**，于是站在地面上的怪整体落到了窗口下方，一个都打不到。
+- **修复**：
+  - 竖直下界改为「玩家脚下再往下留 `max(2, height)` 格」，覆盖一次跳跃（约 1.25 格）与台阶高差；
+  - 目标改用**包围盒**做竖直重叠判定（`getBoundingBox().getHeight()`），高个子怪只要身体伸进窗口内就算命中，
+    不会再因为「脚的位置」被判出界；
+  - 十字斩竖直刀带里那句 `y >= 脚 - 0.5` 一并删除，竖直范围统一交给宽余量窗口，否则跳跃时同样失效；
+  - 视线正上 / 正下时水平投影为零的退化情况，改用 yaw 推导朝向，不再出现「朝天上砍什么都没有」。
+- 实现位置：`FSkills.sectorFromPlayer()` + `SectorZone`（横扫 / 挥击 / 幻影剑舞 / 十字斩共用）。
+
+**55.3 新增「幻影剑舞」技能（`phantom-blade` 段）**
+
+需求：「根据横扫制作幻影剑舞，短时间内挥砍多下，并且挥砍结束生成一道剑气飞向前方，同样随机位置，不同的是发射出去造成伤害。幻影剑舞每一下是 30%，最后一下剑气是 120%」。
+
+- **挥砍段**：`slash-count`（默认 5）下连续挥砍，每一下间隔 `slash-interval-ticks`（默认 3 tick）。
+  每一下都用横扫的弧线，但**随机旋转弧面**（`tilt-min-degrees` / `tilt-max-degrees`，默认 0..180）
+  并在**随机位置**出现（`jitter`，默认 0.6 格），形成幻影感。
+- **每一下 30%**：挥砍段 `weapon-percent` 默认 30，且**每一下独立命中记录**，所以同一目标会被连续命中
+  （5 下 × 30% = 150%）。
+- **收尾剑气 120%**：全部挥砍结束后在随机位置生成一道剑气（`aura.weapon-percent` 默认 120），
+  朝视线前方飞出，沿途对碰到的目标结算伤害；`aura.speed` 每 tick 前进格数（默认 1.2），
+  `aura.max-distance` 最远距离（默认 16，撞到方块会提前停下），`aura.radius` 判定半径（默认 1.5）。
+- 自带示例 `skills/幻影剑舞.yml`（不覆盖管理员改过的文件）。
+- 实现位置：`PhantomBladeSkill` 记录、`FSkillConfig.phantomBlade()`、`RpgItemManager.loadPhantomBladeSkill()`、
+  `FSkills.runPhantomBlade()` + `launchPhantomAura()`。
+
+- **说明**：以上为代码层面实现并已通过 Gradle 离线构建（`BUILD SUCCESSFUL`）与离线校验
+  （`.tmp-phantomcheck/PhantomCheck.java`：37 项 0 错误，覆盖幻影剑舞示例解析、30%/120% 数值、
+  180° 左右覆盖、**跳起后地面怪仍命中**、包围盒重叠、剑气飞行距离），**未在真实 Paper 服务端实测**。
+
+54. 新增「挥击」技能；修复横扫 / 十字斩贴脸打不到的判定；护甲 / 抗性加入强化白名单
+
+**54.1 新增「挥击」技能（`swing` 段）**
+
+需求：「利用横扫和十字斩的代码，编写新技能挥击——每次攻击都会随机以一个倾斜的角度挥出一道弧形，像横扫这种就是水平方向角度弧形」。
+
+- 挥击是**横扫的同源弧形态**，但每次施放都会**随机旋转弧面的倾斜角**：
+  0°＝水平弧（和横扫一样平躺），90°＝竖直弧（和十字斩竖直段一样立起来），
+  默认在 0..90 之间随机，所以每次都可能是水平、竖直或两者之间的斜弧。
+- 配置段 `swing:`，参数与横扫一致，另加两个键：
+  - `tilt-min-degrees`：倾斜角随机下限（默认 0）
+  - `tilt-max-degrees`：倾斜角随机上限（默认 90，可配到 180）
+- 自带示例 `skills/挥击.yml`（不覆盖管理员改过的文件）。
+- 实现位置：`SwingSkill` 记录、`FSkillConfig.swing()`、`RpgItemManager.loadSwingSkill()`、
+  `FSkills.runSwing()` + `drawTiltedArc()`（弧面绕视线方向旋转 tilt 角）。
+
+**54.2 修复：横扫 / 十字斩（以及新挥击）伤害判定——贴脸怪物打不到**
+
+用户反馈：「十字斩和横扫伤害判定其实不太严谨，因为怪物贴近玩家脸伤害是判定不到的，应该是玩家的位置到粒子效果内有判定伤害」。
+
+- **根因**：旧判定以「弧心周围一个球」为命中区，球的 Y 窗口以玩家**眼睛**高度为中心。
+  站在地上的贴脸怪物脚在眼睛下方约 1.6 格，落在窗口外，根本没有被收集到——
+  于是怪物就在刀光里却打不到。
+- **修复**：判定区域改成「**从玩家位置出发、覆盖到弧线外围（`distance + radius`）**」的扇形：
+  - 水平段（横扫、挥击、十字斩水平段）：扇形，水平半径从玩家到弧线外围，角度不超过 `angle-degrees/2`，
+    Y 从玩家脚下延伸到弧顶（眼睛 + `height/2`）——贴脸、脚下的怪物不会再漏判。
+  - 十字斩竖直段：从玩家脚下到弧顶的竖直刀带（沿视线延伸、宽度为弧半径）。
+  - 粒子绘制不变，只有命中区域修正。
+- 实现位置：`FSkills.sectorFromPlayer()` + `SectorZone` 记录，`runSweep` / `runCrossSlash` / `runSwing` 共用。
+
+**54.3 强化白名单加入护甲 / 抗性**
+
+用户反馈：「另外护甲属性和抗性属性怎么没有强化」。
+
+- 原因：`enhancement.yml` 的 `included-stats` 白名单默认只有伤害类属性，护甲 / 抗性不在其中，
+  所以不会被强化、也不会出现蓝色 `[+N]`。
+- 修复：默认白名单加入 `armor` / `armorpercent` / `resistance`（护甲 / 护甲百分比 / 抗性），
+  与伤害同步放大的同时保持战斗可预期（线性减伤，不破坏确定性）。
+- ⚠️ **服务器已有 `enhancement.yml` 时不会被覆盖**：请在服务器端
+  `plugins/EarthRPGItem/enhancement.yml` 的 `included-stats` 手动补上这三项，
+  或直接删除该文件让插件重新生成。
+
+- **说明**：以上为代码层面实现并已通过 Gradle 离线构建（`BUILD SUCCESSFUL`）与离线校验
+  （`.tmp-swingcheck/SwingCheck.java`：33 项 0 错误，覆盖示例 YAML 解析、贴脸扇形判定、
+  倾斜弧 0°/45°/90° 几何），**未在真实 Paper 服务端实测**。
+
+53. 新增现成模板 `Weapon/宝石长剑.yml`（带 3 个宝石槽位的武器）
+
+需求：「你需要帮我设计一个带宝石槽位的武器，直接给我 yml 文件」。
+
+给出一份可直接用的武器配置（**不打包进 jar**，需要手动放进 `plugins/EarthRPGItem/Weapon/`）：
+
+```yaml
+id: gem_sword
+material: NETHERITE_SWORD
+display-name: "&6&l宝石长剑"
+sockets: 3          # ★ 宝石槽位数，不写这一行就是 0 槽
+attributes:
+  Attack: 18
+  CritDamage: 25
+  CritDamagePercent: 12
+  CritChance: 12
+  Health: 10
+```
+
+用法：复制到 `plugins/EarthRPGItem/Weapon/` → `/rpgitem reload` → `/rpgitem give gem_sword` →
+手持它执行 `/rpgitem gems` 镶嵌宝石。
+
+**为什么给 `.yml` 而不是 `.txt`**：`.yml` 物品在管理员物品界面里会**单独成一个分组**，分组名就是文件名；
+`.txt` 物品全部挤在「默认 TXT 物品」里。要给自己的一套装备分组，就得用 `.yml`。
+
+**属性只挑了 5 条，其中只有 3 条吃强化**，这是刻意的：
+`Attack` / `CritDamage` / `CritDamagePercent` 在 `enhancement.yml` 的伤害白名单里，会有蓝色 `[+N]`；
+`CritChance` / `Health` 照常生效但**不吃强化**（概率与生存属性刻意不放大）。
+文件里用注释写明了这件事，免得看到「暴击率没有 `[+N]`」以为配置写错了。
+
+**离线校验 `.tmp-ymlcheck/WeaponYmlCheck.java`（78 项 0 错误）**，专门针对「yml 写错了但看不出来」
+这一类问题——YAML 属性键写错会**解析通过、加载通过、然后什么都不给**，在游戏里根本查不出原因：
+
+- **每个顶层键都必须被加载器真的读过**。不是硬编码一张表，而是从 `RpgItemManager` 源码里
+  **抓取所有 `config.get*("...")` 的键名**再逐个比对。顺带核实了四个容易搞错的：
+  `Soulbound`（大写 S）、`unbreakable`（全小写）、`hide-enchantments`、`custom-model-data`。
+- **每个 `attributes` 键都必须在加载器读得到的属性表里**（同样从源码抓取）。
+- **加载路径判定**：`loadItemFile` 有三条分支（拼接多物品 / `items:` 段落 / 单物品），
+  选错分支**照样能解析**但加载出来的不是这个物品。断言全文只有 1 行顶层 `id:`（否则会被拼接逻辑切开）、
+  没有 `items:` 段落、命中单物品分支。
+- **重复顶层键检测**：SnakeYAML 对重复键**不报错、静默保留最后一个**，所以重复的 `sockets:` 或
+  `attributes:` 会被无声吞掉。
+- 断言 `description` 里**没有手写槽位行**（`[   ]` 是插件生成的，手写会重复两行）。
+
+- **说明**：以上为代码层面实现并已通过 Gradle 离线构建（`BUILD SUCCESSFUL`），**未在真实 Paper 服务端实测**。
+
+52. 修复：强化台 / 宝石台的「返回主菜单」会把玩家送进管理员界面
+
+用户反馈：「强化和宝石镶嵌的界面是面向玩家的，所以不需要制作返回按钮——一返回就到管理界面了」。
+
+**这个反馈是对的，而且是权限设计上的真 bug。** 两个界面底部的 `返回主菜单` 调用的是 `menu.openMain(player)`，
+而主菜单 `/rpgitem gui` 是**管理员界面**：权限 `earthrpgitem.gui` 默认只有 OP，里面有物品浏览器、
+重载开关这类东西。但强化台（`earthrpgitem.enhance`）和宝石台（`earthrpgitem.gem`）**默认所有人可用**。
+
+所以一个普通玩家打开强化台，点一下「返回主菜单」，就会直接掉进一个他本来没权限打开的界面。
+这不是「多了一个用不上的按钮」，而是**一个玩家界面把管理员界面暴露给了玩家**。
+
+**改法**：删掉两个界面的返回按钮，只留关闭。强化台删掉 `ENHANCE_BACK_SLOT`（45），
+宝石台删掉 `GEM_BACK_SLOT`（45），两边的 `openMain` 分支一并删除。关闭按钮的说明文字里写清了原因，
+免得以后有人觉得「少了点什么」又把它加回来。
+
+**顺带核对了一遍同类界面**：技能面板（`/rpgitem skills`，也是面向玩家的）用的是 `PANEL_CLOSE_SLOT`，
+技能背包的返回是「返回技能面板」而不是主菜单——它们本来就是对的。
+剩下的 `openMain` 调用都在管理员菜单里（设置 / 分类 / 技能库 / 图鉴），保留正确。
+
+- **说明**：以上为代码层面实现并已通过 Gradle 离线构建（`BUILD SUCCESSFUL`），**未在真实 Paper 服务端实测**。
+  离线校验里补了回归：断言两个界面的监听器**不再引用** `openMain` / `BACK_SLOT`，
+  且 `RpgMenu` 里不再声明 `ENHANCE_BACK_SLOT` / `GEM_BACK_SLOT`——否则以后很容易顺手加回来。
+  建议用一个**没有 OP** 的测试账号打开 `/rpgitem enhance gui` 和 `/rpgitem gems` 确认底部只有关闭。
+
+51. 修复：强化石在「已有物品配置」的环境里永远不会生成
+
+用户反馈：「强化石你没做吗？他应该放置在 rpgitem items 里」。
+
+**这个反馈是对的，而且根因不是强化石没写，是它走错了生成路径。** `Items/enhance_stone.txt` 早就存在，
+但它和几十个示例物品共用同一个生成器，而那个生成器的前提是**目录为空**：
+
+```java
+exampleGenerationFolders = RpgItemType.values()
+        .map(RpgItemType::getFolderName)
+        .filter(this::hasNoItemConfigs)   // 只在目录里一个物品配置都没有时才生成
+```
+
+所以新装环境一启动就有强化石，而**已经有物品配置的环境永远不会生成它**——正好是用户的环境。
+表现也不是「没有强化石」，而是「材料永远不够」：`stone.item-id` 指向一个不存在的物品，
+强化台按钮永远灰着。这正是最容易被误判成「强化逻辑写错了」的那种症状。
+
+**改法**：把「配置**要求**的物品」和「示例物品」分开，前者由 `ensureRequiredItemFiles()` 负责，
+它**不依赖目录是否为空**，每次 `reloadItems()` 都跑：
+
+1. `enhancement.yml` 的 `stone.item-id` 若没有任何物品配置 → 生成 `Items/<id>.txt`。
+2. `gemstones.yml` 里每个宝石 id 若没有任何物品配置 → 生成 `Items/<id>.txt`（用该宝石的 `material` / `display-name`）。
+
+三条边界：
+
+- **只写不存在的文件**（`if (file.exists()) return false;`），所以管理员自己改过的强化石 / 宝石外观不会被覆盖。
+  这个功能是**补缺**，不是接管内容。
+- 生成后**立刻重新载入**物品表（`if (ensureRequiredItemFiles() > 0)` 再 `loadItems` 一遍），
+  否则本 tick 内强化台仍然看不到它。
+- id 里带 `/`、`\`、`..` 直接拒绝，避免生成的路径逃出 `Items/` 目录。
+
+原有的「找不到就打印警告」保留着：自动生成可能因目录只读而失败，那时警告是唯一线索。
+
+- **说明**：以上为代码层面实现并已通过 Gradle 离线构建（`BUILD SUCCESSFUL`），**未在真实 Paper 服务端实测**。
+  可以在已有物品的测试服上直接启动，观察日志里有没有 `已自动生成 Items/enhance_stone.txt` 那一行。
+
+50. 新增宝石系统（宝石注册 / 宝石槽位 / 镶嵌 / 宝石台 GUI）
+
+需求：「宝石增加的属性用绿色 [+10] 表示；武器需要注册才能有宝石槽位，所以你需要创建一个模板文件；
+宝石可以根据注册修改增加的属性；武器拥有的宝石槽位在描述里以白色 [   ] 表示；宝石根据颜色的不同
+会导致 [   ] 显示的颜色不同；根据宝石注册的图标在 [   ] 放置不同的图标，比如红宝石 生命 [ ♥ ]」。
+
+**1. 宝石本体 = 一个已注册物品 + `gemstones.yml` 里的一项声明**，两者用**同一个 id** 关联。
+
+- 物品文件（`Items/ruby.txt`）决定它在背包里长什么样、id 叫什么。
+- `gemstones.yml` 决定它**插上装备后给什么属性、以什么颜色和图标显示**：
+
+```yaml
+gems:
+  ruby:
+    display-name: "&c红宝石"
+    color: "&c"        # 槽位里图标的颜色
+    icon: "♥"         # 插好后槽位里显示的图标
+    material: RED_DYE  # 仅在缺少物品文件时用于自动生成
+    stats:
+      Health: 6
+      Recovery: 1
+```
+
+这样加一颗宝石 = **加一个物品文件 + 加一项声明**，不需要新的物品类型，也不需要改代码。
+`stats` 用的键和物品文件完全一致（`Attack` / `Health` / `MagicDamage` / `AttackPercent` …）。
+
+**写错的属性键不会生效**：宝石属性会过一遍 `RpgStats` 的属性表，只有结算真正认识的键才会留下。
+这是刻意的——否则会印出一个绿色 `[+N]` 却根本不加属性，玩家看到的是假承诺。
+
+**2. 槽位来自物品文件的 `sockets` 字段**（`RpgItem` 新增 `sockets`，仍然只有一个构造点）：
+
+```yaml
+id: socketed_sword_sample
+sockets: 2          # 不写这一行 = 0 个槽位
+```
+
+**没写 `sockets` 的装备就是 0 槽**，宝石插不上去。槽位数由物品文件逐件决定，不是按类型统一给的。
+同时提供了两个带槽模板：`Weapon/socketed_sword_sample.txt`（2 槽）、`Armor/socketed_chestplate_sample.txt`（1 槽），
+以及三颗宝石物品（`Items/ruby.txt` / `sapphire.txt` / `emerald.txt`）。
+
+**3. 描述里的槽位行**，紧跟在强化等级下面（两者都是「物品状态」而不是「某条属性」，所以并排放在属性框上方）：
+
+| 状态 | 显示 |
+| --- | --- |
+| 空槽位 | 白色 `[   ]` |
+| 已镶嵌 | 白色方括号里放**宝石自己的颜色和图标**，如 `[♥]`（红宝石）、`[✦]`（蓝宝石） |
+
+**括号本身永远是白色，变的是里面的图标**——这是「两颗不同宝石一眼能区分」的实现方式。
+配置在 `lore-templates.socket-line`（`label` / `bracket-color` / `gem-color` / `enabled`）。
+
+已经不在 `gemstones.yml` 里的宝石 id 显示成 `[?]`，**不显示成空槽**。这也是刻意的：
+那个槽位里确实还存着宝石，画成空槽会诱导玩家去插新的，把原来那颗**覆盖掉**。
+
+**4. 宝石属性用绿色 `[+N]` 显示在对应属性行上**，位置在蓝色强化 `[+N]` 之前：
+
+```
+  攻击 Attack +10 [+4] [+3]
+                 ↑绿  ↑蓝
+```
+
+绿色 = 宝石给的固定值，蓝色 = 强化给的。两个括号分开是因为它们是**两个不同的来源**，
+合并成一个数字就分不出「这件装备本身强」还是「强化堆出来的」。
+
+顺带修掉一个会**吞掉宝石显示**的问题：属性行原本在「物品自身数值为 0」时直接跳过，
+于是一颗给纯防御装备加 `Health` 的红宝石**整行都不会出现**，绿色括号永远看不到。
+现在只要**物品自身或宝石任意一方**有值就保留该行；物品自身为 0 时只印宝石括号
+（`生命值 Health [+6]`），不再印一个没意义的 `+0`。
+
+**5. 宝石参与强化**（已确认）：宝石给的是**固定值**，但**会被强化百分比一起放大**。
+
+```
+该装备基础 = 物品自身属性 + 所有已镶嵌宝石的属性（固定值）
+最终        = 基础 + 强化加成（把「基础」的每一格按强化百分比放大）
+```
+
+即宝石的固定值先并进该装备的基础，再被强化一起放大。例：`Attack 10` 的剑插一颗 `Attack 4` 的蓝宝石，
+在 `+20%` 那一级结算 `round(14 × 0.2) = 3`，总计 **17**；若宝石不参与强化则是 **16**——两者确实不同，
+离线校验里专门断言了这个差异。白名单外的属性（如 `Health`）照常生效，只是不吃强化加成。
+
+**6. 宝石台 GUI**：`/rpgitem gems`（主菜单也加了入口），权限 `earthrpgitem.gem`（默认 `true`，
+与强化台的 `earthrpgitem.enhance` 分开，因为它们是两个独立功能）。
+
+| 位置 | 内容 |
+| --- | --- |
+| 中间 | 主手物品的副本（含槽位实时状态） |
+| 中右 | 已镶嵌 / 总槽位、操作说明 |
+| 下方一排 | 每个槽位一格：空槽白 `[   ]`，已镶嵌显示该宝石的物品图标 |
+
+| 操作 | 效果 |
+| --- | --- |
+| 光标拿宝石**左键**空槽位 | 镶嵌（从光标消耗 1 颗） |
+| **右键**已镶嵌的槽位 | 卸下那颗宝石回背包 |
+| 点击没有槽位的位置 | 不做任何事 |
+
+沿用强化台的两条安全决定：**装备全程留在主手**（界面只画副本，装备从没离开过玩家，
+就不存在「界面开着时装备安不安全」）；**宝石只从光标消耗、不放进任何槽位**，
+所以这个界面本身不保管任何值钱的东西。同样**允许点击玩家自己的背包**（否则宝石拿不到光标上），
+只拦拖拽和 shift 点击。
+
+另外两条时序上的保护：
+
+- **先写进装备、成功了才从光标扣**（`socketGem` 返回 true 才扣 1 颗）。写失败就不扣，
+  不会出现「宝石没了但没镶上」。
+- **卸下时先确认宝石物品还存在**再清空槽位（`findById` 在 `unsocketGem` **之前**）。
+  否则配置里删掉那颗宝石后右键卸下，宝石会直接消失；现在会提示并**保留在装备里**，把配置改回来就能卸下。
+- 背包满时卸下的宝石**掉在脚下**，不销毁（复用强化台的 `giveBack`）。
+
+**7. 持久化与「配置改动不吞玩家财产」**：
+
+- 槽位内容存在物品自己的 PDC（`gem_sockets`，按槽位顺序的逗号分隔 id 列表），**跟着物品走**，
+  跨重启、跨配置重载都保留（和 `enhance_level` 同一个思路）。
+- `updateOutdatedItem` 重建物品时会**带上已镶嵌的宝石**，就像它带上强化等级一样——
+  否则管理员改一次物品配置，全服已镶嵌的宝石就会静默消失。
+- **容量变小不会丢宝石**：`normalizeSockets` 只补齐、**从不截断**。配置把 `sockets` 从 2 改成 1，
+  第二颗宝石仍然留在数据里、仍然生效，不会因为一次「本意只是外观调整」的配置改动被删掉。
+- 宝石 id 里含逗号会在载入时被拒绝并告警：逗号是槽位存储的分隔符，否则一个 id 会裂成两颗幽灵宝石。
+- `attributeSignature` 纳入 `sockets` 与宝石表指纹，所以改这两处会让物品**重渲染一次**，
+  印出来的数字和实际结算保持一致。
+
+**8. 新增开关**：`features.gemstones`（总开关，关闭后宝石台说明原因、已镶嵌宝石不再提供属性，
+但**不会从装备里消失**，重新打开就恢复）、`lore-templates.socket-line.*`（槽位行外观）。
+
+- **说明**：以上为代码层面实现并已通过 Gradle 离线构建（`BUILD SUCCESSFUL`），**未在真实 Paper 服务端实测**。
+  离线校验 `.tmp-gemcheck/GemCheck.java`（20113 项 0 错误）覆盖：槽位常量不重叠且在 54 格内、
+  槽位行不与返回/关闭键重叠、界面画出的槽位和监听器处理的槽位一致、`openGems` 先铺满 54 格、
+  宝石只从光标消耗的守恒性质（两万次随机镶嵌/卸下后 `消耗 == 归还 + 仍镶嵌`，且永不越界）、
+  容量缩小不截断、未注册 id 不显示成空槽、以及宝石参与强化的数学（`17` vs 不参与的 `16`）。
+  首次启动会生成 `gemstones.yml`，并为缺失的宝石 id 生成占位物品文件。
+
+49. 新增强化台界面（GUI）
+
+需求：「接下来制作强化界面」。
+
+**入口**：`/rpgitem enhance gui`（`enhance station` 同义），权限 `earthrpgitem.enhance`（默认 `true`）。
+主菜单（`/rpgitem gui`）也加了一个「强化台」入口。已有的 `/rpgitem enhance`、`enhance set`、`enhance info`
+保持 `earthrpgitem.admin` 不变——它们**从背包直接扣材料、绕过强化台**，只留给管理员。
+
+**两个刻意的安全决定，都为了「界面不可能弄丢玩家的东西」：**
+
+1. **装备不进界面槽位，全程留在主手**，界面里显示的只是副本。
+   如果把真装备放进槽位，那么服务器崩死、玩家被踢、插件热重载，只要发生在界面开着的时候，
+   装备就跟着界面一起没了，而且没有任何记录证明它存在过。留在主手就没有这个窗口期。
+2. **材料存的是数量，不是一个物品堆。** 槽位是 `EnhanceStationManager` 的渲染，不是容器。
+   所以材料不会因为崩服 / 踢出 / 重载而丢失，也无法被复制——和技能背包存技能 id 而不是技能物品同一个思路。
+   存入是**立即持久化**的（`enhance-station.yml`，原子写入），不依赖「关界面时归还」这种会来不及执行的时机。
+
+**界面内容**：装备副本、当前 / 目标等级、成功率、失败惩罚、**这一级的逐条实际加成**、
+强化石槽位（已存入 / 背包中 / 每次消耗）、强化按钮、返回 / 关闭。
+按钮**不可强化时会写出原因**（空手 / 不是 RPG 物品 / 已满 / 缺配置 / 材料不够），不会是一个点了没反应的死按钮。
+
+**「实际加成」这一格是必要的**：只看百分比没法判断某件装备究竟有没有收益——纯防御装备在伤害白名单下是空的。
+原来的 `enhance info` 指令已经这么做，界面里同样需要，否则玩家只会看到一个 +9% 却不知道自己的剑涨了什么。
+
+**强化石槽位**：光标拿强化石左键 = 全部存入，右键 = 存入 1 个，空手左键 = 取回全部（背包满则掉在脚下，不销毁）。
+为此该界面**允许点击玩家自己的背包**（与技能背包同理：不这样的话玩家根本无法把材料拿到光标上），
+只拦截拖拽与 shift 点击，避免物品被推进展示格。
+
+**改 `stone.item-id` 的处理**：存入时连**物品 id 一起记下来**，之后只有 id 匹配才能花用。
+否则管理员改一行配置就会把全服玩家已存进去的材料静默转换成新材料或直接清零；
+改成不存在的 id 时材料也不会卡死，取回会提示 id 已失效但**材料仍然留着**。
+
+**顺带重构（这是本次最该做的一件事）**：把强化结算抽成 `EnhancementService`，
+指令和界面**共用同一份实现**。扣材料时机、概率判定、三种失败惩罚，任何一处两边写得不一致，
+后果就是玩家丢装备或者白嫖尝试。同时删掉了指令里那份重复代码。
+
+- **说明**：以上为代码层面实现并已通过 Gradle 离线构建（`BUILD SUCCESSFUL`），**未在真实 Paper 服务端实测**。
+  首次启动会生成 `enhance-station.yml`（玩家存入记录）。
+
+48. 新增「代达罗斯弓」箭雨技能；王之宝库支持飞行命中生物
+
+需求：「利用王之财宝技能类型的代码，制作代达罗斯弓（技能）：将落下的全部武器改为箭、金色特效改为粉色、
+同时背后生成的武器改为天上生成、武器生成时候的圆环取消掉、落下的武器取消爆炸、同样改为普通攻击」。
+
+**结论先说：这六条里有五条本来就只是配置开关，只有最后一条需要动代码。**
+
+1. **新增现成模板 `skills/代达罗斯弓.yml`**（**不打包进 jar**，需要手动放进 `plugins/EarthRPGItem/skills/`）。
+   它**没有自己的代码**，完全复用 `gate-of-babylon` 段落，只是换了一套配置：
+
+   | 需求 | 做法 | 是否需要改代码 |
+   | --- | --- | --- |
+   | 武器 → 箭 | `weapon-materials` 换成 `ARROW` / `SPECTRAL_ARROW` / `TIPPED_ARROW` | 否 |
+   | 金色 → 粉色 | 所有粒子 `block: "255,105,180"` | 否 |
+   | 背后 → 天上 | `spawn-mode: sky` | 否 |
+   | 取消圆环 | `ripple.enabled: false` | 否 |
+   | 取消爆炸 | `explosion-particle.enabled: false` | 否 |
+   | 普通攻击（= 攻速冷却） | `attack-speed-cooldown: true` | 否 |
+   | 飞行途中碰到生物就命中 | `collide-with-entities: true` | **是（本次新增）** |
+
+2. **「改为普通攻击」按「冷却换成攻速冷却」实现**（已与用户确认，不是改伤害结算公式）：
+   `attack-speed-cooldown: true`，与王之宝库一致。技能伤害本身仍走原有管线。
+
+3. **新增 `collide-with-entities` / `collision-radius`（默认关闭 / 1.0）。**
+   这是本次唯一的代码改动。原来武器是「生成点→落点直线插值 + 只和方块不碰撞」，**对生物完全无判定**：
+   箭会直接穿过目标、砸在后面地上。对剑来说这是设计（穿墙直击准星），对箭雨来说就是明显坏了。
+   - `collide-with-entities: true` 时，飞行途中碰到生物**就地命中并停下**。
+   - 判定用**本 tick 飞过的那一段线段**，不是当前位置的点：`fall-speed` 大于 1 时一 tick 跨好几格，
+     只测点会让高速箭矢直接跳过站位不巧的目标。
+   - 按生物**中心**判定（不是脚底），所以贴身掠过也算命中。
+   - **命中只结算单个目标**，不复用落地路径：否则每支箭仍会对周围所有目标造成范围伤害，
+     「取消爆炸」就等于白做。
+   - `max-hits-per-target` 仍然生效，16 支箭不会对同一目标结算 16 次。
+   - **默认关闭**，所以王之宝库的行为一字未变。
+
+4. `/rpgitem magicdebug` 新增一行打印 `collide-with-entities` 与 `collision-radius`：
+   它会**静默改变这批武器到底是什么**（开着的时候，遇到目标的武器就停在原地、不再飞向准星落点），
+   属于不看就猜不到的那类配置。
+
+- **说明**：以上为代码层面实现并已通过 Gradle 离线构建（`BUILD SUCCESSFUL`），**未在真实 Paper 服务端实测**。
+  `代达罗斯弓.yml` 的结构与枚举名（材质/音效/粒子）已用 SnakeYAML + paper-api 的 `javap` 常量表离线校验（61 项 0 错误），
+  但**`blade-tilt-degrees` 是唯一无法离线验证的值**：箭的贴图同样是斜的，模板沿用剑实测出的 `-45`，
+  进游戏看一眼箭是否顺着飞行方向即可，偏了就改 0 / +45 / -90，不需要重新编译。
+
+47. 修复：技能暴击不吃「暴击伤害百分比」；强化范围收窄为只有伤害类属性
+
+实测反馈两条：「暴击率这种就不要加入强化列表里了，我们只强化伤害就好了」「暴击伤害百分比加成没有直接加成造成的暴击伤害，这里的暴击伤害不是指属性，而是指造成的暴击」。
+
+1. **强化范围从「全属性减排除表」改为「伤害类白名单」。**
+   新增 `included-stats`，默认只列伤害系属性：`attack` / `attackpercent` / `truedamage` / `pctdamage` / `pstdamage` /
+   各类 `*damage` 与 `*damagepercent`（物理、背刺、刺客、魔法、弓弩、冰火光明暗）/ `critdamage` / `critdamagepercent`。
+   **暴击率、护甲、生命、闪避等一律不再强化。**
+   - 原因是量级失控的方向不同：伤害翻 3 倍是玩家能预期的，但暴击率、闪避率翻 3 倍会让战斗结果无法预估。
+   - `excluded-stats` 保留为**优先级高于白名单的否决表**，用于防止以后往白名单加东西时误把攻速、攻击范围、
+     额外耐久这类「放大会破坏手感」的属性放进来。
+   - `included-stats: []` 可以退回原来的全属性口径。
+
+2. **根因：技能伤害路径根本没有读取 `CritDamagePercent`。**
+   全插件只有三条会掷暴击的伤害路径，其中两条读了、一条没读：
+   - `RpgCombatListener.calculateDamage`（近战普攻）：读了 ✅
+   - `RpgProjectileListener`（弓箭普攻）：读了 ✅
+   - `FSkills`（**全部技能**）：**只用了固定值 `CritDamage`，从没读过 `CritDamagePercent`** ❌
+
+   所以「有暴击伤害百分比、但暴击打出来没变」在普攻上看不出来，只有用技能才会暴露——而技能正是这段时间在做的部分
+   （王之宝库等），所以这个缺口一直没被发现。表现还特别容易误导：`CritDamagePercent` 是**真实生效的属性**，
+   物品面板和 `/rpgitem skillcheck` 都显示它有值，只有结算时被跳过。
+   - 修复：技能结算里补上 `rawDamage * CritDamagePercent / 100`，乘的基与近战**同一个**（暴击前的裸伤害），
+     这样两条路径以后不会再次分叉。
+   - 元素伤害的基（`elementCritBonus` / `rawSkillCritDamage`）**刻意仍然只用固定值**，因为近战的
+     `rawCriticalDamage` 就是这么做的——这里是「与普攻保持一致」，不是遗漏。
+   - `/rpgitem skillcheck` 新增一行 `暴击伤害百分比 CritDamagePercent`。原来只打印 `CritDamage`，
+     两个名字又极易混淆，所以「有暴击伤害但暴击不涨」在界面上没有任何数字可以对照——这正是它藏住的原因。
+     （反过来说：`CritDamage` 是固定值、`CritDamagePercent` 是按比例放大暴击，两者的区别现在在面板上一目了然。）
+
+- **说明**：以上为代码层面实现并已通过 Gradle 离线构建（`BUILD SUCCESSFUL`），**未在真实 Paper 服务端实测**。
+
+46. 新增强化系统（第一阶段：数据层 + 属性结算 + 物品显示）
+
+- **新增** `enhancement.yml`（首次启动自动生成，已存在则不覆盖）。每件装备有**各自独立**的强化等级，强化按**百分比缩放属性**；失败按分段惩罚。默认曲线 **20 级几何增长**：+5% 起步，每级约 ×1.24，**满级 ≈ +302%**；成功率 100% → 15%，1~7 级失败无惩罚、8~14 级掉 1 级、15~20 级破坏物品。
+- **核心设计：只存等级，动态结算。** 物品的 PDC 里只写一个整数 `enhance_level`，加成每次按等级从 `enhancement.yml` 的 `percent` 推导。
+  - 好处：改 `enhancement.yml` 的数值后，**全服已有物品立刻跟着变**，不必重刷物品、也不必回收玩家装备。反面做法（把算好的数值写进物品）会让配置更新只影响之后新生成的物品。
+  - 用百分比而不是逐条写加成，是为了**不必为每件装备枚举属性**：物品有什么属性就缩放什么，新加的物品自动适用，不会出现"忘了给某个类型配加成"。
+- **只强化伤害类属性（白名单）**：`included-stats` 列出可强化的属性，默认只有伤害系（`attack` / `attackpercent` / 各类 `*damage` / `*damagepercent` / `truedamage` / `pctdamage` / `pstdamage` / 暴击**伤害**）。**暴击率、护甲、生命等不在其中**——它们是概率或生存属性，跟着伤害一起放大，角色强度会比伤害数字涨得快得多。
+  - `excluded-stats` 是**优先于白名单的否决表**，用于保证攻速、攻击范围、额外耐久这类「放大会破坏手感或平衡」的属性即使被误加回白名单也不会生效。
+  - 两张表留空 / 改写即可切换口径：`included-stats: []` 会回到「除否决表外全部强化」。
+- **物品显示：基础值与强化量分开。** 形如 `◆ 攻击 Attack +286 [+200]`，**中括号为蓝色**（`bonus-color`，默认 `&9`），表示这一部分来自强化。
+  - **每条属性独立取整后再拼接**，所以两条各 1.5 的加成显示为 `[+2][+2]` 而不是 `[+3]`——印在属性后面的数字必须是这条属性自己的加成。
+  - **百分比属性按 1% 取整；不足 1% 时显示 `[+0%]` 而不是省略。** 省略会让玩家以为这条属性没被强化。反之，**固定值属性取整为 0 则不显示**（`[+0]` 没有信息量，纯属噪音）。
+  - `%` 由属性自身的后缀决定，`recoverypercent` 这类后缀是 `%/秒` 的也能正确识别。
+  - 带随机区间的属性（`reroll-on-use`）会显示成 `[+下限~+上限]`，与同一行 `10-20` 的区间口径一致；只印一个数字会低估上限、高估下限。
+- **负数属性按绝对值缩放、以正数给予**：`AttackSpeed -60` 在某级 `+20%` 下变成 `-60 + 12 = -48`，显示 `-60[+12]`。强化是收益，**不能让缺点变得更强**，否则一件带副作用的装备会越强化越难用。
+- **结算接入现有管线**：加成经 `RpgStats.addAccessoryStats` 合入，因此抗性、破甲、暴击族、`features.*` 开关等既有规则**自动生效**，没有新增任何战斗分支。玩家与实体（假人）两条装备路径共用同一个 `addWithEnhancement`，所以强化后的装备在假人手里与玩家手里数值一致。
+- **物品显示**：lore 顶部新增「✦ 强化 +N」一行。`LORE_FORMAT_VERSION` 升到 3。
+- **关键修复：强化等级不会被配置更新洗掉。** `updateOutdatedItem` 在物品签名变化时会按新配置**重建**物品，原本只搬运强化耐久 / 绑定 / 损坏度。若把强化等级留在这里不管，**任何一次物品配置更新都会把全服 +20 的武器静默重置回 +0**。现在重建时按原等级重建，并把强化表内容纳入物品签名：改 `enhancement.yml` 会让物品重新渲染一次 lore，保证「物品上印的数字」和「实际结算的数字」始终一致。
+- **随机属性不再被重掷**：`createItem` 拆出接受既有 `randomValues` 的重载，强化时复用物品**已经掷出**的随机属性，不会因为强化而改变其它词条。
+- **指令**（均需 `earthrpgitem.admin`）：`/rpgitem enhance` 强化手中物品一级；`/rpgitem enhance set <等级>` 直接设定等级（测试用）；`/rpgitem enhance info` 查看当前等级、下一级成功率 / 惩罚，并**打印这件物品在该级的实际逐条加成**（只看百分比无法判断某件装备究竟有没有收益）。
+- **强化石**：默认 `stone.item-id: enhance_stone`（`Items/enhance_stone.txt` 仅在 Items 目录为空时生成）。留空表示不消耗材料。**若配置的 id 找不到对应物品，启动时会打印明确警告** —— 否则这个错误的表现是「材料永远不够」，会让人去怀疑强化逻辑。
+- **说明**：以上为代码层面实现并已通过 Gradle 离线构建（`BUILD SUCCESSFUL`），**未在真实 Paper 服务端实测**。
+
+45.12 光圈变灰的真因（粒子颜色回退值）；武器残留上限 128 → 512 且可配置
+
+实测反馈两条：「生成时候的光圈粒子应该是金色的，他为什么现在是灰色的」「让武器实体残留可以达到 512 个，因为满攻速释放压力测试触发上限了」。
+
+1. **光圈是灰色的真因：`ripple` 段缺失时，粒子颜色回退到了通用的灰色 `128,128,128`。**
+   粒子配置的读取顺序是「技能 yml 的 `block` → `color` → config.yml 的 `color` → config.yml 的 `block` → **内置回退值**」，
+   而内置回退值是给任意特效用的灰色 `128,128,128`。所以只要 `王之宝库.yml` 没有同步更新（45.11 才新增 `ripple` 段），
+   圆环**照样会画出来，但是灰色**——它看起来像渲染坏了，其实是配置键不存在。
+   - 新增 `loadParticleConfig(config, path, defaultBlock)` 重载，允许调用方指定回退颜色；
+     `gate-of-babylon` 的**全部**粒子（`ripple` / `trail` / `spawn-particle` / `impact-particle` / `explosion-particle`）
+     现在都回退到金色 `255,215,0`（`GATE_DEFAULT_PARTICLE_COLOR`），所以即使 yml 没更新也不会再出现"没人选过的颜色"。
+   - `/rpgitem magicdebug` 的粒子摘要**现在会打印颜色**（形如 `DUST(12@0.35 255,215,0)`）。
+     以前只打印 `粒子(count@radius)`，颜色是回退值还是配置值在游戏里根本看不出来——这正是这个 bug 藏了这么久的原因。
+   - 同时确认 yml 里 `ripple.block: "255,215,0"` 确实能解析成金色（SnakeYAML 校验通过）。
+
+2. **武器残留上限 128 → 512，并改为可配置。** 满攻速连续施放时，单次 16 把武器 × 多次施放会很快撞到 128，
+   撞到后**整次施放被直接拒绝**（只在控制台留一行 WARNING），表现就是"技能突然不放了"。
+   - 新增 `config.yml` 的 `fskill.gate-max-live-displays`，默认 **512**。单次施放上限仍是固定的 32，不受影响。
+   - 之前是写死的常量，正常服务器够用、压测不够用，所以留成配置：需要更高就调大（调大 = 实体更多 = 服务端压力更大）。
+   - 被上限挡住时的 WARNING 现在会带上当前上限值和"可用 `fskill.gate-max-live-displays` 调整"的提示，不再让人猜。
+
+- **说明**：以上为代码层面实现并已通过 Gradle 离线构建（`BUILD SUCCESSFUL`），**未在真实 Paper 服务端实测**。
+
+45.11 悬停期改为剑柄处的平面金色圆环；技能面板加中文按键名并重排版
+
+两个改动。
+
+1. **「王之宝库」悬停期：从散点粒子改为剑柄处的平面圆形金色粒子。** 武器生成后到发射前会悬停一小段时间（`launch-delay-ticks`），
+   原来这里只有生成瞬间的一团散点粒子。现在**每一 tick 都在剑柄位置画一个平面圆环**，模仿「武器正从宝库的圆形门里被拔出来」：
+   - 新增 `ParticleEffectPlayer.playGateRipple(center, axis, config, phase)`：在**垂直于 `axis` 的平面内**画一圈粒子，
+     `count` 个粒子均匀分布、`radius` 就是圆环半径，两个值都按字面生效。它与 `playBurst` 的区别正是这里需要的两点：
+     只画**单个平面圆环**（不是一串扩散的球），并且画在**给定的点上**（不会像 `playAlways` 那样偏移到上方一格），
+     所以圆环能一直锁在剑柄上。
+   - 圆环画在**剑柄**而不是武器中心：贴图是一格高、以实体为中心，而 `faceGateWeapon` 已经把剑刃对准飞行方向，
+     所以剑柄在沿剑刃轴**向后 0.5 格**处（`GATE_HILT_OFFSET`）。这样圆环套在握把上，剑身正好穿过环心。
+   - `phase` 每 tick 推进 `GATE_RIPPLE_SPIN`，圆环会缓慢旋转，不会看起来像静止的贴图。
+   - 新增配置 `ripple` 段（`enabled` / `particle` / `block` / `count` / `radius` / `plane`）与 `ripple.plane`：
+     `blade`（默认，垂直于剑刃，像从圆形门里拔出）/ `horizontal`（平躺的水平圆环，像脚下法阵）。拼错 `plane` 会在控制台警告并回退到 `blade`。
+   - 粒子名写错只影响这一个特效：失败按武器各报一次（不会每 tick 刷屏），武器本身不受影响。
+
+2. **技能面板：所有按钮与槽位都加上中文按键名，并重新排版。**
+   - 以前按钮只写 `Q` / `SQ` / `F` / `SF` / `R` / `SR` / `L` / `SL`，玩家看不懂 `Q` 是哪个键。现在统一显示为
+     **「Q 丢弃键」「SQ 潜行+丢弃键」「F 副手交换键」「SF 潜行+副手交换键」「R 右键」「SR 潜行+右键」「L 左键」「SL 潜行+左键」**，
+     槽位里的技能名也带上该键位标签（形如 `[Q 丢弃键] 技能名`）。新增 `SkillPanelManager.triggerName/triggerLabel` 统一提供这些名称。
+   - **重排版**：**槽位挪到最上面一排（槽位 0~7）**，一眼就能看到哪个键位绑了什么；每个键位仍占一整列，
+     从上到下是 技能槽 → 键位开关 → 释放提示 → 冷却提示 → 就绪提示。
+   - **技能背包与关闭按钮挪到最后一排**（槽位 45 = 技能背包，49 = 关闭），面板总开关放在第 1 排最右（槽位 8），
+     紧挨着槽位行。原来总开关在 27、技能背包在 36，和槽位行挤在一起。
+   - 槽位布局常量（`PANEL_SLOT_BASE` / `PANEL_TRIGGER_BASE` / … / `PANEL_MASTER_SLOT` 等）改为在 `RpgMenu` 中统一定义，
+     `RpgMenuListener` 直接引用。以前绘制和点击判定各自硬编码一套槽位范围，这次一并消掉，避免以后改版式时两边对不上。
+   - 顺手修掉手册里两处早就过时的槽位号（总开关写作 31、技能背包写作 40，代码里其实是 27 / 36）。
+
+- **说明**：以上为代码层面实现并已通过 Gradle 离线构建（`BUILD SUCCESSFUL`），**未在真实 Paper 服务端实测**。
+
+45.10 模板默认释放距离由 8.0 提到 16.0
+
+实测提出「把释放距离调远一点」。释放距离就是 `gate-of-babylon` 下的 **`distance`**（准星射线长度）：
+
+- 它决定从眼睛沿视线做射线多长，**射线越长落点越远**；命中方块就用命中点，没命中就用射线末端，再往下找地面。
+- 模板默认值从 **8.0 提到 16.0**，施放时落点会明显更远，覆盖范围也更大。
+- 想再远就继续加大（例如 24.0 / 32.0）；想砸在脚边就调小。注意 `spread-radius` 是**绝对**半径，距离拉远后视觉上散布会显得更小，
+  需要更铺开的话把 `spread-radius` 一起调大。
+- 另外 `sky-height`（天上生成高度，默认 14）在落点变远后也可以适当加大，否则天上来的武器会显得贴近地面。
+
+- **说明**：以上为配置默认值调整，已通过 Gradle 离线构建（`BUILD SUCCESSFUL`），**未在真实 Paper 服务端实测**。
+
+45.9 第八次实测：武器一飞出去就歪 —— `teleport` 把施法者的视角旋转写回了实体
+
+实测反馈：「武器生成的时候朝向是正常的，但是飞出去的时候武器就歪了一点」。这个「生成时对、一动就歪」的现象精确指向了一个只在移动时才会触发的路径，查下来是 `teleport` 覆盖实体旋转：
+
+1. **根因：`teleport(Location)` 会把 Location 的 yaw/pitch 一并写到实体上。** 背后的生成点是这样来的：
+   `origin = player.getLocation().clone()` → `start = origin.clone().add(...)`，所以**生成点带着施法者当时的视角朝向**（yaw/pitch）。
+   - 生成瞬间：实体带着施法者的朝向被创建，但紧接着 `faceGateWeapon` 调用了 `setRotation(0, 0)`，把它按回单位旋转，**所以刚生成时朝向是对的**。
+   - 开始飞行后：每一 tick 的 `teleport(point)` 里，`point` 是从 `weapon.start.clone()` 算出来的，**仍然带着施法者的 yaw/pitch**，于是 `teleport` 又把它们写回实体。而 `FIXED` 的显示实体是**先应用实体自身旋转、再应用 `transformation`**，等于在已经瞄准好的姿态外面又套了一层施法者的视角旋转 —— 武器就歪了。歪的幅度正好等于施法者视角的偏转量，所以看起来只是「歪了一点」。
+   - 也解释了为什么是「飞出去才歪」：悬停等待发射的那段时间不调用 `teleport`，旋转一直保持 `faceGateWeapon` 设的 0；天上生成的武器生成点是 `impact.clone()`（`impact` 是 `new Location(world,x,y,z)`，yaw/pitch 本来就是 0），所以也不受影响 —— 只有**背后生成**的武器会歪。
+2. **修法**：凡是交给 `spawn` / `teleport` 的 Location，一律把 yaw/pitch 归零，让实体旋转恒为单位旋转，姿态完全由 `transformation` 决定，不再随施法者看哪里而漂移。三处都做了：生成、逐 tick 飞行、落地。
+   - 落地那处 `impact` 本来就是零旋转，属于顺手加固（写成显式归零，避免以后有人改 `impact` 的构造方式时又踩同一个坑）。
+
+- **说明**：以上为代码层面实现并已通过 Gradle 离线构建（`BUILD SUCCESSFUL`），**未在真实 Paper 服务端实测**。
+
+45.8 第七次实测：摆正角由 +45 改为 -45（剑刃这才真的指向落点）；爆炸改用原版爆炸烟团
+
+实测反馈两条：「剑刃是斜着指向上方的」「爆炸效果还是没有，只有火焰效果」。两条都定位到了具体原因。
+
+1. **剑刃偏 90° 的真因：贴图剑刃角的符号搞反了。** 45.7 假设剑贴图的剑刃在贴图平面内指向**右上 45°**，所以用 `+45°` 去摆正。实测「斜着指向上方」说明这个假设是反的。两轮实测正好把真实角度夹死了：
+
+   | 摆正角 | 假设剑刃角 | 结果 |
+   | --- | --- | --- |
+   | 45.4 那一版：不摆正（0°） | — | 实测「斜着扔出去」→ 偏差 45° |
+   | 45.7 那一版：`+45°` | 45° | 实测「斜着指向上方」→ 说明不是 45° |
+   | 本版：`-45°` | **135°** | 离线验证剑刃与落点夹角 **0.00°** |
+
+   用 JOML 复算确认：真实剑刃角是 **135°**（在显示实体里读出来是「左上」方向，即镜像的那一侧），此时 `+45°` 会让剑刃落在 **与飞行方向垂直 90°** 的位置——前下方飞行时看起来正是「斜着指向上方」；改成 `-45°` 之后剑刃精确落在飞行方向上（0.00°）。
+   - 新增配置 **`blade-tilt-degrees`**（默认 **-45**）：这个值直接决定剑刃是否指向落点。留成配置是因为它依赖贴图，而贴图朝向在不同资源包/不同材质下可能不同——实测再偏 45° 时只改这一个值即可，**不需要重新编译**。
+   - `/rpgitem magicdebug` 现在会打印当前的 `blade-tilt-degrees`，方便对着调。
+
+2. **爆炸改用原版爆炸烟团。** 45.7 把 `explosion-particle` 从 `SMALL_FLAME` 换成了 `FLAME`，结果实测「只有火焰效果」——火焰是火苗，本来就不像爆炸。现在默认改为 **`EXPLOSION 2@0.6`**，也就是原版那种白色爆炸烟团，这才是「爆炸」的观感。
+   - `EXPLOSION` 的贴图将近一格大，所以 `count` 保持很小（2）；想更夸张可以调到 3~4。
+   - 仍然走 `playImpactBurst`，粒子精确炸在落点上，不会飘到上方一格。
+
+- **说明**：以上为代码层面实现并已通过 Gradle 离线构建（`BUILD SUCCESSFUL`），**未在真实 Paper 服务端实测**。
+
+45.7 第六次实测：武器改为「剑刃朝向落点」飞出去；落地爆炸重新可见
+
+本次修掉实测里最刺眼的两个问题。
+
+1. **朝向根因：`Billboard.FIXED` + `setRotation(0,0)` 让所有武器朝向完全相同。** 上一版为了让武器「恒定竖直」，把实体旋转固定成 0 并用 `GROUND` 姿态。结果是 16 把武器的贴图全部朝同一个固定方向平铺、彼此毫无差别，实测反馈就是「像物品展示框里挂着的物品一样飞过去」「落地统统一个朝向」。现在武器**按自己的飞行方向摆姿态**：剑刃精确指向它自己的落点，飞出去是剑尖朝前的。
+   - 姿态由两次旋转组成：先把贴图在自身平面内转 **+45°**（剑贴图的剑刃是斜的，不对齐 +Y，不修正就会「斜着扔」），再把局部 +Y 转到「生成点→落点」方向；正下方下落是最短弧旋转的退化情形（两向量反向时旋转轴不唯一），单独用面内 180° 处理。
+   - 显示姿态从 `GROUND` 换成 **`NONE`**：只有 `NONE` 是真正的单位姿态（`GROUND` 自带 0.5 缩放、`FIXED` 自带 [0,180,0] 镜像），用它才能直接瞄准，也不再需要 2 倍缩放去抵消。
+   - 瞄准之后**只剩绕剑刃自转这一个自由度**，这里把它用来让贴图面朝「水平且垂直于飞行方向」。这不是装饰：贴图面必须垂直于剑刃，浅角度飞行时剑刃接近水平，面就必然接近竖直（会侧成一条线看不见）。离线用 JOML 1.10.5 按真实生成几何验证，**剑尖与落点夹角 0.02°~0.03°、贴图竖直度偏差 0.00**，天上直落、背后浅角、近水平全部通过。
+
+2. **爆炸「消失」的真因不是贴图太小，是粒子飘到了落点上方一格。** `playBurst` 只在 `effect` 为 circle/sphere/round 时才画扩散环，否则会静默转给 `playAlways`，而 `playAlways` 的默认形状把粒子放在**中心上方 1 格**（那是给物品粒子云用的偏移，不是给砸地用的）。于是配置的爆炸实际上变成几个飘在半空的 `SMALL_FLAME`。
+   - 新增 `playImpactBurst`：粒子精确炸在落点上，`count`/`radius` 按字面生效（`count` 个粒子散布在 `radius` 格球内，下半球稍微压扁，读起来是从地面炸开而不是陷进地里）。
+   - 模板默认从 `SMALL_FLAME 8@0.45` 改为 **`FLAME 32@0.9`**，明显可见又不会像 `EXPLOSION` 那样糊住准星；文件里另外附了想要原版白色爆炸时该怎么写。
+
+- **说明**：以上为代码层面实现并已通过 Gradle 离线构建（`BUILD SUCCESSFUL`），**未在真实 Paper 服务端实测**。
+
+45.6 第五次实测：王之宝库「只有声音、没有武器」的诊断补全
+
+实测反馈是「施放只听到龙翼拍打声、没有武器出现」，并且开启法阵诊断（`/rpgitem magicdebug` 后再施放）控制台打印「magic-circle 段没有解析到」。这条日志曾让人误以为宝库技能没被解析，但根因是两件不相干的事混在了一起：
+
+1. **「没有解析到」是法阵诊断的误读**。那行日志来自 `magic-circle` 分支，而宝库文件里根本没有 `magic-circle` 段（只有 `gate-of-babylon`），所以只要开启法阵诊断、施放任何一个没有法阵的技能，它就会打印这句。它跟宝库是否解析**无关**。
+2. **听到声音 = 宝库确实在施放**。龙翼拍打声（`ENTITY_ENDER_DRAGON_FLAP`）只在 `runGateOfBabylon` 里播放，也就是说 `gate-of-babylon` 段解析成功且 `enabled()` 为真、施放流程已经进入。武器没出现的问题发生在生成/逐 tick 推进环节，而这部分旧版只有在「未施放」时才打日志，正常施放时完全静默，无法判断到底卡在哪一步。
+
+本次改动让宝库在法阵诊断开启时**三种状态都打印明确日志**，彻底结束「猜谜-误读」：
+
+- 正常施放：`[GateOfBabylon] 运行中：weapon-count=16 spawn-mode=mixed 材质池=20 damage=0.00 weapon-percent=60.00`；
+- 段存在但未启用：`[GateOfBabylon] 未运行：gate-of-babylon 段存在但 enabled()=false（需要 weapon-count>0、weapon-materials 可解析、且 damage/weapon-percent 至少一项大于 0）`；
+- 段没解析到：`[GateOfBabylon] 未运行：gate-of-babylon 段没有解析到（检查 fskill.gate-of-babylon 是否存在、层级是否正确）`。
+
+配合这行基准日志，若施放后仍没有武器，再看随后有没有 `王之宝库的武器实体生成失败`（WARNING，spawn 抛异常）或 `王之宝库任务异常`（SEVERE，逐 tick 推进抛异常）就能定位到具体那一步。另外已用与插件完全相同的解析算法（缩进两格 + 包进八个键位）离线验证 `skills/王之宝库.yml`：`fskill.gate-of-babylon` 在八个键位下全部可达、字段值全部正确，**解析层不存在问题**，问题只会在部署（旧 jar / 旧 yml 未复制到 `plugins/EarthRPGItem/skills/`）或运行时 spawn/任务异常。
+
+- **说明**：以上为代码层面实现并已通过 Gradle 离线构建（`BUILD SUCCESSFUL`），**未在真实 Paper 服务端实测**。
+
+45.5 第四次实测：武器改为恒定竖直、剑尖朝下；爆炸改用小贴图
+
+1. **武器姿态彻底重做 —— 不再「瞄准落点」**。前几轮的方向一直不对，根因是把剑身旋到了飞行方向上：从背后生成时飞行方向本身就是斜的，所以无论怎么修，看起来都是斜着被扔出去；上一轮再叠加一个 +45° 的「贴图摆正」，只是斜上加斜。现在武器**恒定竖直、剑尖朝下**，与它从哪个方向飞来无关，这才是「头朝地面」。
+   - 姿态取 **`GROUND`**（法阵中心装饰用的同一套，也是这个插件里唯一被实测确认「看着对」的悬浮物品姿态），再绕 **Z 轴**转 180° 把剑尖翻到朝下。绕 Z 而不是绕 X：绕 Z 是面内翻转，贴图正面仍朝向观察者；绕 X 同样能让剑尖朝下，但会把贴图背面转出来，单面的物品模型会直接看不见。
+   - `GROUND` 自带 0.5 缩放，所以 `transformation` 里补了 2 倍缩放，武器维持原来一格大小。
+   - 顺带纠正上一轮的两个错误结论（已用 1.21.1 原版资源核对）：`item/generated` 里 `fixed` 的 rotation 是 **`[0,180,0]`，是左右镜像**，并非看起来那样中性的展示框姿态；`none` 画出来是**扁平的图标效果**。两者都不该用作武器姿态。
+2. **爆炸改用小贴图**：`explosion-particle` 从 `EXPLOSION` 3@0.35 改为 **`SMALL_FLAME` 8@0.45**。`EXPLOSION` 的贴图本身将近一格大，`count` 压到 1 也还是一坨白糊在准星正前方；想要原版那种白色爆炸可以自己改回去（建议 `count: 1`、`radius: 0.2`）。
+
+- **说明**：以上为代码层面实现并已通过 Gradle 离线构建（`BUILD SUCCESSFUL`），**未在真实 Paper 服务端实测**。
+
+三、技能冷却与攻速冷却说明
+
+本版本继续支持并整理了多种冷却机制：
+
+1. RPG `AttackSpeed` 冷却
+
+- `AttackSpeed: 0` 约为 1 秒一次。
+- `AttackSpeed: 100` 约为 0.05 秒一次。
+- `AttackSpeed: -100` 约为 10 秒一次。
+- 攻速冷却以玩家为单位记录，切换 RPGItem 不能绕过冷却。
+- L/SL 技能和使用攻速模式的短弓可以使用该冷却。
+
+2. 技能自身冷却
+
+技能节点的 `cooldown-seconds` 默认生效，`cooldown-enabled` 默认是 `true`。未填写技能冷却时，使用 `fskill.default-cooldown-seconds`，代码默认值为 5 秒。
+
+3. 触发类型全局冷却
+
+技能节点的 `global-cooldown` 默认是 `true`。F、R、SR、Q、SQ、L、SL 等触发类型分别计算全局冷却，同一触发类型的技能共享记录，不同触发类型互不影响。`global-cooldown-seconds` 未填写时使用该技能最终冷却时间。
+
+4. 施法时间和吟唱
+
+`cast-time-seconds` 会在技能释放期间建立全局施法锁，阻止其他技能输入。吟唱默认可以在切换主手物品时中断；中断时会清理相应 FSkill/RSkill 冷却，LSkill 的玩家攻速冷却也会清理。
+
+5. 短弓两种模式
+
+- `shortbow`：使用玩家 `AttackSpeed` 计算冷却。
+- `shortbow-cd`：不读取 `AttackSpeed`，使用技能节点 `cooldown-seconds` 固定冷却。
+
+四、配置变化
+
+新增配置节点：
+
+skill-panel:
+  default-enabled: false
+  default-trigger-enabled: true
+  skills:
+    triple-shot:
+      rpgitem: triple-shot
+      skill-group: "远程主技能"
+      supported-weapons:
+        - BOW
+        - CROSSBOW
+
+字段说明：
+
+- `default-enabled`：玩家首次使用时的面板总开关默认值。
+- `default-trigger-enabled`：玩家首次使用时，各独立键位的默认值。
+- `skills`：注册技能列表。
+- `rpgitem`：实际 RPGItem ID。
+- `skill-group`：技能组名称，可选。
+- `supported-weapons`：武器限制列表，可选。
+
+注意：默认值只作用于玩家尚未保存对应 PDC 值的情况。已经在 GUI 中操作过的玩家继续使用自己的个人状态。
+
+五、独立 skills 文件夹
+
+插件启动时自动创建：
+
+plugins/EarthRPGItem/skills/
+
+并首次生成三个示例技能文件：
+
+- `横扫.yml`
+- `十字斩.yml`
+- `王之宝库.yml`（`gate-of-babylon` 形态的完整示例，固定 10 秒冷却、16 把武器、落地停留 2 秒）
+
+RPGItem 可以通过以下方式引用外部技能：
+
+lskill:
+  skill-file: "横扫.yml"
+
+外部技能文件的根节点就是技能节点本身。文件只在不存在时生成，插件不会覆盖管理员已经修改的文件。
+
+横扫和十字斩示例默认包含固定技能配置、范围伤害、武器百分比、粒子和音效；将它们挂到 L/SL 时使用玩家 AttackSpeed 冷却。王之宝库示例同样使用 `attack-speed-cooldown: true`，需要改成固定冷却时写 `cooldown-seconds` 并删除 `attack-speed-cooldown` 即可。
+
+六、PDC 数据
+
+本版本新增以下玩家 PDC 数据：
+
+- `skill_panel_enabled`：技能面板总开关。
+- `skill_panel_q`、`skill_panel_sq`、`skill_panel_f`、`skill_panel_sf`、`skill_panel_r`、`skill_panel_sr`、`skill_panel_l`、`skill_panel_sl`：八个键位的注册技能 ID。
+- `skill_panel_q_enabled`、`skill_panel_sq_enabled`、`skill_panel_f_enabled`、`skill_panel_sf_enabled`、`skill_panel_r_enabled`、`skill_panel_sr_enabled`、`skill_panel_l_enabled`、`skill_panel_sl_enabled`：八个键位的独立开关。
+- `skill_panel_<键位>_cooldown_messages`、`skill_panel_<键位>_ready_messages`、`skill_panel_<键位>_activation_messages`：八个键位各自的**冷却提示 / 就绪提示 / 释放提示**开关（`<键位>` 为 `q`、`sq`、`f`、`sf`、`r`、`sr`、`l`、`sl`），共 24 个。
+
+这些数据按玩家保存，服务器重启后仍然保留。
+
+七、兼容性规则
+
+1. 总开关关闭时，原有 RPGItem 技能行为保持不变。
+2. 单个键位关闭时，只关闭技能面板对该键位的接管，不会自动禁用 RPGItem 原技能。
+3. 总开关和独立键位都开启时，面板技能优先。
+4. 面板键位开启但槽位为空、技能无效、武器不符合或发生技能组冲突时，不会偷偷回退到另一个旧技能；需要关闭该键位或总开关后恢复旧逻辑。
+5. 容器或插件 GUI 中的丢物操作不会被误判为 Q/SQ 技能输入。
+
+八、本版本修复
+
+1. 修复独立键位按钮看似无效的问题。
+
+旧问题：键位关闭后，面板和旧技能路径处理不清晰，用户无法确认开关是否生效。
+
+现在：键位关闭会明确释放该输入，恢复原有 RPGItem 技能逻辑；GUI 同时发送启用/禁用提示。
+
+2. 修复关闭键位仍参与技能组冲突的问题。
+
+3. 修复玩家退出后施法锁、容器丢弃窗口和打开容器状态残留的问题。
+
+4. 修复在箱子或其他容器中丢 RPGItem 时误触发 Q/SQ 面板技能的问题。
+
+5. 修复无效 `rpgitem` 注册项导致技能列表显示空白但仍可能写入无效 ID 的问题。
+
+6. 修复技能绑定列表只有一页的问题。
+
+7. 修复同一个 RPGItem 被多个注册项引用时，直接拖放会错误绑定到第一条配置的问题。重复引用时现在要求从列表中手动选择。
+
+8. 修复只配置 dimensional-slash 武器百分比伤害时，技能被错误判断为未启用的问题。
+
+9. 增加右键技能配置的空值保护，降低异常 RPGItem 配置导致空指针的风险。
+
+10. 修复独立技能物品只能被 L/SL 释放的问题。
+
+旧问题：使用 `skill-file` 的独立技能模板只注册到 `lskill`，绑定到 Q、SQ、F、SF、R、SR 时解析失败，技能无法释放。
+
+现在：独立技能模板会同时注册到全部八个触发方式，绑定到任意键位都能释放。
+
+11. 修复同一个技能绑定到多个键位时全部失效的问题。
+
+旧问题：同一个技能 ID 绑定到多个键位且带有 `skill-group` 时，各键位互相判定为技能组冲突，导致所有键位都不生效。
+
+现在：相同技能 ID 之间不再互相冲突；技能组冲突只在同一 `skill-group` 下存在不同技能 ID 时触发。
+
+12. 新增 `/rpgitem skillcheck` 诊断命令，逐键位输出总开关、绑定 ID 和失败原因。
+
+九、构建与发布
+
+本版本已经完成 Gradle 离线构建验证：
+
+BUILD SUCCESSFUL
+
+构建产物：
+
+build/libs/EarthRPGItem-3.2bate.jar
+
+推荐更新方式：
+
+1. 完全停止 Paper 服务器。
+2. 备份旧版 JAR 和 `plugins/EarthRPGItem/config.yml`。
+3. 替换插件 JAR。
+4. 启动服务器，不建议使用 `/reload` 替换 JAR。
+5. 使用测试账号执行 `/rpgitem skills`。
+6. 验证总开关、独立键位、技能绑定、技能物品库和原 RPGItem 技能回退。
+
+十、已知限制
+
+1. 当前项目测试任务为 `NO-SOURCE`，本版本已完成编译和打包验证，但仍建议在真实 Paper 测试服进行端到端测试。
+2. `supported-weapons` 依据 Bukkit Material 识别，不依据 RPGItem 自定义 ID 识别。
+3. 同一个 RPGItem 被多个注册配置引用时，光标直接绑定无法自动判断具体注册项，应从技能列表手动选择。
+4. 技能面板本身不会创建新的 RPGItem 技能效果，必须先在原 RPGItem 配置中完成技能定义。
+5. 「王之宝库」没有真实物理：下落是逐 tick 插值的直线运动，武器不会被方块挡住或弹开，伤害来自落点的范围结算而不是碰撞。落点范围内的**所有**生物都会被结算（施法者除外），与横扫 / 冲击波一样不做敌我筛选。
+6. 「王之宝库」的武器是真实实体，`weapon-count` 与 `max-hits-per-target` 是性能与平衡的两个闸门。单次施放超过 32 把会被截断，全服残留超过 128 把时新的施放会被拒绝；把 `weapon-count` 调到 32 时请同时确认服务器的实体与粒子承受能力。

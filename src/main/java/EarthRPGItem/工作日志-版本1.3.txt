@@ -1,0 +1,36 @@
+EarthRPGItem 工作日志（版本 1.3）
+
+一、本次修复
+1. 修复 RPGItem 手动扣血没有受击动画、没有受击音效、其他插件难以识别玩家伤害来源的问题。
+2. 战斗结算改为由玩家作为伤害来源触发 Bukkit/Paper 伤害流程，并使用内部标记避免递归重复计算。
+3. 修复伤害数字格式，默认去掉旧版 = 符号。
+4. 增加伤害数字颜色配置：物理、物理暴击、魔法、魔法暴击、真实伤害都可以独立设置颜色。
+5. 增加武器命中药水效果 hit-buffs，支持单个 RPGItem 配置药水类型、等级、持续秒数。
+6. 命中药水效果加入全局开关 features.hit-buffs 与 hit-buffs.enabled，并接入 Setting GUI。
+7. 调整 Fix/s：默认不修复 ExDur；如需修复附加耐久，可开启 durability.fix-repairs-extra-durability。
+8. 新增 +BackstrikeDamage 背击伤害。
+9. 新增 +AssDamage 刺客伤害与 AssDamagePercent 百分比全伤害加成。
+10. 新增玄铁剑样本<I>：铁剑材质，耐久 III、锋利 IV，命中附加缓慢 I 5 秒，铁块破碎粒子，铁砧落地音效 pitch 0.8。
+
+二、测试样本
+1. long_attack_speed_weapon.txt：长攻速重剑，用于测试慢攻速。
+2. middle_attack_speed_weapon.txt：中攻速铁剑，用于测试普通攻速。
+3. test_backstrike_weapon.txt：单独测试 +BackstrikeDamage。
+4. test_assassin_weapon.txt：单独测试 +AssDamage 与 AssDamagePercent。
+5. xuan_iron_sword_sample_1.txt：综合测试命中药水、粒子、音效、附魔和描述。
+
+三、版本 1.2 乱码日志补写
+1. 1.2 加入 /EarthRPGitem my，用于显示玩家当前生效属性。
+2. 1.2 将 /EarthRPGitem gui 限制为管理员权限。
+3. 1.2 实现主手、装备栏属性生效；副手默认不生效，除非 RPGItem 拥有 Deputy。
+4. 1.2 加入暴击率、暴击伤害、等级要求、灵魂绑定。
+5. 1.2 给 Armor、Tool、Weapon GUI 加入返回按钮和分页按钮。
+6. 1.2 加入世界伤害数字显示、粒子特效、攻击音效基础结构。
+7. 1.2 加入自定义 AttackSpeed，并在攻击冷却期间阻止 RPGItem 再次造成伤害。
+8. 1.2 加入 +Health、+Recovery、+LifeSteal、+MagicDamage 和装备 Buff 框架。
+9. 1.2 加入 ExDur、BreakLimit、EnvArmor、Resistance、BowArmor、CritArmor、Evasion、ArmorPen、TrueDamage 等防御/耐久/伤害属性。
+
+四、后续开发建议
+1. 如果要继续扩展伤害类型，建议保持“计算模块 -> 显示行 -> 归属伤害触发”的结构。
+2. 如果要做更多刺客判定，可增加对怪物仇恨列表、最近攻击者记录、潜行状态的综合判断。
+3. 如果服务端安装了复杂战斗插件，建议实服测试 EntityDamageByEntityEvent 的优先级兼容性。

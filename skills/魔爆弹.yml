@@ -1,0 +1,108 @@
+# 魔爆弹 - 法师独立技能模板
+# 本文件位于 plugins/EarthRPGItem/skills/魔爆弹.yml
+# 插件会自动把本文件注册为一个技能，技能 ID 就是文件名：魔爆弹
+#
+# 定位：法师的范围爆发法术。发射一枚缓慢的魔弹，命中目标或方块后原地爆炸，
+# 对落点周围造成范围魔法伤害。
+# 技能组3：与烈焰法阵互斥（都是范围爆发定位），避免同时带两个群伤技能。
+#
+# 类型：shortbow（投射物）。
+#   爆炸由 projectile-item 的 impact-explosion 段实现——它只做「粒子模拟 + 范围技能伤害」，
+#   【不会生成爆炸实体、不破坏方块、不点燃】，所以不会炸掉玩家建筑。
+
+display-name: "&5魔爆弹"
+material: ENCHANTED_BOOK
+skill-group: "技能组3"
+supported-weapons: [STAFF]
+
+# 0.5 秒读条：作为爆发技能，要有一点施法前摇。
+cast-time-seconds: 0.5
+cooldown-seconds: 14
+cooldown-name: "魔爆弹"
+cooldown-enabled: true
+messages-enabled: true
+global-cooldown: false
+
+# ---- 成长规则 ----
+# 每级单发倍率 +7%、爆炸半径 +0.12、爆炸伤害 +5%。
+# 爆炸是对范围内【所有】目标结算，所以倍率成长会被命中数放大——增幅比单体技能保守。
+# Lv.10：单发 80+63 = 143%，爆炸半径 3 + 9×0.12 = 4.08 格，爆炸倍率 60+45 = 105%。
+leveling:
+  max-level: 10
+  per-level:
+    shortbow.weapon-percent: 7
+    shortbow.projectile-item.impact-explosion.radius: 0.12
+    shortbow.projectile-item.impact-explosion.weapon-percent: 5
+
+shortbow:
+  arrow-count: 1
+  # 飞行速度 1.8 格/tick：比奥术飞弹慢，看得出是一枚「被抛出去的球」，
+  # 而且给对手留出躲避空间——爆炸技能不该又快又准。
+  speed: 1.8
+  # 直接命中本体的伤害：80%。主要伤害来自爆炸，本体伤害不宜过高。
+  weapon-percent: 80
+  # 排除 PHYSICAL(近战面板) 与 PROJECTILE(弓术词条)，法术只吃魔法/元素伤害。
+  # 这是排除列表：写进去的项会被移除，不是「只用这些」。
+  weapon-percent-sources: [PHYSICAL, PROJECTILE]
+  damage-type: MAGIC
+  damage-enabled: true
+  volleys: 1
+  volley-interval-ticks: 0
+  spread-mode: line
+  spread-degrees: 0
+  # 本体用烈焰弹：橙黄色、带体积感，最像「一枚会炸的魔法球」。
+  projectile: FIRE_CHARGE
+  projectile-item:
+    glow: true
+    # 不穿透：命中第一个目标立刻爆炸，这是爆炸类法术的应有行为。
+    pierce: 0
+    # 会被方块挡住：打墙上就在原地爆炸，方便往地面/墙面预置陷阱。
+    collide-blocks: true
+    # 判定半径大一点，因为弹体本身看起来有体积。
+    hit-radius: 0.9
+    max-distance: 28
+    scale: 1.0
+    tilt-degrees: 0
+    impact-particle:
+      enabled: true
+      particle: END_ROD
+      count: 20
+      radius: 0.5
+    impact-sound:
+      enabled: true
+      sound: ENTITY_FIREWORK_ROCKET_BLAST
+      volume: 0.7
+      pitch: 1.4
+    # ---- 命中爆炸（魔爆弹的核心） ----
+    # 只做粒子模拟 + 范围技能伤害：不生成爆炸实体、不破坏方块、不点燃。
+    impact-explosion:
+      # 爆炸半径 3 格，成长到满级约 4.08 格。
+      radius: 3.0
+      # 固定伤害 0：爆炸伤害全部按武器面板百分比计算。
+      damage: 0
+      # 爆炸倍率 60%：范围伤害低于单体是常识，否则一发清场。
+      weapon-percent: 60
+      # 排除同本体：爆炸不吃近战面板与弓术词条。
+      weapon-percent-sources: [PHYSICAL, PROJECTILE]
+      # 爆炸伤害类型：MAGIC。
+      damage-type: MAGIC
+      particle:
+        enabled: true
+        particle: EXPLOSION
+        count: 3
+        radius: 1.5
+      sound:
+        enabled: true
+        sound: ENTITY_GENERIC_EXPLODE
+        volume: 1.0
+        pitch: 1.1
+  # 拖尾：橙色 DUST，像一条燃烧的弹道。
+  trail:
+    enabled: true
+    particle: DUST
+    count: 10
+    radius: 0.09
+    color: "255,140,40"
+  launch-sound: ENTITY_ILLUSIONER_CAST_SPELL
+  launch-volume: 0.7
+  launch-pitch: 1.2

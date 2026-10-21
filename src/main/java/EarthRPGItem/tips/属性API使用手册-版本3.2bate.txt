@@ -1,0 +1,270 @@
+================================================================================
+EarthRPGItem 属性 API 使用手册
+版本 3.2bate —— 给其他插件开发者
+================================================================================
+
+本文档面向**想给玩家 / 生物临时或永久加属性**的插件开发者（光环、药水效果、
+BUFF 技能、装备被动、活动加成……）。EarthRPGItem 的属性系统有三层：
+
+   玩家身上的属性 = 装备 + 饰品 + 强化 + 宝石（插件自己结算）
+                + 你的插件通过本 API 添加的【属性附加值 modifier】（本文档）
+
+本 API 只做一件事：**在玩家已有的属性之外，再挂一份由你命名、由你控制的属性**，
+战斗结算时自动叠加进去。你不碰内部管理器、不碰物品，只和稳定接口打交道。
+
+--------------------------------------------------------------------------------
+一、不要这样做
+--------------------------------------------------------------------------------
+
+不要转换主类或直接访问内部管理器：
+
+    // 不要这样：依赖内部实现，版本升级后可能失效
+    EarthRPGItem plugin = (EarthRPGItem) Bukkit.getPluginManager().getPlugin("EarthRPGItem");
+    plugin.getRpgItemManager().setAttributeModifier(...);
+
+请只用公开接口 EarthRPGItemAPI（EarthRPGItem.api 包，属于稳定契约）。
+earthrpgitem 源名是插件自己技能用的保留名，写它会直接抛异常，见第四节。
+
+--------------------------------------------------------------------------------
+二、声明依赖与编译依赖
+--------------------------------------------------------------------------------
+
+plugin.yml（推荐 softdepend：没装 EarthRPGItem 你的插件也要能启动）：
+
+    softdepend: [EarthRPGItem]
+
+编译时需要 EarthRPGItem 的 jar 作 compileOnly（里面有 EarthRPGItem.api.* 和
+EarthRPGItem.items.RpgStats）：
+
+    dependencies {
+        compileOnly files('libs/EarthRPGItem-3.2bate.jar')
+    }
+
+接口上的 @NotNull 来自 org.jetbrains 注解，只会影响 IDE 提示，不参与运行。
+运行时只要 EarthRPGItem 先加载即可（softdepend 保证顺序）。
+
+--------------------------------------------------------------------------------
+三、获取 EarthRPGItemAPI
+--------------------------------------------------------------------------------
+
+    import EarthRPGItem.api.EarthRPGItemAPI;
+    import org.bukkit.Bukkit;
+    import org.bukkit.plugin.RegisteredServiceProvider;
+
+    private EarthRPGItemAPI rpgApi;
+
+    @Override
+    public void onEnable() {
+        RegisteredServiceProvider<EarthRPGItemAPI> provider =
+                Bukkit.getServicesManager().getRegistration(EarthRPGItemAPI.class);
+        if (provider != null) {
+            rpgApi = provider.getProvider();
+        } else {
+            getLogger().warning("未找到 EarthRPGItem，属性 API 不可用。");
+        }
+    }
+
+EarthRPGItem 在自己的 onEnable 里以自身插件身份注册该服务；provider 为 null 就是要判空
+「没装 / 还没加载完」的情况。之后所有调用前判空即可。
+
+--------------------------------------------------------------------------------
+四、核心概念：source（来源）、duration（时长）、替换 vs 叠加
+--------------------------------------------------------------------------------
+
+**source（来源名）**：每个属性附加值都属于一个你起的名字，例如 "myplugin:aura"。
+规则：
+
+  · 只允许 [A-Za-z0-9_.:-]{1,64]，匹配不区分大小写（"MyPlugin:Aura" 和
+    "myplugin:aura" 是同一个源）；
+  · 不同插件各用各的 source，互不覆盖：你删自己的源绝不会动别人的；
+  · 名字 "earthrpgitem" 是插件自己技能用的**保留名**——写入 / 移除它都会被拒绝
+    （抛 IllegalArgumentException）。读取它没问题，clearModifiers 也不会删它。
+
+**duration（秒）**：
+
+  · ≤ 0 = **永久**：写进玩家持久数据，重启不丢，直到你 removeModifier / 清空；
+  · > 0 = **到时自动过期**：只存在于内存，重启即消失，不会落盘。
+
+**替换 vs 叠加**：
+
+  · setModifier —— 用新值**整体替换**这个 source 现有的附加值。适合光环 / 循环任务：
+    每秒调一次也不会越叠越大（传全 0 或空块 = 移除）；
+  · addModifier —— 在现有基础上**累加**，只适合真正要叠层的效果（叠层 BUFF）。
+
+--------------------------------------------------------------------------------
+五、加属性：三种写法
+--------------------------------------------------------------------------------
+
+RpgStats 是记录类，可以直接构造；更常用的是 Map 形式，键用物品 lore 的小写无分隔
+写法（attack、critchance、health……），未知的键会被忽略：
+
+    import java.util.Map;
+    import EarthRPGItem.items.RpgStats;
+
+    // 写法 1：Map 键值（推荐，键名容错：Attack / crit-chance / crit chance 都行）
+    rpgApi.setModifier(player, "myplugin:berserk", Map.of(
+            "attack", 40.0,
+            "critdamage", 20.0,
+            "armorpen", 5.0
+    ), 30.0);                          // 30 秒后自动过期
+
+    // 写法 2：直接用属性键构造 RpgStats（fromLore，无分隔小写键；比定位构造省心）
+    RpgStats stats = RpgStats.fromLore(Map.of(
+            "attack", 100.0,
+            "counterattack", 40.0,
+            "health", 200.0
+    ));
+    rpgApi.setModifier(player, "myplugin:bastion", stats, 0);   // 0 = 永久
+
+    // 写法 3：叠加（只在确实要叠层时用）
+    rpgApi.addModifier(player, "myplugin:potion", stats, 120.0);
+
+    // 要构造完整 62 个分量（顺序即下表顺序，第 21 个 exdur 是 int）的 RpgStats 时，
+    // 用定位构造 new RpgStats(attack, attackPercent, armor, ...)；一般用 fromLore 即可。
+
+**全属性键表**（Map 写法可用的键，全部小写无分隔；数值含义与物品 lore 一致）：
+
+| 键 | 含义 | 键 | 含义 |
+| --- | --- | --- | --- |
+| attack | 攻击 | attackpercent | 攻击加成(%) |
+| armor | 护甲 | armorpercent | 护甲加成(%) |
+| critchance | 暴击率 | critdamage | 暴击伤害 |
+| critdamagepercent | 暴击伤害加成(%) | attackspeed | 攻速 |
+| health | 生命 | vitality | 生命加成 |
+| recovery | 恢复 / 回血 | recoverypercent | 恢复加成(%) |
+| lifesteal | 吸血(点) | lifestealpercent | 吸血(%) |
+| magicdamage | 魔法伤害 | magicdamagepercent | 魔法伤害加成(%) |
+| bowdamage | 弓伤害 | bowdamagepercent | 弓伤害加成(%) |
+| exdraw | 额外抽取 | fix | 每秒修复 |
+| exdur | 额外耐久 | envarmor | 环境/掉落护甲 |
+| envarmorpercent | 环境护甲加成(%) | magicarmor | 魔法护甲 |
+| magicarmorpercent | 魔法护甲加成(%) | resistance | 抗性 |
+| bowarmor | 弓护甲 | bowarmorpercent | 弓护甲加成(%) |
+| critarmor | 暴击抗性 | critarmorpercent | 暴击抗性加成(%) |
+| evasion | 闪避 | armorpen | 护甲穿透 |
+| truedamage | 真实伤害 | backstrikedamage | 背刺伤害 |
+| backstrikedamagepercent | 背刺伤害加成(%) | assdamage | 暗杀伤害 |
+| assdamagepercent | 暗杀伤害加成(%) | pctdamage | 百分比伤害 |
+| pstdamage | 百分比真实伤害 | attackrange | 攻击距离 |
+| parry | 格挡 | counterattack | 反击 |
+| dodge | 闪避(减伤) | block | 格挡(减伤) |
+| determination | 韧性 | cad | 冷却加速 |
+| icedamage / firedamage | 冰 / 火伤害 | icedamagepercent | 冰 / 火伤害加成(%) |
+| lightdamage / darkdamage | 光 / 暗伤害 | lightdamagepercent | 光 / 暗伤害加成(%) |
+| icearmor | 冰护甲 | icearmorpercent | 冰护甲加成(%) |
+| firearmor | 火护甲 | firearmorpercent | 火护甲加成(%) |
+| lightarmor | 光护甲 | lightarmorpercent | 光护甲加成(%) |
+| darkarmor | 暗护甲 | darkarmorpercent | 暗护甲加成(%) |
+
+构造 RpgStats 时分量顺序就是上表的顺序（62 个分量；第 21 个 exdur 按 int 取整）。
+
+--------------------------------------------------------------------------------
+六、读取属性
+--------------------------------------------------------------------------------
+
+    RpgStats active = rpgApi.getStats(player);       // 玩家全部有效属性（装备+饰品+你的 modifier，已考虑功能开关）
+    active.attack();                                  // 直接取分量；active.toMap() 拿到小写键 Map
+
+    RpgStats mine  = rpgApi.getModifier(player, "myplugin:aura");   // 我这个 source 贡献了多少
+    boolean on     = rpgApi.hasModifier(player, "myplugin:aura");   // 我的源是否挂了非 0 属性
+    Set<String> srcs = rpgApi.getModifierSources(player);           // 这个玩家身上所有来源
+
+    // 战斗属性立即生效；Health / Vitality 由插件的 1 秒属性任务推给最大生命；
+    // 移动速度等没有 RPG 对应属性的请走原版属性（第九节）。
+
+--------------------------------------------------------------------------------
+七、移除属性
+--------------------------------------------------------------------------------
+
+    rpgApi.removeModifier(player, "myplugin:aura");   // 只删我这个源
+    rpgApi.clearModifiers(player);                    // 删玩家身上所有外部 modifier
+    // 玩家退出时内存里的 modifier 会被清掉：永久的是从持久数据读回来的，
+    // 过期的本来就该消失。你的插件不需要自己监听退出。
+
+--------------------------------------------------------------------------------
+八、原版属性（没有 RPG 对应值的属性）
+--------------------------------------------------------------------------------
+
+移动速度、跳跃高度、击退抗性、攻击击退等没有 RPG 属性对应项，走原版实体属性：
+
+    import org.bukkit.attribute.AttributeModifier;
+
+    rpgApi.setVanillaModifier(player, "myplugin:slow",
+            "movement_speed", -0.1,
+            AttributeModifier.Operation.ADD_SCALAR,     // ADD_NUMBER / ADD_SCALAR / MULTIPLY_SCALAR_1
+            10.0);                                      // 10 秒
+
+    rpgApi.removeVanillaModifiers(player, "myplugin:slow");   // 把这个源加的原版属性全清掉
+
+属性名可以带或不带前缀："movement_speed"、"generic.movement_speed"、
+"minecraft:generic.movement_speed" 都认。同一个源 + 同一个属性再次调用会**替换**旧值。
+常用：movement_speed、jump_strength、knockback_resistance、attack_knockback。
+
+--------------------------------------------------------------------------------
+九、完整示例：潜行光环插件（覆盖式刷新）
+--------------------------------------------------------------------------------
+
+潜行 = 开「狂战士光环」（+40 攻击、+20 暴击伤害、-5 攻速、-10% 移动速度），
+取消潜行 = 关。每次开启都用 setModifier 覆盖同一个源，8 秒不刷新自动过期。
+
+    public final class BerserkAura implements Listener {
+        private final EarthRPGItemAPI rpgApi;
+
+        // 构造时传入第三节获取的 rpgApi（判过空）
+        public BerserkAura(EarthRPGItemAPI rpgApi) { this.rpgApi = rpgApi; }
+
+        @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+        public void onToggle(PlayerToggleSneakEvent event) {
+            // 潜行开启 = 开光环；关闭 = 移除
+            if (event.isSneaking()) apply(event.getPlayer());
+            else rpgApi.removeModifier(event.getPlayer(), "berserk:aura");
+        }
+
+        private void apply(org.bukkit.entity.Player player) {
+            rpgApi.setModifier(player, "berserk:aura", Map.of(
+                    "attack", 40.0,
+                    "critdamage", 20.0,
+                    "attackspeed", -5.0
+            ), 8.0);
+            rpgApi.setVanillaModifier(player, "berserk:aura",
+                    "movement_speed", -0.1,
+                    AttributeModifier.Operation.ADD_SCALAR, 8.0);
+        }
+    }
+
+每次潜行都用 setModifier **覆盖**同一个源，所以不会越叠越大；8 秒不刷新就过期。
+退出时插件自动清理，不需要额外处理。
+
+--------------------------------------------------------------------------------
+十、注意事项
+--------------------------------------------------------------------------------
+
+  · **必须在主线程调用**（属性结算与持久读写不是线程安全的）。事件监听器 / 命令 /
+    BukkitRunnable 天然在主线程；自己开线程的话要切回主线程（Bukkit.getScheduler()）。
+  · source 只能写一次，之后每次都覆盖式管理：同一个源不要既 set 又 add。
+  · 永久 modifier 写进玩家持久数据，**跨服同步 / 回档 / 换号**这类运维问题由你自己承担；
+    过期的 modifier 不落盘。
+  · 未知属性键会被忽略（Map 写法），拼错键不会报错但也不生效——用第六节的
+    getModifier 回查一下最稳。
+  · "earthrpgitem" 源名被保留：写入 / 移除它都会抛 IllegalArgumentException。
+  · getStats 返回的是“当前结算视图”，读到的数字受插件功能开关影响，只读、不改状态。
+
+--------------------------------------------------------------------------------
+十一、采集经验 / 挖掘等级部分
+--------------------------------------------------------------------------------
+
+同一个 EarthRPGItemAPI 还提供采集经验（发经验事件 / 读等级 / 注册 provider），
+那是给「经验等级插件」用的另一套接口，和属性附加值无关。详见同目录的
+《采集经验API使用手册-版本3.2bate.txt》。
+
+实战速查（/rpgitem MY 验证落地、set vs add 每 tick 光环写法）见同目录的
+《其他插件属性API接入示例.txt》。
+
+接口总览（EarthRPGItem.api.EarthRPGItemAPI）：
+
+    getStats / getModifier / getModifierSources / hasModifier
+    setModifier(RpgStats 与 Map 两版) / addModifier / removeModifier / clearModifiers
+    setVanillaModifier / removeVanillaModifiers
+    registerGatheringLevelProvider / unregisterGatheringLevelProvider
+    getGatheringLevel / awardGatheringExperience
+================================================================================

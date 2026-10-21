@@ -1,0 +1,150 @@
+# ==========================================================================
+#  采掘等级工具整合模板（Tool/collection_level_tools.yml）
+# ==========================================================================
+#  一个 yml 整合全部配套的采集工具，工具的采掘等级和资源点的 required-level 一一对应。
+#  · attributes 里的 MiningLevel / ForestLevel / FarmingLevel 是【这把工具的采掘等级】：
+#    资源点门槛直接拿它比较——工具采掘等级 ≥ 资源点 required-level 才能采集，
+#    和其他插件的玩家等级无关。
+#  · 等级链（照着资源点门槛配的，可直接用）：
+#      挖矿  铜矿镐 3 → 铁矿镐 5 → 金矿镐 8 → 钻石镐 10 → 残骸镐 15
+#      砍树  深色橡木斧 4 → 绯红菌柄斧 6
+#      农业  西瓜锄 3 → 地狱疣锄 4
+#  · MiningSpeed / ForestSpeed / FarmingSpeed 是采集速度的百分比加成（20 = +20%），
+#    采集时间 = 资源点硬度 × 20 tick ÷ (1 + 速度/100)。
+#  · 每个物品一个节点（items 下面），想加新工具复制一段改 id 和等级即可。
+#  · 文件缺失时插件会自动写入一份（已存在不会覆盖）。
+items:
+  copper_mining_pickaxe:
+    id: copper_mining_pickaxe
+    material: IRON_PICKAXE
+    display-name: "&6铜矿镐 &7(采掘等级 3)"
+    attributes:
+      MiningLevel: 3
+      MiningSpeed: 10
+      MiningFortune: 10
+    custom-model-data: 0
+    hide-enchantments: false
+    Soulbound: false
+    unbreakable: false
+    description:
+      - "&7采掘等级 3：可采铜矿资源点"
+
+  iron_mining_pickaxe:
+    id: iron_mining_pickaxe
+    material: DIAMOND_PICKAXE
+    display-name: "&7铁矿镐 &7(采掘等级 5)"
+    attributes:
+      MiningLevel: 5
+      MiningSpeed: 15
+      MiningFortune: 15
+    custom-model-data: 0
+    hide-enchantments: false
+    Soulbound: false
+    unbreakable: false
+    description:
+      - "&7采掘等级 5：可采铜矿 / 铁矿资源点"
+
+  gold_mining_pickaxe:
+    id: gold_mining_pickaxe
+    material: GOLDEN_PICKAXE
+    display-name: "&e金矿镐 &7(采掘等级 8)"
+    attributes:
+      MiningLevel: 8
+      MiningSpeed: 18
+      MiningFortune: 18
+    custom-model-data: 0
+    hide-enchantments: false
+    Soulbound: false
+    unbreakable: false
+    description:
+      - "&7采掘等级 8：可采金矿及以下资源点"
+
+  diamond_mining_pickaxe:
+    id: diamond_mining_pickaxe
+    material: DIAMOND_PICKAXE
+    display-name: "&b钻石镐 &7(采掘等级 10)"
+    attributes:
+      MiningLevel: 10
+      MiningSpeed: 20
+      MiningFortune: 20
+    custom-model-data: 0
+    hide-enchantments: false
+    Soulbound: false
+    unbreakable: false
+    description:
+      - "&7采掘等级 10：可采钻石矿及以下资源点"
+
+  debris_mining_pickaxe:
+    id: debris_mining_pickaxe
+    material: NETHERITE_PICKAXE
+    display-name: "&8残骸镐 &7(采掘等级 15)"
+    attributes:
+      MiningLevel: 15
+      MiningSpeed: 25
+      MiningFortune: 25
+    custom-model-data: 0
+    hide-enchantments: false
+    Soulbound: false
+    unbreakable: false
+    description:
+      - "&7采掘等级 15：可采远古残骸资源点（最高档）"
+
+  darkoak_forest_axe:
+    id: darkoak_forest_axe
+    material: DIAMOND_AXE
+    display-name: "&2深色橡木斧 &7(采掘等级 4)"
+    attributes:
+      ForestLevel: 4
+      ForestSpeed: 15
+      ForestFortune: 15
+    custom-model-data: 0
+    hide-enchantments: false
+    Soulbound: false
+    unbreakable: false
+    description:
+      - "&7采掘等级 4：可采深色橡木资源点"
+
+  crimson_forest_axe:
+    id: crimson_forest_axe
+    material: NETHERITE_AXE
+    display-name: "&c绯红菌柄斧 &7(采掘等级 6)"
+    attributes:
+      ForestLevel: 6
+      ForestSpeed: 20
+      ForestFortune: 20
+    custom-model-data: 0
+    hide-enchantments: false
+    Soulbound: false
+    unbreakable: false
+    description:
+      - "&7采掘等级 6：可采绯红菌柄资源点（最高档）"
+
+  melon_farming_hoe:
+    id: melon_farming_hoe
+    material: DIAMOND_HOE
+    display-name: "&a西瓜锄 &7(采掘等级 3)"
+    attributes:
+      FarmingLevel: 3
+      FarmingSpeed: 15
+      FarmingFortune: 15
+    custom-model-data: 0
+    hide-enchantments: false
+    Soulbound: false
+    unbreakable: false
+    description:
+      - "&7采掘等级 3：可采西瓜资源点"
+
+  wart_farming_hoe:
+    id: wart_farming_hoe
+    material: NETHERITE_HOE
+    display-name: "&d地狱疣锄 &7(采掘等级 4)"
+    attributes:
+      FarmingLevel: 4
+      FarmingSpeed: 20
+      FarmingFortune: 20
+    custom-model-data: 0
+    hide-enchantments: false
+    Soulbound: false
+    unbreakable: false
+    description:
+      - "&7采掘等级 4：可采地狱疣资源点（最高档）"

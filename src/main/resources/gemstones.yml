@@ -1,0 +1,35 @@
+# 宝石系统配置。每个宝石 = 一个 Items 里的物品文件（决定它长什么样、id 叫什么）
+# + 这里的一项声明（决定它插上装备后给什么属性、以什么颜色和图标显示）。
+#
+# 注意：这里声明的 `id` 必须和某个已注册物品（Items/*.txt）的 id 一致，否则宝石插不进去。
+# 如果某个 id 没有任何物品文件，插件启动时会自动生成一个 Items/<id>.txt 占位文件
+# （用下面的 material 和 display-name），你可以随意改它的外观。
+#
+# stats 用的键和物品文件完全一致（Attack / Health / MagicDamage / AttackPercent …）。
+# color 只影响槽位里 [♥] 图标和界面的显示颜色；icon 是插好后槽位里显示的文字图标。
+
+gems:
+  ruby:
+    display-name: "&c红宝石"
+    color: "&c"
+    icon: "♥"
+    material: RED_DYE
+    stats:
+      Health: 6
+      Recovery: 1
+  sapphire:
+    display-name: "&9蓝宝石"
+    color: "&9"
+    icon: "✦"
+    material: LAPIS_LAZULI
+    stats:
+      Attack: 4
+      AttackPercent: 8
+  emerald:
+    display-name: "&a绿宝石"
+    color: "&a"
+    icon: "◆"
+    material: EMERALD
+    stats:
+      MagicDamage: 5
+      MagicDamagePercent: 10

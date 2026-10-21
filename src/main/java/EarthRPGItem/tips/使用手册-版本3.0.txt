@@ -1,0 +1,808 @@
+EarthRPGItem 3.0 使用手册
+
+版本：3.0
+适用环境：Paper 1.21.1、Java 21
+
+一、配置文件格式
+
+每个物品配置必须直接从 id: 开始，不要添加 Weapon: 或 Tool: 根节点。
+
+示例：
+
+id: demo_weapon
+material: BOW
+display-name: "&6测试武器"
+attributes:
+  Attack: 12
+  AttackSpeed: 20
+Soulbound: false
+description:
+  - "&7这是一个测试物品"
+
+将文件放入：
+plugins/EarthRPGItem/Weapon/
+
+然后执行：
+/rpgitem reload
+
+如果服务器仍使用旧监听器或旧配置，建议完整重启服务器。
+
+二、3.0 新增技能
+
+1. shortbow
+
+shortbow 使用玩家当前 RPG 属性发射技能投射物。
+默认冷却方式为玩家 AttackSpeed。
+
+rskill:
+  cooldown-seconds: 1
+  cooldown-name: "短弓"
+  shortbow:
+    projectile: ARROW
+    arrow-count: 3
+    spread-degrees: 14
+    speed: 3.2
+    trail:
+      enabled: false
+      particle: CRIT
+      count: 2
+    launch-sound: ENTITY_ARROW_SHOOT
+    launch-volume: 1.0
+    launch-pitch: 1.0
+
+字段说明：
+- projectile：投射物类型。支持 ARROW、SNOWBALL、FIREBALL、SMALL_FIREBALL。
+- arrow-count：发射数量。
+- spread-degrees：水平散射角度。
+- speed：投射物速度。
+- trail.enabled：是否显示飞行轨迹，默认 false。
+- trail.particle：轨迹粒子类型。
+- trail.count：每次轨迹显示数量。
+- launch-sound：释放技能时的声音。
+- launch-volume：释放声音音量。
+- launch-pitch：释放声音音调。
+
+2. shortbow-cd
+
+shortbow-cd 与 shortbow 发射方式相同，但冷却只使用技能节点的 cooldown-seconds，不读取玩家 AttackSpeed。
+
+rskill:
+  cooldown-seconds: 4
+  cooldown-name: "技能冷却短弓"
+  shortbow-cd:
+    projectile: SNOWBALL
+    arrow-count: 5
+    spread-degrees: 20
+    speed: 3.0
+    trail:
+      enabled: true
+      particle: END_ROD
+      count: 3
+    launch-sound: ENTITY_ARROW_SHOOT
+    launch-volume: 1.0
+    launch-pitch: 1.15
+
+shortbow 与 shortbow-cd 的区别：
+- shortbow：使用玩家 AttackSpeed 计算冷却。
+- shortbow-cd：使用 cooldown-seconds 计算技能冷却。
+
+三、技能触发节点
+
+fskill：按 F 键或换手键。
+rskill：站立状态右键。
+srskill：蹲下状态右键。
+qskill：按 Q 丢弃键。
+sqskill：蹲下按 Q。
+lskill：左键或近战攻击。
+
+Q 键与 RPG 物品丢弃保护：
+- 普通状态按 Q：有可用 `qskill` 时触发 Q 技能；没有 Q 技能时保持原有普通丢弃行为。
+- 蹲下按 Q（Shift+Q）：有可用 `sqskill` 时触发 SQ 技能。
+- 蹲下按 Q 时，如果主手是 RPG 物品但没有可用 `sqskill`，会取消丢弃，物品不会掉落，也不会触发其他技能。
+- 非 RPG 物品不受该保护影响，仍可正常丢弃。
+- 如果主手无法使用 SQ 技能但副手有可用 SQ 技能，系统仍会按原有副手技能选择逻辑尝试触发副手技能。
+
+- `sfskill`：蹲下按 F。若没有可用 `sfskill`，蹲下按 F 会回退触发普通 `fskill`。
+- `slskill`：蹲下按鼠标左键。若没有可用 `slskill`，蹲下左键会回退触发普通 `lskill`。
+- 配置了可用的 `sfskill` 或 `slskill` 后，蹲下操作优先触发对应蹲下技能，不会同时触发普通技能。
+
+同一实体再次获得同类临时属性增强时，会覆盖旧效果并刷新持续时间，不会因为低冷却连续释放而无限叠加。若确实需要特殊叠加效果，可在 attribute-boost 节点中显式注册：
+
+attribute-boost:
+  duration-seconds: 10
+  stackable: true
+  Attack: 20
+
+未配置 `stackable: true` 时默认按覆盖刷新处理。单次技能释放只应用一次属性增强；技能链再次调用时也遵守相同规则。
+
+
+技能释放时间：
+- `cast-time-seconds`：技能释放时间，单位为秒，默认 `0`，表示不启用。
+- 配置该值后，技能成功释放会进入全局技能释放锁；锁定期间玩家不能释放 F、R、SR、Q、SQ、L 或其他技能。
+- 例如：
+
+```yaml
+rskill:
+  cast-time-seconds: 1
+  dimensional-slash:
+    damage: 80
+    weapon-percent: 150
+```
+
+释放次元斩后 1 秒内不能释放其他技能，1 秒结束后恢复技能使用。释放时间和技能冷却是两套独立限制；释放时间结束不代表技能自身冷却已经结束。
+
+  cooldown-enabled: true
+  messages-enabled: true
+  global-cooldown: true
+  global-cooldown-seconds: 5
+
+- cooldown-enabled：是否启用技能自身冷却。
+- messages-enabled：是否显示技能冷却和释放提示。
+- global-cooldown：是否加入该触发键的全局冷却。
+- global-cooldown-seconds：全局冷却时间，不填写时使用 cooldown-seconds。
+
+四、dimensional-slash 次元斩
+
+次元斩从玩家准星方向进行方块射线检测，在命中位置或最大距离位置造成范围伤害。
+它不会破坏方块、不会生成方块掉落物，也不会穿透方块。
+
+rskill:
+  cooldown-seconds: 5
+  dimensional-slash:
+    distance: 7
+    radius: 3
+    height: 3
+    damage: 20
+    weapon-percent: 100
+    damage-type: PHYSICAL
+    can-crit: true
+    particle:
+      enabled: true
+      particle: EXPLOSION
+      effect: burst
+      count: 1
+    sound:
+      enabled: true
+      sound: ENTITY_GENERIC_EXPLODE
+      volume: 1.0
+      pitch: 1.0
+
+字段说明：
+- distance：最大检测距离。
+- radius：范围伤害半径。
+- height：范围伤害高度。
+- damage：技能固定伤害。
+- weapon-percent：武器伤害来源百分比。
+- damage-type：伤害类型，例如 PHYSICAL、MAGIC、BOW、TRUE、ICE、FIRE、LIGHT、DARK。
+- can-crit：是否允许暴击。
+- particle、sound：技能释放时的粒子和声音。
+
+五、技能连锁 SkillChain
+
+技能完成后可以延迟触发另一个技能。
+
+rskill:
+  chain:
+    after: dimensional-slash
+    next: shortbow
+    delay-seconds: 0.5
+  dimensional-slash:
+    damage: 20
+    distance: 7
+    radius: 3
+
+字段说明：
+- after：完成的技能名称，目前常用 dimensional-slash。
+- next：下一个技能，目前支持 shortbow 和 attribute-boost。
+- delay-seconds：延迟秒数。
+
+六、临时属性增强 AttributeBoostSkill
+
+属性增强只在指定时间内生效，到期后自动移除，不会永久修改玩家基础属性。
+
+rskill:
+  attribute-boost:
+    duration-seconds: 5
+    Attack: 10
+    AttackSpeed: 15
+    CritChance: 10
+
+可配置属性示例：
+- Attack
+- AttackPercent
+- AttackSpeed
+- CritChance
+- CritDamage
+- CritDamagePercent
+- MagicDamage
+- BowDamage
+- ArmorPen
+- TrueDamage
+- BackstrikeDamage
+- BackstrikeDamagePercent：背击百分比。背击时会同时增加固定 `BackstrikeDamage`，并按武器伤害面板附加同等百分比的背击伤害。例如 `BackstrikeDamage: 10`、`BackstrikeDamagePercent: 50`、武器面板伤害为 100 时，背击附加部分为固定 15 加面板 50。
+- AssDamage
+- AssDamagePercent：刺客伤害百分比；固定刺客伤害和百分比倍率增量都会单独显示。
+- IceDamage / IceDamagePercent
+- FireDamage / FireDamagePercent
+- LightDamage / LightDamagePercent
+- DarkDamage / DarkDamagePercent
+
+元素百分比不是简单把固定元素伤害翻倍。它按本次攻击的基础伤害来源附加元素伤害，再分别经过元素护甲、元素护甲百分比和抗性结算。例如 IceDamagePercent: 20 会按本次基础伤害的 20% 附加冰元素伤害；IceDamage 则是额外固定冰伤害。
+
+七、暴击属性
+
+CritDamage 与 CritDamagePercent 是两个独立属性。
+
+attributes:
+  CritChance: 100
+  CritDamage: 10
+  CritDamagePercent: 100
+
+含义：
+- CritChance: 100：暴击率 100%。
+- CritDamage: 10：暴击成功时固定追加 10 点伤害。
+- CritDamagePercent: 100：暴击成功时，额外增加 100% 的基础暴击伤害部分。
+
+注意：
+CritDamage: 10 不是 10%。只有 CritDamagePercent 才表示百分比。
+未配置 CritDamagePercent 时，默认值为 0，不影响旧物品。
+
+八、吟唱与 Buff 释放
+
+chants 用于在技能正式释放前执行吟唱阶段。用户通过 release-at 注册 Buff 和攻击技能的释放时机。
+
+示例：
+
+srskill:
+  cooldown-seconds: 8
+  chants:
+    dimensional_chant:
+      interval-seconds: 1.0
+      release-at: end
+      stages:
+        stage_1:
+          text: "&7次元斩，蓄势待发..."
+  buffs:
+    speed_buff:
+      type: SPEED
+      amplifier: 1
+      duration-seconds: 5
+  dimensional-slash:
+    damage: 0
+    weapon-percent: 100
+    distance: 7
+    radius: 3
+    height: 3
+    damage-type: PHYSICAL
+    can-crit: true
+
+release-at 的规则：
+- start：吟唱开始时给予 Buff，并释放攻击技能。
+- end：吟唱结束时给予 Buff，并释放攻击技能。
+- both：吟唱开始和结束各给予一次 Buff，并在两个时点释放攻击技能。
+
+Buff 不再固定只在吟唱开始时生效，用户必须通过 chants 的 release-at 选择时机。
+
+注意：
+- chants 为空时，Buff 和其他技能会立即执行。
+- dimensional-slash 可以配置 damage: 0，只要 weapon-percent 大于 0，仍会正常释放。
+- chants、buffs、dimensional-slash 必须放在同一个触发节点，例如 srskill 或 rskill。
+
+九、投射物伤害与命中特效
+
+3.0 中普通弓和技能短弓都支持 RPG 伤害属性，包括攻击、弓箭伤害、魔法伤害、元素伤害、真实伤害、暴击、护甲穿透等。
+
+投射物命中特效默认关闭：
+
+features:
+  projectile-hit-particles: false
+  projectile-sounds: false
+
+projectile-hit-feedback:
+  allow: false
+
+projectile-hit-particles:
+  enabled: false
+
+projectile-hit-sound:
+  enabled: false
+
+投射物飞行轨迹与命中反馈是两套独立配置：
+- projectile-trail-particles：飞行中的轨迹。
+- projectile-hit-particles：命中时粒子。
+- projectile-trail-sound：飞行中的声音。
+- projectile-hit-sound：命中时声音。
+
+如果服务器已经生成过旧 config.yml，插件不会自动覆盖旧配置。请手动确认命中粒子和命中音效为 false，然后重启服务器或执行 /rpgitem reload。
+
+十、完整组合示例
+
+id: demo_chain_bow
+material: BOW
+display-name: "&5次元连射弓"
+attributes:
+  Attack: 20
+  AttackSpeed: 20
+  CritChance: 20
+  CritDamage: 8
+  CritDamagePercent: 50
+Soulbound: false
+rskill:
+  cooldown-seconds: 5
+  cooldown-name: "次元连射"
+  chain:
+    after: dimensional-slash
+    next: shortbow
+    delay-seconds: 0.5
+  attribute-boost:
+    duration-seconds: 5
+    Attack: 10
+    AttackSpeed: 15
+  dimensional-slash:
+    distance: 7
+    radius: 3
+    height: 3
+    damage: 20
+    weapon-percent: 100
+    damage-type: PHYSICAL
+    can-crit: true
+  shortbow:
+    projectile: ARROW
+    arrow-count: 3
+    spread-degrees: 14
+    speed: 3.2
+    trail:
+      enabled: false
+      particle: CRIT
+      count: 2
+
+description:
+  - "&7右键释放次元斩"
+  - "&7次元斩后 0.5 秒自动发射短弓"
+  - "&7暴击固定值与暴击百分比独立计算"
+
+十一、常用问题排查
+
+1. 修改 YAML 后没有变化：
+- 确认文件放在 plugins/EarthRPGItem/Weapon/。
+- 确认文件第一行是 id:。
+- 执行 /rpgitem reload；必要时完整重启服务器。
+
+2. 命中粒子或音效仍然存在：
+- 检查服务器实际 plugins/EarthRPGItem/config.yml，而不是项目 src/main/resources/config.yml。
+- 将 projectile-hit-particles.enabled 和 projectile-hit-sound.enabled 改为 false。
+- 同时确认 features.projectile-hit-particles 和 features.projectile-sounds 为 false。
+
+3. 短弓没有发射：
+- 确认技能节点位于 rskill、fskill 等触发节点内部。
+- 确认 shortbow 或 shortbow-cd 的 arrow-count 大于 0。
+- 确认 projectile 使用支持的类型名称。
+
+4. 技能没有冷却提示：
+- 检查 messages-enabled。
+- 检查插件全局 fskill、rskill、qskill 消息开关。
+
+5. 技能链没有触发：
+- after 必须写成实际技能名，例如 dimensional-slash。
+- next 必须写成已配置的 shortbow 或 attribute-boost。
+- delay-seconds 使用数字，不要写单位文字。
+
+十二、模板导入
+
+项目中可直接使用以下模板：
+- 新技能测试模板-短弓-攻速冷却.yml
+- 新技能测试模板-短弓-技能冷却.yml
+- 新技能测试模板-次元斩.yml
+- skill-shapes-test-weapon.yml：完整技能形态测试武器，顶层直接从 id: 开始。
+
+复制到：
+plugins/EarthRPGItem/Weapon/
+
+执行：
+/rpgitem reload
+
+推荐测试顺序：
+1. 先测试普通短弓发射和冷却。
+2. 再测试 shortbow-cd 的固定技能冷却。
+
+十三、冲击波、横扫与十字斩
+
+三种技能形态都可以放在 fskill、rskill、lskill、srskill、qskill 或 sqskill 下。
+
+1. 冲击波 shockwave
+
+shockwave 以玩家脚下为中心，在地面前方生成可配置角度的扇形粒子，并对扇形内生物造成伤害和击退。
+
+shockwave:
+  angle-degrees: 90
+  radius: 5
+  height: 2
+  knockback: 5
+  damage: 20
+  weapon-percent: 50
+  damage-type: PHYSICAL
+  weapon-percent-sources: [ATTACK]
+  can-crit: true
+  particle:
+    enabled: true
+    particle: CRIT
+    count: 120
+    radius: 0.05
+    effect: break
+
+- angle-degrees：扇形角度。
+- radius：冲击范围半径。
+- height：垂直命中范围。
+- knockback：击退强度，默认 5。
+- particle.count：冲击波粒子数量。冲击波会从玩家脚下中心逐帧向外扩散，目标在波前接触时受到伤害。
+- sound：可选技能音效节点，支持 enabled、sound、volume、pitch。
+
+示例：
+  sound:
+    enabled: true
+    sound: ENTITY_GENERIC_EXPLODE
+    volume: 1.0
+    pitch: 1.0
+
+2. 横扫 sweep
+
+sweep 在玩家准星前方生成水平弧形刀波，默认距离为 2 格。弧形范围内的生物受到一次伤害。
+
+sweep:
+  distance: 2
+  radius: 2
+  height: 2
+  angle-degrees: 110
+  damage: 30
+  weapon-percent: 80
+  damage-type: PHYSICAL
+  weapon-percent-sources: [ATTACK]
+  can-crit: true
+  particle:
+    enabled: true
+    particle: CRIT
+    count: 160
+    radius: 0.08
+    effect: break
+
+- distance：刀波中心距离准星的距离，默认 2。
+- 横扫中心位于玩家准星前方；正面观察是以准星为中心的水平刀线，从侧面观察会呈向前弯曲的弧形。
+- angle-degrees：刀波弧度。
+- particle.count：大量刀波粒子数量。
+- sound：可选技能音效节点，支持 enabled、sound、volume、pitch。
+
+示例：
+  sound:
+    enabled: true
+    sound: ENTITY_PLAYER_ATTACK_SWEEP
+    volume: 1.0
+    pitch: 1.0
+
+3. 十字斩 cross-slash
+
+cross-slash 在同一中心位置执行两段独立伤害：horizontal 水平刀波和 vertical 垂直刀波。两段可以配置不同伤害、百分比来源、伤害类型和粒子。
+
+cross-slash:
+  distance: 2
+  radius: 2
+  height: 2
+  angle-degrees: 110
+  horizontal:
+    damage: 25
+    weapon-percent: 70
+    damage-type: PHYSICAL
+    weapon-percent-sources: [ATTACK]
+    can-crit: true
+    particle:
+      enabled: true
+      particle: CRIT
+      count: 180
+      radius: 0.08
+      effect: break
+  vertical:
+    damage: 25
+    weapon-percent: 70
+    damage-type: PHYSICAL
+    weapon-percent-sources: [ATTACK]
+    can-crit: true
+    particle:
+      enabled: true
+      particle: CRIT
+      count: 180
+      radius: 0.08
+      effect: break
+
+4. 技能伤害类型和百分比
+
+damage-type 支持 PHYSICAL、MAGIC、BOW、TRUE、ICE、FIRE、LIGHT、DARK。
+weapon-percent-sources 支持 ATTACK、MAGIC_DAMAGE、BOW_DAMAGE、TRUE_DAMAGE、ICE_DAMAGE、FIRE_DAMAGE、LIGHT_DAMAGE、DARK_DAMAGE 和 ALL。
+
+固定 damage 与 weapon-percent 会合并为技能伤害，并按配置的 damage-type 计算护甲、元素护甲、抗性和暴击。十字斩的 horizontal 与 vertical 分别计算，因此同一目标可以受到两段独立伤害。
+
+十四、次元斩爆炸粒子
+
+dimensional-slash 的爆炸中心固定产生 EXPLOSION 爆炸粒子，并从中心向外扩散；particle 节点用于叠加第二种粒子。
+
+dimensional-slash:
+  particle:
+    enabled: true
+    particle: END_ROD
+    count: 100
+    radius: 3
+    effect: sphere
+
+上例会显示 EXPLOSION + END_ROD。particle.particle 可以替换为 CRIT、FLAME、SOUL_FIRE_FLAME、ELECTRIC_SPARK 等，particle.count 控制额外粒子数量，particle.radius 控制扩散范围。
+3. 再测试次元斩范围和方块阻挡。
+
+十六、法阵 magic-circle
+
+法阵从玩家准星方向进行方块射线检测，在命中位置创建一个贴近地面的法阵；没有命中方块时使用最大距离位置。法阵范围由粒子圆环表示，持续期间按 interval-seconds 生成地面喷发粒子，并对范围内生物造成一次该间隔的伤害。
+
+示例：
+
+fskill:
+  cooldown-seconds: 3
+  magic-circle:
+    distance: 8
+    radius: 3.5
+    height: 2.5
+    duration-seconds: 5
+    interval-seconds: 1
+    burst-count: 5
+    use-armor-stand: true
+    center-material: PAPER
+    damage: 12
+    weapon-percent: 35
+    damage-type: MAGIC
+    weapon-percent-sources: [MAGIC_DAMAGE]
+    can-crit: true
+    particle:
+      enabled: true
+      particle: ENCHANT
+      count: 64
+      radius: 3.5
+      effect: circle
+    burst-particle:
+      enabled: true
+      particle: SOUL_FIRE_FLAME
+      count: 8
+      radius: 0.12
+      effect: burst
+    sound:
+      enabled: true
+      sound: BLOCK_ENCHANTMENT_TABLE_USE
+      volume: 1.0
+      pitch: 1.0
+
+字段说明：
+- distance：从玩家准星方向开始检测的最大距离，默认 6。
+- radius：法阵半径，默认 3。
+- height：法阵伤害高度，默认 2。
+- duration-seconds：法阵持续时间，默认 5 秒。
+- interval-seconds：每次喷发和伤害的间隔，默认 1 秒。
+- burst-count：每次间隔生成的喷发数量，默认 3。
+- particle：法阵范围圆环粒子。
+- burst-particle：从地面向上窜出的喷发粒子；particle、count、radius、effect 均可配置。
+- damage、weapon-percent、damage-type、weapon-percent-sources、can-crit：沿用技能伤害系统。
+- sound：法阵创建时播放的声音。
+- use-armor-stand：是否在法阵中心生成可视中心物品，默认 true。
+- center-material：中心物品材质，默认 PAPER。使用 Bukkit/Paper Material 名称。
+
+中心盔甲架说明：
+- 盔甲架本体隐身，中心物品保持可见。
+- 盔甲架无重力、无碰撞、不可被玩家交互。
+- 法阵结束、玩家离线或玩家死亡时自动删除盔甲架。
+- 设置 use-armor-stand: false 时只显示粒子法阵，不生成中心物品。
+
+可直接使用的模板：
+- magic-circle-test-weapon.yml
+
+
+十七、法阵目标 Buff 与属性增减
+
+法阵可以对范围内的敌人或队友持续施加药水 Buff，也可以临时增加或减少 RPG 属性。效果会在每次 interval-seconds 喷发时刷新，避免法阵持续期间提前过期。
+
+magic-circle:
+  target: ENEMY
+  include-self: false
+  buff-duration-seconds: 10
+  buffs:
+    weakness:
+      type: WEAKNESS
+      amplifier: 0
+    slowness:
+      type: SLOWNESS
+      amplifier: 0
+  attribute-duration-seconds: 10
+  attribute-boost:
+    Attack: -5
+    AttackSpeed: -3
+
+目标配置：
+- target: ENEMY：只对敌人生效，默认值。
+- target: FRIENDLY：对队友、生物、村民和铁傀儡生效。
+- target: PLAYER：只对玩家实体生效，不影响生物、村民、铁傀儡、盔甲架等非玩家实体。
+- target: ALL：对范围内所有目标生效。
+- include-self：控制是否包含法阵释放玩家；target 为 PLAYER、FRIENDLY 或 ALL 时有效，默认 false。
+- **训练假人例外**：假人的实体类型可以切换。为了不让「切成村民的假人免疫法阵、却照样被横扫命中」这种不一致发生，`target: ENEMY` 下**训练假人始终算作敌人**，无论它显示成什么生物。
+- **法阵为什么可能「有法阵、没伤害」**：法阵的伤害与 Buff 在**粒子之前**结算，粒子绘制失败只会在控制台打印一次警告，不会影响伤害。如果确实没有伤害，请手持法杖执行 `/rpgitem skilldamage`，查看追加的 `法阵 magic-circle` 段——它会打印插件实际解析到的 `damage`、`weapon-percent`、`weapon-percent-sources`、`target`，以及每次喷发的原始伤害。
+
+Buff 配置：
+- buffs 下每个子节点都是一个药水效果。
+- type：PotionEffectType 名称，例如 SPEED、STRENGTH、WEAKNESS、SLOWNESS。
+- amplifier：药水等级，从 0 开始；0 表示游戏中的 I 级，1 表示 II 级。默认 0。
+- buff-duration-seconds：Buff 持续时间，默认 10 秒。
+
+属性配置：
+- attribute-boost 下填写 RPG 属性名和值。
+- 正数增加属性，负数减少属性。
+- attribute-duration-seconds：属性修改持续时间，默认 10 秒。
+- 属性支持 Attack、AttackSpeed、MagicDamage、CritChance、CritDamage 等 RpgStats 已注册字段。
+- 属性效果对玩家和普通生物都生效；法阵中心盔甲架会自动排除，不会被伤害或 Buff 影响。
+
+示例：
+- 对敌人施加虚弱和缓慢：target: ENEMY，buffs 中配置 WEAKNESS 和 SLOWNESS。
+- 对队友增加攻击：target: FRIENDLY，include-self: true，attribute-boost 中写 Attack: 10。
+
+十八、治疗法阵模板
+
+新增模板：
+- healing-magic-circle-test-weapon.yml
+
+治疗法阵使用 target: ALL 和 include-self: true，范围内所有生物都会获得治疗效果，包括释放者和其他玩家。治疗法阵不需要 damage 或 weapon-percent，使用 buffs 下的 INSTANT_HEALTH。
+
+核心配置：
+
+magic-circle:
+  target: ALL
+  include-self: true
+  buffs:
+    instant-health:
+      type: INSTANT_HEALTH
+      amplifier: 0
+  buff-duration-seconds: 1
+  particle:
+    enabled: true
+    particle: DUST
+    block: 46,255,126
+    count: 72
+    radius: 4
+    effect: circle
+  burst-particle:
+    enabled: true
+    particle: DUST
+    block: 46,255,126
+    count: 12
+    radius: 0.16
+    effect: rise
+  sound:
+    enabled: true
+    sound: ENTITY_PLAYER_LEVELUP
+    volume: 1.0
+    pitch: 1.4
+
+- `DUST` 配合 `block: 46,255,126` 表示绿色粒子。
+- `effect: circle` 表示绿色法阵范围。
+- `effect: rise` 表示从地面向上喷发的绿色粒子。
+- `INSTANT_HEALTH` 的 `amplifier: 0` 为治疗 I 级。
+- `buff-duration-seconds: 1` 适合每秒重复治疗；法阵的每次 interval-seconds 会重新施加治疗。
+- 治疗法阵的声音使用 `ENTITY_PLAYER_LEVELUP`，并设置较高音调作为治疗反馈。
+
+十五、技能自定义音效
+
+shockwave 和 sweep 都可以在技能节点下配置 sound：
+
+sound:
+  enabled: true
+  sound: ENTITY_PLAYER_ATTACK_SWEEP
+  volume: 1.0
+  pitch: 1.0
+
+十字斩支持两次独立音效，分别配置在 horizontal.sound 和 vertical.sound：
+
+cross-slash:
+  horizontal:
+    sound:
+      enabled: true
+      sound: ENTITY_PLAYER_ATTACK_SWEEP
+      volume: 1.0
+      pitch: 1.2
+  vertical:
+    sound:
+      enabled: true
+      sound: ENTITY_PLAYER_ATTACK_STRONG
+      volume: 1.0
+      pitch: 0.8
+
+- horizontal.sound：水平刀弧播放的音效。
+- vertical.sound：垂直刀弧播放的音效。
+- enabled：是否启用该音效。
+- sound：Bukkit/Paper Sound 名称。
+- volume：音量。
+- pitch：音调，低于 1.0 更低沉，高于 1.0 更尖锐。
+- 如果没有配置 horizontal.sound 或 vertical.sound，则使用 cross-slash.sound 作为两段音效的兜底配置。
+
+十六、技能伤害类型与背击
+
+法阵使用 DamageSkill 结算，支持物理、魔法和元素伤害：
+
+magic-circle:
+  damage: 0
+  weapon-percent: 250
+  damage-type: PHYSICAL
+  weapon-percent-sources: [ATTACK, LIGHT_DAMAGE]
+
+`damage-type` 可使用 `PHYSICAL`、`MAGIC`、`ICE`、`FIRE`、`LIGHT`、`DARK`、`TRUE`。`weapon-percent-sources` 可以组合 `ATTACK`、`MAGIC_DAMAGE`、`BOW_DAMAGE`、`ICE_DAMAGE`、`FIRE_DAMAGE`、`LIGHT_DAMAGE`、`DARK_DAMAGE` 等来源。
+
+元素百分比属性也会参与技能来源。例如只有 `LightDamagePercent: 5`、没有 `LightDamage` 时，配置 `LIGHT_DAMAGE` 会按技能武器基础来源的 5% 计算光元素伤害。
+
+shortbow 投射物命中时会结算弓物理伤害、MagicDamage 魔法伤害，以及冰、火、光、暗元素和对应百分比属性，并使用对应元素护甲、魔法护甲、弓护甲和抗性。
+
+冲击波、横扫、十字斩、法阵和其他 DamageSkill 技能默认允许 BackstrikeDamage、BackstrikeDamagePercent、AssDamage 和 AssDamagePercent。这些技能统一通过技能伤害入口判断目标朝向和仇恨状态；测试时应从目标背后释放，并确认物品属性中配置了对应数值。
+
+十七、3.1 新增技能键位
+
+新增两个蹲下技能节点：
+
+- `sfskill`：蹲下按 F。
+- `slskill`：蹲下按鼠标左键。
+
+键位回退规则：
+- 蹲下按 F 时，如果存在可用 `sfskill`，只触发 SF；没有可用 SF 时回退触发普通 `fskill`。
+- 蹲下左键时，如果存在可用 `slskill`，只触发 SL；没有可用 SL 时回退触发普通 `lskill`。
+- F、SF、R、SR、Q、SQ、L、SL 共用技能冷却、全局冷却和释放时间限制。
+
+十八、技能释放时间
+
+在任意技能节点配置 `cast-time-seconds` 可以启用全局技能释放锁：
+
+```yaml
+rskill:
+  cast-time-seconds: 1
+  dimensional-slash:
+    damage: 80
+    weapon-percent: 150
+```
+
+技能成功释放后 1 秒内，玩家不能释放 F、SF、R、SR、Q、SQ、L、SL 或其他技能。释放时间默认为 `0`，未配置时不启用。释放时间与技能自身冷却独立计算，释放时间结束不代表技能冷却结束。
+
+十九、属性增强防重复叠加
+
+属性增强默认不可叠加。同一实体再次获得同类临时属性增强时，会覆盖旧效果并刷新持续时间，避免通过低冷却技能套娃：
+
+```yaml
+attribute-boost:
+  duration-seconds: 10
+  Attack: 20
+```
+
+如确实需要特殊叠加效果，显式配置：
+
+```yaml
+attribute-boost:
+  duration-seconds: 10
+  stackable: true
+  Attack: 20
+```
+
+单次技能释放只应用一次属性增强，技能链再次调用时也遵守该规则。
+
+二十、RPG 物品丢弃规则
+
+- 关闭背包时，手持 RPG 物品按 Q 会进入 Q 技能或丢弃保护，不会直接掉落。
+- 关闭背包时，手持 RPG 物品按 Shift+Q 会进入 SQ 技能或丢弃保护，不会直接掉落。
+- 没有对应 Q/SQ 技能时，仍取消手持 RPG 物品的直接丢弃。
+- 打开背包后，空手从背包按 Q 或拖到背包外丢弃 RPG 物品，不触发 Q/SQ，也不应切换手持物品。
+- 普通非 RPG 物品不受 RPG 丢弃保护影响。
+
+二十一、背击百分比规则
+
+`BackstrikeDamagePercent` 同时作用于两部分：
+
+```text
+固定背击部分 = BackstrikeDamage × (1 + BackstrikeDamagePercent / 100)
+武器面板部分 = 武器基础伤害 × BackstrikeDamagePercent / 100
+```
+
+例如 `BackstrikeDamage: 10`、`BackstrikeDamagePercent: 50`、武器面板伤害为 100 时，背击附加部分为固定 15 加面板 50。该规则适用于普通攻击、DamageSkill、法阵、维度斩和投射物。
+

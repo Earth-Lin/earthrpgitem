@@ -1,0 +1,6 @@
+EarthRPGItem 版本 2.9beta0.4 工作日志
+
+1. 蹲下按 Q 只触发 SQSKILL，不再回退或触发 QSKILL。
+2. SQSKILL 冷却时只显示 SQ 冷却提示，不释放普通 Q 技能。
+3. 站立按 Q 仍只触发 QSKILL。
+4. 版本递增为 2.9beta0.4，正式版本仍为 2.9。

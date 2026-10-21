@@ -1,0 +1,120 @@
+id: excalibur
+material: GOLDEN_SWORD
+display-name: "&6&lEX胜利与誓约之剑 &6&lExcalibur"
+attributes:
+  Attack: 562
+  ArmorPen: 10
+  AttackSpeed: 50
+  MagicDamage: 267
+  LightDamage: 249
+  PctDamage: 1
+  PstDamage: 1
+  Block: 1
+  CAD: 500
+  Fix/s: 999
+  BreakLimit: true
+Soulbound: false
+custom-model-data: 0
+sounds:
+  enabled: true
+  sound: BLOCK_ANVIL_LAND
+  volume: 1.0
+  pitch: 1.2
+particles:
+  enabled: true
+  particle: BLOCK
+  block: GOLD_BLOCK
+  effect: break
+  count: 24
+  radius: 1.8
+fskill:
+  cooldown-seconds: 5
+  chants:
+    thirteen_seals:
+      interval-seconds: 0.8
+      release-at: end
+      particles:
+        enabled: true
+        particle: DUST
+        color: "255,215,0"
+        effect: contract
+        count: 48
+        radius: 4.0
+      sound:
+        enabled: true
+        sound: BLOCK_BEACON_POWER_SELECT
+        volume: 1.0
+        pitch: 0.8
+      stages:
+        seal_1:
+          text: "&6十三拘束，议决开始。"
+        seal_2:
+          text: "&e此战，即为拯救世界之战。"
+          sound:
+            enabled: true
+            sound: BLOCK_AMETHYST_BLOCK_CHIME
+            volume: 1.0
+            pitch: 1.2
+        release:
+          text: "&f圣剑，拔锚！"
+          particles:
+            enabled: true
+            particle: END_ROD
+            effect: rise
+            count: 36
+            radius: 1.5
+  damages:
+    excalibur_blast:
+      mode: wave
+      damage-type: LIGHT
+      damage: 0
+      weapon-percent: 500
+      weapon-percent-sources:
+        - ATTACK
+        - MAGIC_DAMAGE
+        - LIGHT_DAMAGE
+      length: 100
+      radius: 1.5
+      repeating: false
+      hit-once-per-cast: true
+      pierce: true
+      particles:
+        enabled: true
+        particle: DUST
+        color: "255,215,0"
+        effect: line
+        count: 20
+        radius: 0.8
+      sound:
+        enabled: true
+        sound: ENTITY_GENERIC_EXPLODE
+        volume: 2.0
+        pitch: 0.5
+  broadcasts:
+    title:
+      text: "Excalibur"
+      color: "&6"
+      duration-seconds: 3
+description:
+  - "&7┌────────────────✧────────────────┐"
+  - "  &6物理伤害 &fAttack +562"
+  - "  &6护甲穿透 &fArmorPen +10%"
+  - "  &6攻击速度 &fAttackSpeed +50"
+  - "  &6魔法伤害 &fMagicDamage +267"
+  - "  &6光属性伤害 &fLightDamage +249"
+  - "  &6规模伤害 &fPctDamage +1%"
+  - "  &6比例伤害 &fPstDamage +1%"
+  - "  &6格挡 &fBlock +1"
+  - "  &6反击伤害增加 &fCAD +500%"
+  - "  &6无限耐久 &fFix/s +999"
+  - "&7└────────────────✧────────────────┘"
+  - "&7┌────────────────✧────────────────┐"
+  - "  &f🗡 &f[&d神话&f]"
+  - ""
+  - "  &f拯救行星的闪耀圣剑。为打倒毁灭星球而被制造"
+  - "  &f出来的、能够击退一切邪恶的黄金之刃。"
+  - "  &f有着13道封印，每解锁1道封印威力越大。"
+  - "  &f圣剑的十三拘束被开放后，将化为猛烈之光。"
+  - "  &f出典:FATE"
+  - "&7└────────────────✧────────────────┘"
+  - "  &7按F键吟唱后发射光炮 | 冷却5秒"

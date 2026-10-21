@@ -1,0 +1,95 @@
+# 鹰眼专注 - 弓手增益技能模板
+# 本文件位于 plugins/EarthRPGItem/skills/鹰眼专注.yml
+# 插件会自动把本文件注册为一个技能，技能 ID 就是文件名：鹰眼专注
+#
+# 定位：弓手的爆发增益。短时间大幅提升弓术伤害与暴击。
+# 技能组1：与其它增益/主动技能互斥，避免同时携带多个增益叠乘。
+#
+# 实现要点：
+#   attribute-boost 只改属性、本身【不绘制任何粒子】，
+#   所以同时挂一个 magic-circle 段当视觉载体（中心爆发 + 外环扩散），
+#   两个段互不干扰：属性由 attribute-boost 给，画面由 magic-circle 画。
+
+display-name: "&a鹰眼专注"
+material: ENCHANTED_BOOK
+skill-group: "技能组1"
+supported-weapons: [BOW]
+
+# 0.3 秒读条：几乎瞬发，但施法瞬间被打断会吃掉冷却。
+cast-time-seconds: 0.3
+cooldown-seconds: 24
+cooldown-name: "鹰眼专注"
+cooldown-enabled: true
+messages-enabled: true
+global-cooldown: false
+
+# ---- 成长规则 ----
+# 每级：弓术伤害 +3、弓术伤害% +2、暴击率 +0.8、暴击伤害 +4、持续 +0.4 秒。
+# 增益类技能的成长给在「时长」和「数值」两侧，避免高等级只变强不变久。
+# Lv.10：弓伤 20+27=47、弓伤% 15+18=33%、暴击率 12+7.2=19.2%、
+#        暴伤 30+36=66、持续 6 + 9×0.4 = 9.6 秒。
+leveling:
+  max-level: 10
+  per-level:
+    attribute-boost.bowdamage: 3
+    attribute-boost.bowdamagepercent: 2
+    attribute-boost.critchance: 0.8
+    attribute-boost.critdamage: 4
+    attribute-boost.duration-seconds: 0.4
+
+# ---- 属性增益（真正生效的部分） ----
+# 键名会被归一化（去下划线、转小写），写 bow-damage / bowDamage 都可以。
+# 持续时间 6 秒、冷却 24 秒 —— 有明显空窗期，不能无脑开。
+attribute-boost:
+  bowdamage: 20
+  bowdamagepercent: 15
+  critchance: 12
+  critdamage: 30
+  duration-seconds: 6
+  # 不可叠加：连开两次不会叠成 40 点弓伤。
+  stackable: false
+
+# ---- 视觉载体：粒子爆发 ----
+# magic-circle 的 enabled() 需要「有伤害 / 有 buff / 有属性增益」之一，
+# 本技能通过下面的 buffs 满足条件（用一个无害的视觉锚点效果）。
+magic-circle:
+  # 0 伤害：这是增益技能，不该有攻击性。
+  damage: 0
+  weapon-percent: 0
+  # 以自己身前 0.5 格为中心（distance 会被兜底为至少 0.5）。
+  distance: 0.5
+  radius: 2.0
+  height: 2.2
+  # 0.9 秒：足够看清中心爆发 + 两三层环扩散。
+  duration-seconds: 0.9
+  # 0.3 秒一轮 = 3 轮。
+  interval-seconds: 0.3
+  # 每轮 4 处上升粒子，形成向上的气流，配合「专注」的观感。
+  burst-count: 4
+  use-armor-stand: false
+  # 不针对任何人：只作为视觉锚点。
+  target: ENEMY
+  include-self: false
+  # 视觉锚点 buff：速度 amplifier 0、持续 1 秒，几乎无感，
+  # 作用仅在于让 magic-circle 通过 enabled() 判定。
+  buffs:
+    anchor:
+      type: SPEED
+      amplifier: 0
+      duration-seconds: 1
+  # 法阵外环：只读 particle 与 count，不读 effect/radius。
+  particle:
+    enabled: true
+    particle: HAPPY_VILLAGER
+    count: 64
+  # 向上迸发的爆发粒子（playRisingBurst，高度 ≈ radius × 8）。
+  burst-particle:
+    enabled: true
+    particle: CRIT
+    count: 26
+    radius: 0.4
+  sound:
+    enabled: true
+    sound: ENTITY_EXPERIENCE_ORB_PICKUP
+    volume: 0.9
+    pitch: 1.6

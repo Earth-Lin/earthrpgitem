@@ -1,0 +1,84 @@
+EarthRPGItem 1.6 属性使用手册补充
+
+一、PctDamage 规模伤害
+格式：
+attributes:
+  PctDamage: 80
+说明：
+1. 数值为百分比。
+2. 根据攻击者当前最大生命值计算额外物理伤害。
+3. 例如玩家最大生命值为 40，PctDamage: 80 会提供 32 点基础规模伤害。
+4. 此伤害会受到目标护甲类属性影响。
+5. 该属性用于弓箭/弩弹射物命中，近战不会触发。
+
+二、PstDamage 比例伤害
+格式：
+attributes:
+  PstDamage: 5
+说明：
+1. 数值为百分比。
+2. 根据目标最大生命值计算额外物理伤害。
+3. 例如目标最大生命值为 200，PstDamage: 5 会提供 10 点基础比例伤害。
+4. 此伤害会受到目标护甲类属性影响。
+5. 该属性用于弓箭/弩弹射物命中，近战不会触发。
+
+三、AttackRange 攻击范围
+格式：
+attributes:
+  AttackRange: 1.25
+说明：
+1. 支持小数，建议最多两位小数。
+2. 弹射物命中主目标后，以主目标为中心查找半径内生物。
+3. 范围内其他生物会受到与主目标同样的最终伤害、同样的伤害数字图标。
+4. 范围伤害同样使用玩家作为伤害来源，并强制破除无敌帧。
+5. 该属性用于弓箭/弩弹射物命中，近战不会触发。
+
+四、Parry 格挡
+格式：
+attributes:
+  Parry: 80
+说明：
+1. 数值为概率，最大按 100% 计算。
+2. 玩家受到近战物理或弹射物伤害时，有概率完全免疫该次物理/弹射物伤害。
+3. 不包含虚空、摔落、烧伤、窒息、魔法、真实、背刺、刺客等伤害。
+4. 攻速冷却期间无法触发格挡。
+5. 格挡成功后，玩家会获得一次按 AttackSpeed -50 计算的冷却。
+6. 格挡成功会在玩家面前播放金色粒子爆开效果和格挡音效。
+
+五、CounterAttack 反击
+格式：
+attributes:
+  CounterAttack: 80
+说明：
+1. 数值为概率，最大按 100% 计算。
+2. 只有格挡成功后才会尝试触发。
+3. 弹射物被格挡时不会触发反击。
+4. 近战格挡反击会对攻击者造成一次主手武器基础攻击伤害。
+5. 反击会播放当前武器的打击粒子、打击音效和劈砍粒子。
+
+六、配置开关
+features:
+  pct-damage: true
+  pst-damage: true
+  attack-range: true
+  parry: true
+  counter-attack: true
+  parry-particles: true
+
+parry-particles:
+  enabled: true
+  count: 48
+  radius: 0.8
+  duration-seconds: 3
+
+parry-sound:
+  enabled: true
+  sound: BLOCK_ANVIL_LAND
+  volume: 1.0
+  pitch: 0.5
+
+七、拉弓与发射音效
+1. 1.6 中弹射物飞行音效改为发射音效，默认 ENTITY_FIREWORK_ROCKET_LAUNCH。
+2. projectile-launch-sound 控制全局发射音效。
+3. 如果单个 RPGItem 写了 projectile-trail-sound.enabled: true，会优先使用该物品自己的发射音效配置。
+4. EXDraw 每个阶段会让拉弓提示音提高 stage-pitch-step，默认 0.08。

@@ -1,0 +1,32 @@
+EarthRPGItem 工作日志 版本1.8
+
+一、修复内容
+1. 修复近战武器默认继承全局 particles 配置的问题。
+   现在普通打击粒子默认关闭，只有 RPGItem 文本中明确写入 particles.enabled: true 时才会触发。
+   全局 features.particles 和 particles 配置仍作为总开关与默认参数使用，但不会让所有武器自动出现铁方块破碎。
+
+二、新增饰品系统
+1. 新增 RpgItemType.ACCESSORY，对应插件数据目录 Accessory。
+2. 新增 accessory-type 字段，用于声明饰品类型，如 ring、earring、necklace。
+3. 新增 /rpgitem accessorygui，玩家可打开标题为 accessory 的饰品界面。
+4. 饰品 GUI 包含戒指、耳饰、手饰双槽，胸饰、项链、腰饰、披风单槽。
+5. 饰品格旁边使用告示牌提示类型，其余空位用黑色玻璃板填充，提示物和玻璃板不可拿取。
+6. 饰品数据保存到 accessories.yml，玩家关闭 GUI 时自动保存。
+7. 饰品属性只在饰品 GUI 内生效，手持饰品不会生效，避免和武器、工具逻辑混淆。
+
+三、新增指令
+1. /rpgitem give <玩家ID> <rpgitem名字>
+   管理员可直接给予在线玩家指定注册物品。
+2. /rpgitem puton <目标> <rpgitem名字>
+   支持玩家名、原版选择器和 @self。
+   护甲自动装备到对应栏位，其他物品装备到主手。
+   如果目标为玩家且物品是饰品，会优先放入对应饰品槽。
+
+四、兼容性说明
+1. 非玩家生物装备 RPGItem 武器或护甲时，原有 collectActiveStats(LivingEntity) 逻辑继续生效。
+2. puton 指令使用 Bukkit 原版选择器解析，便于命令方块和 MythicMobs 技能调用。
+3. MythicMobs 的 @self 场景如果命令发送者本身是实体，会直接解析为该实体。
+
+五、后续建议
+1. 如果后续饰品类型需要扩展，只需要在 config.yml 的 accessory.types 增加显示名，并在代码的槽位映射中添加格子。
+2. 如果要让非玩家生物也拥有饰品栏，需要新增实体 PDC 或独立 YAML 存储，目前 1.8 只为玩家提供饰品 GUI。
